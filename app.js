@@ -527,21 +527,24 @@ function getClientsWithJobCounts() {
 function createConversationJobCard(job, index) {
     const id = `job-${Date.now()}-${index}`;
     const dueDate = formatDueDate(job.updateDue);
+    const daysAgo = getDaysSinceUpdate(job.lastUpdated);
     return `
         <div class="job-card" id="${id}">
-            <div class="job-card-header" data-job-id="${id}">
-                <div class="job-info">
-                    <div class="job-title">${job.jobNumber} | ${job.jobName}</div>
-                    <div class="job-meta-compact">🕐 ${dueDate}${job.withClient ? ' · With Client' : ''}</div>
+            <div class="job-header" data-job-id="${id}">
+                <div class="job-logo"><img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'"></div>
+                <div class="job-main">
+                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">⌄</span></div>
+                    <div class="job-update-preview">${job.update || 'No updates yet'}</div>
+                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span><span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE}` : ''}</div>
                 </div>
-                <span class="card-chevron">›</span>
             </div>
             <div class="job-expanded">
-                <div class="section-label">Update</div>
-                <div class="job-description">${job.update || 'No update yet'}</div>
+                <div class="section-label">The Project</div>
+                <div class="job-description">${job.description || 'No description'}</div>
+                <div class="section-label" style="margin-top:14px">Client Owner</div>
+                <div class="job-owner">${job.projectOwner || 'TBC'}</div>
                 <div class="job-footer">
-                    ${job.channelUrl ? `<a href="${job.channelUrl}" target="_blank" class="teams-link">Teams →</a>` : '<span></span>'}
-                    <span class="job-meta-compact">${job.projectOwner || 'TBC'}</span>
+                    ${job.channelUrl ? `<a href="${job.channelUrl}" target="_blank" class="teams-link" onclick="event.stopPropagation()">↗ TEAMS</a>` : '<span></span>'}
                 </div>
             </div>
         </div>
@@ -562,7 +565,7 @@ function bindDynamicElements(container) {
     container.querySelectorAll('.other-clients-btn').forEach(btn => {
         btn.addEventListener('click', () => { addUserMessage('Other clients'); showOtherClients(); });
     });
-    container.querySelectorAll('.job-card-header').forEach(header => {
+    container.querySelectorAll('.job-header[data-job-id]').forEach(header => {
         header.addEventListener('click', () => $(header.dataset.jobId)?.classList.toggle('expanded'));
     });
 }
@@ -585,6 +588,10 @@ function showOtherClients() {
         if (area) area.scrollTop = area.scrollHeight;
     }, 400);
 }
+
+// ===== SVG ICONS =====
+const ICON_CLOCK = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+const ICON_EXCHANGE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12l-3-3M20 15H8l3 3"/></svg>`;
 
 // ===== HELPERS =====
 function formatDueDate(isoDate) {
@@ -736,7 +743,7 @@ function createWipCard(job) {
                 <div class="job-main">
                     <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">⌄</span></div>
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
-                    <div class="job-meta-compact">🕐 ${dueDate}<span class="dot">·</span><span class="stage-tag">${job.stage}</span><span class="dot">·</span><span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span></div>
+                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span><span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE}` : ''}</div>
                 </div>
             </div>
             <div class="job-expanded">
@@ -773,7 +780,7 @@ function createWipCompactCard(job) {
                 <div class="job-logo"><img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'"></div>
                 <div class="job-main">
                     <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">⌄</span></div>
-                    <div class="job-meta-compact">🕐 ${dueDate}<span class="dot">·</span><span class="${getDaysAgoClass(daysAgo)}">${daysAgo}d</span></div>
+                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span><span class="${getDaysAgoClass(daysAgo)}">${daysAgo}d</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE}` : ''}</div>
                 </div>
             </div>
             <div class="job-expanded">

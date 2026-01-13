@@ -1020,6 +1020,11 @@ body {
     margin-top: 10px;
     flex-wrap: wrap;
 }
+.job-meta-compact svg {
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
 .job-meta-compact .dot { color: #ddd; }
 .stage-tag {
     background: var(--grey-100);
