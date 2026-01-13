@@ -535,7 +535,7 @@ function createConversationJobCard(job, index) {
                 <div class="job-main">
                     <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">⌄</span></div>
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
-                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span><span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE}` : ''}</div>
+                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE} With client` : ''}</div>
                 </div>
             </div>
             <div class="job-expanded">
@@ -591,6 +591,7 @@ function showOtherClients() {
 
 // ===== SVG ICONS =====
 const ICON_CLOCK = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+const ICON_REFRESH = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>`;
 const ICON_EXCHANGE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12l-3-3M20 15H8l3 3"/></svg>`;
 
 // ===== HELPERS =====
@@ -743,7 +744,7 @@ function createWipCard(job) {
                 <div class="job-main">
                     <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">⌄</span></div>
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
-                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span><span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE}` : ''}</div>
+                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE} With client` : ''}</div>
                 </div>
             </div>
             <div class="job-expanded">
@@ -780,7 +781,7 @@ function createWipCompactCard(job) {
                 <div class="job-logo"><img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'"></div>
                 <div class="job-main">
                     <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">⌄</span></div>
-                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span><span class="${getDaysAgoClass(daysAgo)}">${daysAgo}d</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE}` : ''}</div>
+                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo}d</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE} With client` : ''}</div>
                 </div>
             </div>
             <div class="job-expanded">
