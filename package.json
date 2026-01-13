@@ -2,7 +2,7 @@
   "name": "dot-hub",
   "version": "1.0.0",
   "scripts": {
-    "start": "npx serve -s . -l 3000"
+    "start": "npx serve -s . -l tcp://0.0.0.0:3000"
   },
   "dependencies": {
     "serve": "^14.0.0"
