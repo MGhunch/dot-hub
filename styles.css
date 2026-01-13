@@ -1704,8 +1704,7 @@ body {
 .legend-swatch.projects { background: var(--red); }
 .legend-swatch.committed-swatch { background: #e0e0e0; }
 .legend-swatch.incoming-swatch {
-    background: rgba(237, 28, 36, 0.15);
-    border: 2px dashed rgba(237, 28, 36, 0.5);
+    background: rgba(237, 28, 36, 0.15)
 }
 
 /* Tracker Notes */
