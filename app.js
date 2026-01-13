@@ -839,7 +839,7 @@ function groupByWip(jobs) {
     });
     const s = (a, b) => getDaysUntilDue(a.updateDue) - getDaysUntilDue(b.updateDue);
     Object.values(g).forEach(arr => arr.sort(s));
-    return { leftTop: { title: "WE'RE ON IT", jobs: g.withUs, compact: false }, rightTop: { title: 'WITH YOU', jobs: g.withYou, compact: false }, leftBottom: { title: 'INCOMING', jobs: g.incoming, compact: true }, rightBottom: { title: 'ON HOLD', jobs: g.onHold, compact: true } };
+    return { leftTop: { title: 'JOBS WITH US', jobs: g.withUs, compact: false }, rightTop: { title: 'JOBS WITH YOU', jobs: g.withYou, compact: false }, leftBottom: { title: 'INCOMING', jobs: g.incoming, compact: true }, rightBottom: { title: 'ON HOLD', jobs: g.onHold, compact: true } };
 }
 
 function renderWip() {
