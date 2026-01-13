@@ -220,7 +220,7 @@ function navigateTo(view) {
     state.currentView = view;
     $$('.nav-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === view));
     $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
-    $('desktop-footer')?.classList.toggle('hidden', view !== 'home');
+    $('desktop-footer')?.classList.toggle('minimal', view !== 'home');
     
     if (!isDesktop()) {
         $('phone-home')?.classList.add('hidden');
@@ -507,7 +507,7 @@ async function executeTracker(parsed) {
         return;
     }
     
-    // Fetch the summary
+    // Fetch the summary for inline display
     try {
         const response = await fetch(`${API_BASE}/tracker/summary?client=${client}&period=${period}`);
         
@@ -528,7 +528,6 @@ async function executeTracker(parsed) {
         const clientName = data.client;
         const spent = formatMoney(data.spent);
         const remaining = formatMoney(Math.abs(data.remaining));
-        const budget = formatMoney(data.budget);
         const percent = data.percentUsed;
         
         let statusText = '';
@@ -889,7 +888,7 @@ function groupByWip(jobs) {
     });
     const s = (a, b) => getDaysUntilDue(a.updateDue) - getDaysUntilDue(b.updateDue);
     Object.values(g).forEach(arr => arr.sort(s));
-    return { leftTop: { title: "WE'RE ON IT", jobs: g.withUs, compact: false }, rightTop: { title: 'WITH YOU', jobs: g.withYou, compact: false }, leftBottom: { title: 'INCOMING', jobs: g.incoming, compact: true }, rightBottom: { title: 'ON HOLD', jobs: g.onHold, compact: true } };
+    return { leftTop: { title: 'JOBS WITH US', jobs: g.withUs, compact: false }, rightTop: { title: 'JOBS WITH YOU', jobs: g.withYou, compact: false }, leftBottom: { title: 'INCOMING', jobs: g.incoming, compact: true }, rightBottom: { title: 'ON HOLD', jobs: g.onHold, compact: true } };
 }
 
 function renderWip() {
@@ -1030,86 +1029,142 @@ function toggleWipWithClient(jobNumber, isWithClient) {
 }
 
 // ===== TRACKER VIEW =====
+
+// Tracker data storage
 let trackerClients = {};
 let trackerData = [];
 let trackerCurrentMonth = 'January';
 let trackerIsQuarterView = false;
 let trackerCurrentEditData = null;
 
-async function renderTracker() {
-    const content = $('tracker-content');
-    if (!content) return;
-    
-    // Show loading
-    content.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>Loading tracker...</p></div>`;
-    
-    // Load clients if not already loaded
-    if (Object.keys(trackerClients).length === 0) {
-        await loadTrackerClients();
+// Calendar quarters (fixed) - clients just label them differently
+const calendarQuarters = {
+    'Q1-cal': { months: ['January', 'February', 'March'], label: 'Jan › Mar' },
+    'Q2-cal': { months: ['April', 'May', 'June'], label: 'Apr › Jun' },
+    'Q3-cal': { months: ['July', 'August', 'September'], label: 'Jul › Sep' },
+    'Q4-cal': { months: ['October', 'November', 'December'], label: 'Oct › Dec' }
+};
+
+// Current calendar quarter (Jan-Mar 2026)
+const currentCalendarQuarter = 'Q1-cal';
+
+// Map client's Q label to calendar quarter
+const clientQuarterLabels = {
+    'ONE': 'Q4', 'ONS': 'Q4', 'ONB': 'Q4',
+    'SKY': 'Q3', 'TOW': 'Q2', 'FIS': 'Q4'
+};
+
+// Fallback data
+const fallbackTrackerClients = [
+    { code: 'ONS', name: 'One NZ – Simplification', committed: 25000, rollover: 0, rolloverUseIn: '', yearEnd: 'March', currentQuarter: 'Q4' },
+    { code: 'ONE', name: 'One NZ – Marketing', committed: 12500, rollover: 2400, rolloverUseIn: 'JAN-MAR', yearEnd: 'March', currentQuarter: 'Q4' },
+    { code: 'ONB', name: 'One NZ – Business', committed: 12500, rollover: 0, rolloverUseIn: '', yearEnd: 'March', currentQuarter: 'Q4' },
+    { code: 'SKY', name: 'Sky', committed: 10000, rollover: 0, rolloverUseIn: '', yearEnd: 'June', currentQuarter: 'Q3' },
+    { code: 'TOW', name: 'Tower', committed: 10000, rollover: 1500, rolloverUseIn: 'JAN-MAR', yearEnd: 'September', currentQuarter: 'Q2' },
+    { code: 'FIS', name: 'Fisher Funds', committed: 4500, rollover: 500, rolloverUseIn: 'JAN-MAR', yearEnd: 'March', currentQuarter: 'Q4' }
+];
+
+function formatTrackerCurrency(amount) {
+    if (Math.abs(amount) >= 1000) {
+        return '$' + (amount / 1000).toFixed(Math.abs(amount) % 1000 === 0 ? 0 : 1) + 'K';
     }
-    
-    // Load data for current client
-    if (state.trackerClient) {
-        await loadTrackerData(state.trackerClient);
+    return '$' + Math.abs(amount).toLocaleString();
+}
+
+function getQuarterForMonth(month) {
+    for (const key in calendarQuarters) {
+        if (calendarQuarters[key].months.includes(month)) return key;
     }
-    
-    // Setup dropdowns
-    setupTrackerDropdowns();
-    
-    // Render content
-    renderTrackerContent();
+    return currentCalendarQuarter;
+}
+
+function getQuarterInfoForMonth(clientCode, month) {
+    const calQ = getQuarterForMonth(month);
+    const quarter = calendarQuarters[calQ];
+    const calQNum = parseInt(calQ.replace('Q', '').replace('-cal', ''));
+    const clientCurrentCalQ = parseInt(currentCalendarQuarter.replace('Q', '').replace('-cal', ''));
+    const clientCurrentLabel = parseInt(clientQuarterLabels[clientCode]?.replace('Q', '') || '1');
+    let clientQNum = clientCurrentLabel + (calQNum - clientCurrentCalQ);
+    if (clientQNum > 4) clientQNum -= 4;
+    if (clientQNum < 1) clientQNum += 4;
+    return { quarter: 'Q' + clientQNum, months: quarter.months, label: quarter.label };
+}
+
+function getCurrentQuarterInfo(clientCode) {
+    const quarter = calendarQuarters[currentCalendarQuarter];
+    const clientLabel = clientQuarterLabels[clientCode] || 'Q1';
+    return { quarter: clientLabel, months: quarter.months, label: quarter.label };
+}
+
+function getPreviousQuarter(clientCode) {
+    const quarter = calendarQuarters['Q4-cal'];
+    const clientCurrentQ = parseInt((clientQuarterLabels[clientCode] || 'Q1').replace('Q', ''));
+    const prevQ = clientCurrentQ === 1 ? 'Q4' : 'Q' + (clientCurrentQ - 1);
+    return { quarter: prevQ, months: quarter.months, label: quarter.label };
+}
+
+function getTrackerMonthSpend(client, month) {
+    return trackerData.filter(d => d.client === client && d.month === month).reduce((sum, d) => sum + d.spend, 0);
+}
+
+function getTrackerProjectsForMonth(client, month) {
+    return trackerData.filter(d => d.client === client && d.month === month);
 }
 
 async function loadTrackerClients() {
     try {
         const response = await fetch(`${API_BASE}/tracker/clients`);
-        if (!response.ok) throw new Error('Failed to load clients');
+        if (!response.ok) throw new Error('API returned ' + response.status);
         const data = await response.json();
-        
-        // Build clients object
-        trackerClients = {};
-        data.forEach(c => {
-            trackerClients[c.code] = {
-                name: c.name,
-                committed: c.committed,
-                quarterlyCommitted: c.committed * 3,
-                rollover: c.rollover || 0,
-                rolloverUseIn: c.rolloverUseIn || '',
-                yearEnd: c.yearEnd,
-                currentQuarter: c.currentQuarter
-            };
-        });
-        
-        // Populate client dropdown
-        const menu = $('tracker-client-menu');
-        const trigger = $('tracker-client-trigger');
-        if (!menu || !trigger) return;
-        
-        menu.innerHTML = '';
-        const lastClient = localStorage.getItem('trackerLastClient');
-        let defaultClient = null;
-        let defaultName = 'Select Client';
-        
-        data.forEach((c, idx) => {
-            const isDefault = lastClient ? (c.code === lastClient) : (idx === 0);
-            const option = document.createElement('div');
-            option.className = 'custom-dropdown-option' + (isDefault ? ' selected' : '');
-            option.dataset.value = c.code;
-            option.textContent = c.name;
-            menu.appendChild(option);
-            if (isDefault) { defaultClient = c.code; defaultName = c.name; }
-        });
-        
-        if (defaultClient) {
-            state.trackerClient = defaultClient;
-            trigger.querySelector('span').textContent = defaultName;
-        } else if (data.length > 0) {
-            state.trackerClient = data[0].code;
-            trigger.querySelector('span').textContent = data[0].name;
-        }
+        populateTrackerClients(data);
+        return true;
     } catch (e) {
-        console.log('Failed to load tracker clients:', e);
-        trackerClients = {};
+        console.log('Using fallback tracker clients');
+        populateTrackerClients(fallbackTrackerClients);
+        return true;
+    }
+}
+
+function populateTrackerClients(data) {
+    trackerClients = {};
+    data.forEach(c => {
+        trackerClients[c.code] = {
+            name: c.name,
+            committed: c.committed,
+            quarterlyCommitted: c.committed * 3,
+            rollover: c.rollover || 0,
+            rolloverUseIn: c.rolloverUseIn || '',
+            yearEnd: c.yearEnd,
+            currentQuarter: c.currentQuarter
+        };
+    });
+    
+    // Populate dropdown
+    const menu = $('tracker-client-menu');
+    const trigger = $('tracker-client-trigger');
+    if (!menu || !trigger) return;
+    
+    menu.innerHTML = '';
+    const lastClient = localStorage.getItem('trackerLastClient');
+    let defaultClient = null;
+    let defaultName = '';
+    
+    data.forEach((c, idx) => {
+        const option = document.createElement('div');
+        const isDefault = lastClient ? (c.code === lastClient) : (idx === 0);
+        option.className = 'custom-dropdown-option' + (isDefault ? ' selected' : '');
+        option.dataset.value = c.code;
+        option.textContent = c.name;
+        menu.appendChild(option);
+        if (isDefault) { defaultClient = c.code; defaultName = c.name; }
+    });
+    
+    if (defaultClient) {
+        state.trackerClient = defaultClient;
+        trigger.querySelector('span').textContent = defaultName;
+    } else if (data.length > 0) {
+        state.trackerClient = data[0].code;
+        trigger.querySelector('span').textContent = data[0].name;
     }
 }
 
@@ -1125,9 +1180,9 @@ async function loadTrackerData(clientCode) {
         }));
         return true;
     } catch (e) {
-        console.log('Failed to load tracker data for:', clientCode, e);
+        console.log('Using empty tracker data for:', clientCode);
         trackerData = [];
-        return false;
+        return true;
     }
 }
 
@@ -1137,7 +1192,7 @@ function setupTrackerDropdowns() {
         state.trackerClient = value;
         localStorage.setItem('trackerLastClient', value);
         $('tracker-content').style.opacity = '0.5';
-        await loadTrackerData(state.trackerClient);
+        await loadTrackerData(value);
         $('tracker-content').style.opacity = '1';
         renderTrackerContent();
     });
@@ -1149,22 +1204,34 @@ function setupTrackerDropdowns() {
     });
     
     // Mode toggle (Month/Quarter)
-    const modeSwitch = $('tracker-mode-switch');
-    const modeSpend = $('tracker-mode-spend');
-    const modePipeline = $('tracker-mode-pipeline');
+    const toggle = $('tracker-mode-switch');
+    const labelMonth = $('tracker-mode-spend');
+    const labelQuarter = $('tracker-mode-pipeline');
     
-    if (modeSwitch) {
-        modeSwitch.checked = trackerIsQuarterView;
-        modeSwitch.addEventListener('change', () => {
-            trackerIsQuarterView = modeSwitch.checked;
-            modeSpend?.classList.toggle('active', !trackerIsQuarterView);
-            modePipeline?.classList.toggle('active', trackerIsQuarterView);
+    if (toggle) {
+        toggle.addEventListener('change', function() {
+            trackerIsQuarterView = this.checked;
+            labelMonth?.classList.toggle('active', !trackerIsQuarterView);
+            labelQuarter?.classList.toggle('active', trackerIsQuarterView);
             renderTrackerContent();
         });
     }
     
-    modeSpend?.classList.toggle('active', !trackerIsQuarterView);
-    modePipeline?.classList.toggle('active', trackerIsQuarterView);
+    labelMonth?.addEventListener('click', () => {
+        if (toggle) toggle.checked = false;
+        trackerIsQuarterView = false;
+        labelMonth.classList.add('active');
+        labelQuarter?.classList.remove('active');
+        renderTrackerContent();
+    });
+    
+    labelQuarter?.addEventListener('click', () => {
+        if (toggle) toggle.checked = true;
+        trackerIsQuarterView = true;
+        labelMonth?.classList.remove('active');
+        labelQuarter.classList.add('active');
+        renderTrackerContent();
+    });
 }
 
 function setupTrackerDropdown(triggerId, menuId, onChange) {
@@ -1194,107 +1261,459 @@ function setupTrackerDropdown(triggerId, menuId, onChange) {
     });
 }
 
-function renderTrackerContent() {
+async function renderTracker() {
     const content = $('tracker-content');
     if (!content) return;
     
+    // Show loading
+    content.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>Loading tracker...</p></div>`;
+    
+    // Load clients if not already loaded
+    if (Object.keys(trackerClients).length === 0) {
+        await loadTrackerClients();
+    }
+    
+    // Load data for current client
+    if (state.trackerClient) {
+        await loadTrackerData(state.trackerClient);
+    }
+    
+    // Setup dropdowns
+    setupTrackerDropdowns();
+    
+    // Render content
+    renderTrackerContent();
+}
+
+function renderTrackerContent() {
+    const content = $('tracker-content');
+    if (!content || !state.trackerClient) return;
+    
     const client = trackerClients[state.trackerClient];
     if (!client) {
-        content.innerHTML = `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Select a client to see their tracker</span></div>`;
+        content.innerHTML = `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Select a client to view tracker</span></div>`;
         return;
     }
     
-    // Get months for current view
-    const months = trackerIsQuarterView ? getQuarterMonths(trackerCurrentMonth) : [trackerCurrentMonth];
+    const committed = client.committed;
+    const rollover = client.rollover || 0;
+    const rolloverUseIn = client.rolloverUseIn || '';
+    const qInfo = getQuarterInfoForMonth(state.trackerClient, trackerCurrentMonth);
+    const prevQ = getPreviousQuarter(state.trackerClient);
     
-    // Filter data for selected month(s)
-    const filteredData = trackerData.filter(d => months.includes(d.month));
+    const labelMap = { 'Jan › Mar': 'JAN-MAR', 'Apr › Jun': 'APR-JUN', 'Jul › Sep': 'JUL-SEP', 'Oct › Dec': 'OCT-DEC' };
+    const viewedQuarterKey = labelMap[qInfo.label] || '';
     
-    // Calculate totals
-    const totalSpend = filteredData.reduce((sum, d) => sum + (d.spend || 0), 0);
-    const budget = trackerIsQuarterView ? (client.committed * 3 + client.rollover) : client.committed;
-    const remaining = budget - totalSpend;
-    const percentUsed = budget > 0 ? Math.round((totalSpend / budget) * 100) : 0;
+    // Calculate spend
+    let toDate, projects, monthsInQuarter;
+    if (trackerIsQuarterView) {
+        toDate = qInfo.months.reduce((sum, m) => sum + getTrackerMonthSpend(state.trackerClient, m), 0);
+        projects = trackerData.filter(d => d.client === state.trackerClient && qInfo.months.includes(d.month));
+        monthsInQuarter = qInfo.months.length;
+    } else {
+        toDate = getTrackerMonthSpend(state.trackerClient, trackerCurrentMonth);
+        projects = getTrackerProjectsForMonth(state.trackerClient, trackerCurrentMonth);
+        monthsInQuarter = 1;
+    }
     
-    // Format currency
-    const formatMoney = (n) => '$' + n.toLocaleString();
+    const totalBudget = committed * monthsInQuarter;
+    const remaining = totalBudget - toDate;
+    const progress = totalBudget > 0 ? Math.min((toDate / totalBudget) * 100, 100) : 0;
+    const isOver = toDate > totalBudget;
+    const showRollover = rollover > 0 && rolloverUseIn && viewedQuarterKey === rolloverUseIn;
     
-    // Build the summary card
-    let html = `
-        <div class="tracker-summary">
-            <div class="tracker-summary-card">
-                <div class="summary-header">
-                    <h3>${client.name}</h3>
-                    <span class="summary-period">${trackerIsQuarterView ? 'Quarter' : trackerCurrentMonth}</span>
-                </div>
-                <div class="summary-numbers">
-                    <div class="summary-item">
-                        <span class="summary-label">Budget</span>
-                        <span class="summary-value">${formatMoney(budget)}</span>
+    // Separate projects by type
+    const mainProjects = projects.filter(p => p.spendType === 'Project budget');
+    const otherProjects = projects.filter(p => p.spendType === 'Extra budget' || p.spendType === 'Project on us');
+    
+    // Group for quarter view
+    const groupProjects = (arr) => {
+        if (!trackerIsQuarterView) return arr;
+        const grouped = {};
+        arr.forEach(p => {
+            const key = p.jobNumber + '|' + p.projectName;
+            if (!grouped[key]) grouped[key] = { ...p, spend: 0, _isGrouped: true };
+            grouped[key].spend += p.spend;
+        });
+        return Object.values(grouped);
+    };
+    
+    const displayMainProjects = groupProjects(mainProjects);
+    const displayOtherProjects = groupProjects(otherProjects);
+    
+    // Calculate spend to date for each job
+    const spendToDate = {};
+    if (!trackerIsQuarterView) {
+        trackerData.forEach(d => {
+            if (d.month !== trackerCurrentMonth) {
+                spendToDate[d.jobNumber] = (spendToDate[d.jobNumber] || 0) + d.spend;
+            }
+        });
+    }
+    
+    const numbersTitle = trackerIsQuarterView ? `${qInfo.quarter} Numbers` : `${trackerCurrentMonth} Numbers`;
+    const amountHeader = trackerIsQuarterView ? `${qInfo.quarter} Total` : trackerCurrentMonth;
+    
+    content.innerHTML = `
+        <div class="tracker-inner">
+            <!-- Numbers Section -->
+            <div class="section-title"><span>${numbersTitle}</span> <span class="quarter-context">${qInfo.quarter} (${qInfo.label})</span></div>
+            <div class="numbers-section">
+                <div class="numbers-grid">
+                    <div class="stat-box">
+                        <div class="stat-value grey">${formatTrackerCurrency(committed * monthsInQuarter)}</div>
+                        <div class="stat-label">Committed</div>
                     </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Spent</span>
-                        <span class="summary-value ${percentUsed > 100 ? 'over' : ''}">${formatMoney(totalSpend)}</span>
+                    <div class="stat-box">
+                        <div class="stat-value">${formatTrackerCurrency(toDate)}</div>
+                        <div class="stat-label">To Date</div>
                     </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Remaining</span>
-                        <span class="summary-value ${remaining < 0 ? 'over' : ''}">${formatMoney(remaining)}</span>
+                    <div class="stat-box">
+                        <div class="stat-value ${isOver ? 'orange' : 'red'}">${isOver ? '-' : ''}${formatTrackerCurrency(Math.abs(remaining))}</div>
+                        <div class="stat-label">To Spend</div>
                     </div>
                 </div>
-                <div class="summary-bar">
-                    <div class="summary-bar-fill ${percentUsed > 100 ? 'over' : percentUsed > 80 ? 'warning' : ''}" style="width: ${Math.min(percentUsed, 100)}%"></div>
+                <div class="tracker-progress-bar">
+                    <div class="tracker-progress-fill ${isOver ? 'over' : ''}" style="width: ${progress}%"></div>
                 </div>
-                <div class="summary-percent">${percentUsed}% used</div>
+                ${showRollover ? `
+                    <div class="rollover-credit">
+                        <div class="rollover-label">Rollover</div>
+                        <div class="rollover-amount"><strong>+${formatTrackerCurrency(rollover)}</strong> credit from ${prevQ.quarter}</div>
+                    </div>
+                ` : ''}
+            </div>
+            
+            <!-- Projects Table -->
+            <div class="section-title">The Work</div>
+            <div class="projects-section">
+                <table class="projects-table">
+                    <thead>
+                        <tr>
+                            <th class="chevron-col"></th>
+                            <th class="project-col">Project Name</th>
+                            <th class="owner-col">Owner</th>
+                            <th>Description</th>
+                            ${!trackerIsQuarterView ? '<th class="amount-col">To Date</th>' : ''}
+                            <th class="amount-col">${amountHeader}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${displayMainProjects.length === 0 ? `
+                            <tr><td colspan="${trackerIsQuarterView ? 5 : 6}" style="text-align:center;color:var(--grey-400);padding:24px;">No projects for ${trackerIsQuarterView ? qInfo.quarter : trackerCurrentMonth}</td></tr>
+                        ` : displayMainProjects.map(p => {
+                            const jobNum = p.jobNumber.split(' ')[1] || '';
+                            const showToDateCol = !trackerIsQuarterView && jobNum !== '000' && jobNum !== '001' && (spendToDate[p.jobNumber] || 0) > 0;
+                            const chevronDisabled = p._isGrouped ? 'style="color:var(--grey-200);cursor:default;"' : '';
+                            return `
+                                <tr>
+                                    <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">›</button></td>
+                                    <td class="project-name">${p.jobNumber} · ${p.projectName}</td>
+                                    <td>${p.owner || ''}</td>
+                                    <td>${p.description || ''}</td>
+                                    ${!trackerIsQuarterView ? `<td class="amount" style="color:var(--grey-400);font-weight:normal;">${showToDateCol ? '(' + formatTrackerCurrency(spendToDate[p.jobNumber]) + ')' : ''}</td>` : ''}
+                                    <td class="amount ${p.ballpark ? 'ballpark' : ''}">${formatTrackerCurrency(p.spend)}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            ${displayOtherProjects.length > 0 ? `
+                <!-- Other Work Table -->
+                <div class="section-title">Other Stuff</div>
+                <div class="projects-section">
+                    <table class="projects-table">
+                        <thead>
+                            <tr>
+                                <th class="chevron-col"></th>
+                                <th class="project-col">Project Name</th>
+                                <th class="owner-col">Owner</th>
+                                <th>Description</th>
+                                ${!trackerIsQuarterView ? '<th class="amount-col">To Date</th>' : ''}
+                                <th class="amount-col">${amountHeader}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${displayOtherProjects.map(p => {
+                                const jobNum = p.jobNumber.split(' ')[1] || '';
+                                const showToDateCol = !trackerIsQuarterView && jobNum !== '000' && jobNum !== '001' && (spendToDate[p.jobNumber] || 0) > 0;
+                                const chevronDisabled = p._isGrouped ? 'style="color:var(--grey-200);cursor:default;"' : '';
+                                return `
+                                    <tr>
+                                        <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">›</button></td>
+                                        <td class="project-name">${p.jobNumber} · ${p.projectName}</td>
+                                        <td>${p.owner || ''}</td>
+                                        <td>${p.description || ''}</td>
+                                        ${!trackerIsQuarterView ? `<td class="amount" style="color:var(--grey-400);font-weight:normal;">${showToDateCol ? '(' + formatTrackerCurrency(spendToDate[p.jobNumber]) + ')' : ''}</td>` : ''}
+                                        <td class="amount">${formatTrackerCurrency(p.spend)}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            ` : ''}
+            
+            <!-- Bottom Row: Chart + Notes -->
+            <div class="tracker-bottom-row">
+                <div>
+                    <div class="section-title">Tracker</div>
+                    <div class="chart-section">
+                        <div class="chart-wrapper">
+                            <div class="y-axis" id="tracker-y-axis"></div>
+                            <div class="committed-line" id="tracker-committed-line"></div>
+                            <div class="chart-container" id="tracker-chart-container"></div>
+                        </div>
+                        <div class="chart-legend">
+                            <div class="legend-item"><div class="legend-swatch projects"></div><span>Projects</span></div>
+                            <div class="legend-item"><div class="legend-swatch committed-swatch"></div><span>Committed</span></div>
+                            <div class="legend-item"><div class="legend-swatch incoming-swatch"></div><span>Ballpark</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="section-title">Notes</div>
+                    <div class="notes-section">
+                        <ul class="notes-list">
+                            <li><strong>Ballparks</strong> – Red numbers are ballparks. Most jobs start as a $5K ballpark before we lock in scope.</li>
+                            <li><strong>Rollover</strong> – You can use your rollover credit any time during the quarter. It's extra on top of committed spend.</li>
+                            <li><strong>Always on</strong> – Numbers include always-on time for meetings, consults and reporting.</li>
+                        </ul>
+                        <button class="pdf-btn" onclick="getTrackerPDF()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <line x1="9" y1="15" x2="15" y2="15"></line>
+                            </svg>
+                            Get PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Edit Modal -->
+        <div class="tracker-modal-overlay" id="tracker-edit-modal">
+            <div class="tracker-modal">
+                <div class="tracker-modal-header">
+                    <span class="tracker-modal-title" id="tracker-modal-title">Update Project</span>
+                    <div class="tracker-modal-header-right">
+                        <div class="ballpark-toggle">
+                            <span class="ballpark-label" id="tracker-ballpark-label">Ballpark</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="tracker-edit-ballpark">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <button class="tracker-modal-close" onclick="closeTrackerModal()">×</button>
+                    </div>
+                </div>
+                <div class="tracker-modal-body">
+                    <div class="tracker-form-group">
+                        <label class="tracker-form-label">Project Name</label>
+                        <input type="text" class="tracker-form-input" id="tracker-edit-name" readonly>
+                    </div>
+                    <div class="tracker-form-group">
+                        <label class="tracker-form-label">Description</label>
+                        <input type="text" class="tracker-form-input" id="tracker-edit-description">
+                    </div>
+                    <div class="tracker-form-row">
+                        <div class="tracker-form-group">
+                            <label class="tracker-form-label">Spend</label>
+                            <input type="number" class="tracker-form-input" id="tracker-edit-spend">
+                        </div>
+                        <div class="tracker-form-group">
+                            <label class="tracker-form-label">Month</label>
+                            <select class="tracker-form-input" id="tracker-edit-month">
+                                <option value="January">January</option>
+                                <option value="February">February</option>
+                                <option value="March">March</option>
+                                <option value="October">October</option>
+                                <option value="November">November</option>
+                                <option value="December">December</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="tracker-form-group">
+                        <label class="tracker-form-label">Spend Type</label>
+                        <select class="tracker-form-input" id="tracker-edit-spendtype">
+                            <option value="Project budget">Project budget</option>
+                            <option value="Extra budget">Extra budget</option>
+                            <option value="Project on us">Project on us</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="tracker-modal-footer">
+                    <button class="tracker-btn tracker-btn-secondary" onclick="closeTrackerModal()">Cancel</button>
+                    <button class="tracker-btn tracker-btn-primary" id="tracker-save-btn" onclick="saveTrackerProject()">Save Changes</button>
+                </div>
             </div>
         </div>
     `;
     
-    // Build the projects table
-    if (filteredData.length > 0) {
-        html += `
-            <div class="tracker-table">
-                <div class="tracker-table-header">
-                    <span class="col-job">Job</span>
-                    <span class="col-desc">Description</span>
-                    <span class="col-owner">Owner</span>
-                    <span class="col-spend">Spend</span>
-                </div>
-                <div class="tracker-table-body">
-        `;
-        
-        filteredData.forEach(project => {
-            html += `
-                <div class="tracker-row ${project.ballpark ? 'ballpark' : ''}" onclick="openTrackerEditModal('${project.jobNumber}', '${project.month}')">
-                    <span class="col-job">${project.jobNumber}</span>
-                    <span class="col-desc">${project.description || project.projectName || '-'}</span>
-                    <span class="col-owner">${project.owner || '-'}</span>
-                    <span class="col-spend">${formatMoney(project.spend)}${project.ballpark ? ' *' : ''}</span>
-                </div>
-            `;
-        });
-        
-        html += `
-                </div>
-            </div>
-        `;
-    } else {
-        html += `<div class="empty-section" style="margin-top: 24px;"><span>No spend recorded for ${trackerIsQuarterView ? 'this quarter' : trackerCurrentMonth}</span></div>`;
-    }
+    // Render chart after DOM is ready
+    setTimeout(renderTrackerChart, 0);
     
-    content.innerHTML = html;
+    // Setup modal listeners
+    setupTrackerModalListeners();
 }
 
-function getQuarterMonths(month) {
-    const q1 = ['January', 'February', 'March'];
-    const q2 = ['April', 'May', 'June'];
-    const q3 = ['July', 'August', 'September'];
-    const q4 = ['October', 'November', 'December'];
+function renderTrackerChart() {
+    const client = trackerClients[state.trackerClient];
+    if (!client) return;
     
-    if (q1.includes(month)) return q1;
-    if (q2.includes(month)) return q2;
-    if (q3.includes(month)) return q3;
-    if (q4.includes(month)) return q4;
-    return [month];
+    const committed = client.committed;
+    const qInfo = getCurrentQuarterInfo(state.trackerClient);
+    const prevQ = getPreviousQuarter(state.trackerClient);
+    const chartHeight = 160;
+    const yMax = committed + 10000;
+    
+    // Previous quarter spends
+    const prevSpends = prevQ.months.map(m => 
+        trackerData.filter(d => d.client === state.trackerClient && d.month === m && d.spendType === 'Project budget')
+            .reduce((sum, d) => sum + d.spend, 0)
+    );
+    
+    // Current quarter spends
+    const currentConfirmed = [], currentBallpark = [];
+    qInfo.months.forEach(m => {
+        currentConfirmed.push(trackerData.filter(d => d.client === state.trackerClient && d.month === m && d.spendType === 'Project budget').reduce((sum, d) => sum + d.spend, 0));
+        currentBallpark.push(trackerData.filter(d => d.client === state.trackerClient && d.month === m && d.spendType !== 'Project budget').reduce((sum, d) => sum + d.spend, 0));
+    });
+    
+    // Y axis
+    const yAxis = $('tracker-y-axis');
+    if (yAxis) {
+        yAxis.innerHTML = '';
+        for (let i = 5; i >= 0; i--) {
+            const label = document.createElement('span');
+            label.className = 'y-label';
+            label.textContent = '$' + Math.round(yMax * i / 5 / 1000) + 'k';
+            yAxis.appendChild(label);
+        }
+    }
+    
+    // Committed line
+    const greyBarHeight = chartHeight - (10000 / yMax * chartHeight);
+    const committedLine = $('tracker-committed-line');
+    if (committedLine) {
+        committedLine.style.bottom = (greyBarHeight + 20) + 'px';
+        committedLine.style.top = 'auto';
+    }
+    
+    // Chart bars
+    const container = $('tracker-chart-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    const prevMonthLabels = prevQ.months.map(m => m.substring(0, 3));
+    const currMonthLabels = qInfo.months.map(m => m.substring(0, 3));
+    const today = new Date();
+    const currentMonthName = today.toLocaleString('en-US', { month: 'long' });
+    const currentMonthIndex = qInfo.months.indexOf(currentMonthName);
+    
+    // Previous quarter bars
+    prevMonthLabels.forEach((label, i) => {
+        const group = document.createElement('div');
+        group.className = 'bar-group';
+        const barStack = document.createElement('div');
+        barStack.className = 'bar-stack';
+        barStack.style.height = greyBarHeight + 'px';
+        
+        const greyBar = document.createElement('div');
+        greyBar.className = 'bar-committed';
+        greyBar.style.height = '100%';
+        greyBar.title = 'Committed: ' + formatTrackerCurrency(committed);
+        barStack.appendChild(greyBar);
+        
+        const redBar = document.createElement('div');
+        redBar.className = 'bar-spend';
+        redBar.style.height = (prevSpends[i] / committed * 100) + '%';
+        redBar.title = 'Actual: ' + formatTrackerCurrency(prevSpends[i]);
+        barStack.appendChild(redBar);
+        
+        const labelEl = document.createElement('span');
+        labelEl.className = 'bar-label';
+        labelEl.textContent = label;
+        
+        group.appendChild(barStack);
+        group.appendChild(labelEl);
+        container.appendChild(group);
+    });
+    
+    // Current quarter bars
+    currMonthLabels.forEach((label, i) => {
+        const group = document.createElement('div');
+        group.className = 'bar-group';
+        const barStack = document.createElement('div');
+        barStack.className = 'bar-stack';
+        barStack.style.height = greyBarHeight + 'px';
+        
+        const isFuture = currentMonthIndex !== -1 && i > currentMonthIndex;
+        
+        const greyBar = document.createElement('div');
+        greyBar.className = isFuture ? 'bar-committed future' : 'bar-committed';
+        greyBar.style.height = '100%';
+        greyBar.title = 'Committed: ' + formatTrackerCurrency(committed);
+        barStack.appendChild(greyBar);
+        
+        const confirmedSpend = currentConfirmed[i] || 0;
+        if (!isFuture && confirmedSpend > 0) {
+            const redBar = document.createElement('div');
+            redBar.className = 'bar-spend';
+            redBar.style.height = (confirmedSpend / committed * 100) + '%';
+            redBar.title = 'Actual: ' + formatTrackerCurrency(confirmedSpend);
+            barStack.appendChild(redBar);
+        }
+        
+        const ballparkSpend = currentBallpark[i] || 0;
+        if (ballparkSpend > 0) {
+            const dashedBar = document.createElement('div');
+            dashedBar.className = 'bar-ballpark';
+            dashedBar.style.height = (ballparkSpend / committed * 100) + '%';
+            dashedBar.style.bottom = (!isFuture && confirmedSpend > 0) ? (confirmedSpend / committed * 100) + '%' : '0';
+            dashedBar.title = 'Ballpark: ' + formatTrackerCurrency(ballparkSpend);
+            barStack.appendChild(dashedBar);
+        }
+        
+        const labelEl = document.createElement('span');
+        labelEl.className = 'bar-label';
+        labelEl.textContent = label;
+        
+        group.appendChild(barStack);
+        group.appendChild(labelEl);
+        container.appendChild(group);
+    });
+}
+
+function setupTrackerModalListeners() {
+    const modal = $('tracker-edit-modal');
+    const ballparkToggle = $('tracker-edit-ballpark');
+    
+    if (modal) {
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeTrackerModal(); });
+    }
+    
+    if (ballparkToggle) {
+        ballparkToggle.addEventListener('change', function() {
+            updateTrackerBallparkUI(this.checked);
+        });
+    }
+}
+
+function updateTrackerBallparkUI(isBallpark) {
+    const modal = document.querySelector('.tracker-modal');
+    const label = $('tracker-ballpark-label');
+    if (isBallpark) {
+        modal?.classList.add('ballpark-active');
+        label?.classList.add('active');
+    } else {
+        modal?.classList.remove('ballpark-active');
+        label?.classList.remove('active');
+    }
 }
 
 function openTrackerEditModal(jobNumber, month) {
@@ -1302,7 +1721,77 @@ function openTrackerEditModal(jobNumber, month) {
                     trackerData.find(p => p.jobNumber === jobNumber);
     if (!project) return;
     
-    // For now, just log - modal functionality can be added later
-    console.log('Edit project:', project);
-    showToast('Edit modal coming soon', 'success');
+    trackerCurrentEditData = project;
+    
+    $('tracker-modal-title').textContent = 'Update ' + jobNumber;
+    $('tracker-edit-name').value = project.projectName;
+    $('tracker-edit-description').value = project.description || '';
+    $('tracker-edit-spend').value = project.spend;
+    $('tracker-edit-month').value = project.month;
+    $('tracker-edit-spendtype').value = project.spendType;
+    
+    const isBallpark = project.ballpark || false;
+    $('tracker-edit-ballpark').checked = isBallpark;
+    updateTrackerBallparkUI(isBallpark);
+    
+    $('tracker-edit-modal')?.classList.add('visible');
 }
+
+function closeTrackerModal() {
+    $('tracker-edit-modal')?.classList.remove('visible');
+    document.querySelector('.tracker-modal')?.classList.remove('ballpark-active');
+    const saveBtn = $('tracker-save-btn');
+    if (saveBtn) { saveBtn.textContent = 'Save Changes'; saveBtn.disabled = false; }
+    trackerCurrentEditData = null;
+}
+
+async function saveTrackerProject() {
+    if (!trackerCurrentEditData) return;
+    
+    const updates = {
+        id: trackerCurrentEditData.id,
+        description: $('tracker-edit-description').value,
+        spend: parseFloat($('tracker-edit-spend').value) || 0,
+        month: $('tracker-edit-month').value,
+        spendType: $('tracker-edit-spendtype').value,
+        ballpark: $('tracker-edit-ballpark').checked
+    };
+    
+    const saveBtn = $('tracker-save-btn');
+    if (saveBtn) { saveBtn.textContent = 'Saving...'; saveBtn.disabled = true; }
+    
+    try {
+        const response = await fetch(`${API_BASE}/tracker/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+        
+        if (!response.ok) throw new Error('Failed to save');
+        
+        // Update local data
+        Object.assign(trackerCurrentEditData, updates);
+        closeTrackerModal();
+        
+        // Reload and re-render
+        await loadTrackerData(state.trackerClient);
+        renderTrackerContent();
+        showToast('On it.', 'success');
+        
+    } catch (e) {
+        console.error('Save failed:', e);
+        showToast("Doh, that didn't work.", 'error');
+        if (saveBtn) { saveBtn.textContent = 'Save Changes'; saveBtn.disabled = false; }
+    }
+}
+
+function getTrackerPDF() {
+    const url = `https://dot-tracker-pdf.up.railway.app/pdf?client=${state.trackerClient}&month=${trackerCurrentMonth}${trackerIsQuarterView ? '&quarter=true' : ''}`;
+    window.open(url, '_blank');
+}
+
+// Make functions available globally for onclick handlers
+window.openTrackerEditModal = openTrackerEditModal;
+window.closeTrackerModal = closeTrackerModal;
+window.saveTrackerProject = saveTrackerProject;
+window.getTrackerPDF = getTrackerPDF;
