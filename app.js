@@ -1349,11 +1349,16 @@ function renderTrackerContent() {
     });
     const displayOtherProjects = groupProjects(otherProjects);
     
-    // Calculate spend to date for each job
+    // Calculate spend to date for each job (only months BEFORE current month)
     const spendToDate = {};
     if (!trackerIsQuarterView) {
+        const monthOrder = ['October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September'];
+        const currentMonthIndex = monthOrder.indexOf(trackerCurrentMonth);
+        
         trackerData.forEach(d => {
-            if (d.month !== trackerCurrentMonth) {
+            const dataMonthIndex = monthOrder.indexOf(d.month);
+            // Only count if this month comes before the current viewed month
+            if (dataMonthIndex !== -1 && currentMonthIndex !== -1 && dataMonthIndex < currentMonthIndex) {
                 spendToDate[d.jobNumber] = (spendToDate[d.jobNumber] || 0) + d.spend;
             }
         });
