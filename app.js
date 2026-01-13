@@ -1030,8 +1030,279 @@ function toggleWipWithClient(jobNumber, isWithClient) {
 }
 
 // ===== TRACKER VIEW =====
-function renderTracker() {
+let trackerClients = {};
+let trackerData = [];
+let trackerCurrentMonth = 'January';
+let trackerIsQuarterView = false;
+let trackerCurrentEditData = null;
+
+async function renderTracker() {
     const content = $('tracker-content');
     if (!content) return;
-    content.innerHTML = `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Tracker coming soon</span></div>`;
+    
+    // Show loading
+    content.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>Loading tracker...</p></div>`;
+    
+    // Load clients if not already loaded
+    if (Object.keys(trackerClients).length === 0) {
+        await loadTrackerClients();
+    }
+    
+    // Load data for current client
+    if (state.trackerClient) {
+        await loadTrackerData(state.trackerClient);
+    }
+    
+    // Setup dropdowns
+    setupTrackerDropdowns();
+    
+    // Render content
+    renderTrackerContent();
+}
+
+async function loadTrackerClients() {
+    try {
+        const response = await fetch(`${API_BASE}/tracker/clients`);
+        if (!response.ok) throw new Error('Failed to load clients');
+        const data = await response.json();
+        
+        // Build clients object
+        trackerClients = {};
+        data.forEach(c => {
+            trackerClients[c.code] = {
+                name: c.name,
+                committed: c.committed,
+                quarterlyCommitted: c.committed * 3,
+                rollover: c.rollover || 0,
+                rolloverUseIn: c.rolloverUseIn || '',
+                yearEnd: c.yearEnd,
+                currentQuarter: c.currentQuarter
+            };
+        });
+        
+        // Populate client dropdown
+        const menu = $('tracker-client-menu');
+        const trigger = $('tracker-client-trigger');
+        if (!menu || !trigger) return;
+        
+        menu.innerHTML = '';
+        const lastClient = localStorage.getItem('trackerLastClient');
+        let defaultClient = null;
+        let defaultName = 'Select Client';
+        
+        data.forEach((c, idx) => {
+            const isDefault = lastClient ? (c.code === lastClient) : (idx === 0);
+            const option = document.createElement('div');
+            option.className = 'custom-dropdown-option' + (isDefault ? ' selected' : '');
+            option.dataset.value = c.code;
+            option.textContent = c.name;
+            menu.appendChild(option);
+            if (isDefault) { defaultClient = c.code; defaultName = c.name; }
+        });
+        
+        if (defaultClient) {
+            state.trackerClient = defaultClient;
+            trigger.querySelector('span').textContent = defaultName;
+        } else if (data.length > 0) {
+            state.trackerClient = data[0].code;
+            trigger.querySelector('span').textContent = data[0].name;
+        }
+    } catch (e) {
+        console.log('Failed to load tracker clients:', e);
+        trackerClients = {};
+    }
+}
+
+async function loadTrackerData(clientCode) {
+    try {
+        const response = await fetch(`${API_BASE}/tracker/data?client=${clientCode}`);
+        if (!response.ok) throw new Error('API returned ' + response.status);
+        const data = await response.json();
+        trackerData = data.map(d => ({
+            id: d.id, client: d.client, jobNumber: d.jobNumber, projectName: d.projectName,
+            owner: d.owner, description: d.description, spend: d.spend, month: d.month,
+            spendType: d.spendType, ballpark: d.ballpark
+        }));
+        return true;
+    } catch (e) {
+        console.log('Failed to load tracker data for:', clientCode, e);
+        trackerData = [];
+        return false;
+    }
+}
+
+function setupTrackerDropdowns() {
+    // Client dropdown
+    setupTrackerDropdown('tracker-client-trigger', 'tracker-client-menu', async (value) => {
+        state.trackerClient = value;
+        localStorage.setItem('trackerLastClient', value);
+        $('tracker-content').style.opacity = '0.5';
+        await loadTrackerData(state.trackerClient);
+        $('tracker-content').style.opacity = '1';
+        renderTrackerContent();
+    });
+    
+    // Month dropdown
+    setupTrackerDropdown('tracker-month-trigger', 'tracker-month-menu', (value) => {
+        trackerCurrentMonth = value;
+        renderTrackerContent();
+    });
+    
+    // Mode toggle (Month/Quarter)
+    const modeSwitch = $('tracker-mode-switch');
+    const modeSpend = $('tracker-mode-spend');
+    const modePipeline = $('tracker-mode-pipeline');
+    
+    if (modeSwitch) {
+        modeSwitch.checked = trackerIsQuarterView;
+        modeSwitch.addEventListener('change', () => {
+            trackerIsQuarterView = modeSwitch.checked;
+            modeSpend?.classList.toggle('active', !trackerIsQuarterView);
+            modePipeline?.classList.toggle('active', trackerIsQuarterView);
+            renderTrackerContent();
+        });
+    }
+    
+    modeSpend?.classList.toggle('active', !trackerIsQuarterView);
+    modePipeline?.classList.toggle('active', trackerIsQuarterView);
+}
+
+function setupTrackerDropdown(triggerId, menuId, onChange) {
+    const trigger = $(triggerId);
+    const menu = $(menuId);
+    if (!trigger || !menu) return;
+    
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        $$('.custom-dropdown-menu.open').forEach(m => {
+            if (m.id !== menuId) { m.classList.remove('open'); m.previousElementSibling?.classList.remove('open'); }
+        });
+        trigger.classList.toggle('open');
+        menu.classList.toggle('open');
+    });
+    
+    menu.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+        opt.addEventListener('click', function() {
+            const value = this.dataset.value;
+            menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+            trigger.querySelector('span').textContent = this.textContent;
+            trigger.classList.remove('open');
+            menu.classList.remove('open');
+            if (onChange) onChange(value);
+        });
+    });
+}
+
+function renderTrackerContent() {
+    const content = $('tracker-content');
+    if (!content) return;
+    
+    const client = trackerClients[state.trackerClient];
+    if (!client) {
+        content.innerHTML = `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Select a client to see their tracker</span></div>`;
+        return;
+    }
+    
+    // Get months for current view
+    const months = trackerIsQuarterView ? getQuarterMonths(trackerCurrentMonth) : [trackerCurrentMonth];
+    
+    // Filter data for selected month(s)
+    const filteredData = trackerData.filter(d => months.includes(d.month));
+    
+    // Calculate totals
+    const totalSpend = filteredData.reduce((sum, d) => sum + (d.spend || 0), 0);
+    const budget = trackerIsQuarterView ? (client.committed * 3 + client.rollover) : client.committed;
+    const remaining = budget - totalSpend;
+    const percentUsed = budget > 0 ? Math.round((totalSpend / budget) * 100) : 0;
+    
+    // Format currency
+    const formatMoney = (n) => '$' + n.toLocaleString();
+    
+    // Build the summary card
+    let html = `
+        <div class="tracker-summary">
+            <div class="tracker-summary-card">
+                <div class="summary-header">
+                    <h3>${client.name}</h3>
+                    <span class="summary-period">${trackerIsQuarterView ? 'Quarter' : trackerCurrentMonth}</span>
+                </div>
+                <div class="summary-numbers">
+                    <div class="summary-item">
+                        <span class="summary-label">Budget</span>
+                        <span class="summary-value">${formatMoney(budget)}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Spent</span>
+                        <span class="summary-value ${percentUsed > 100 ? 'over' : ''}">${formatMoney(totalSpend)}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Remaining</span>
+                        <span class="summary-value ${remaining < 0 ? 'over' : ''}">${formatMoney(remaining)}</span>
+                    </div>
+                </div>
+                <div class="summary-bar">
+                    <div class="summary-bar-fill ${percentUsed > 100 ? 'over' : percentUsed > 80 ? 'warning' : ''}" style="width: ${Math.min(percentUsed, 100)}%"></div>
+                </div>
+                <div class="summary-percent">${percentUsed}% used</div>
+            </div>
+        </div>
+    `;
+    
+    // Build the projects table
+    if (filteredData.length > 0) {
+        html += `
+            <div class="tracker-table">
+                <div class="tracker-table-header">
+                    <span class="col-job">Job</span>
+                    <span class="col-desc">Description</span>
+                    <span class="col-owner">Owner</span>
+                    <span class="col-spend">Spend</span>
+                </div>
+                <div class="tracker-table-body">
+        `;
+        
+        filteredData.forEach(project => {
+            html += `
+                <div class="tracker-row ${project.ballpark ? 'ballpark' : ''}" onclick="openTrackerEditModal('${project.jobNumber}', '${project.month}')">
+                    <span class="col-job">${project.jobNumber}</span>
+                    <span class="col-desc">${project.description || project.projectName || '-'}</span>
+                    <span class="col-owner">${project.owner || '-'}</span>
+                    <span class="col-spend">${formatMoney(project.spend)}${project.ballpark ? ' *' : ''}</span>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    } else {
+        html += `<div class="empty-section" style="margin-top: 24px;"><span>No spend recorded for ${trackerIsQuarterView ? 'this quarter' : trackerCurrentMonth}</span></div>`;
+    }
+    
+    content.innerHTML = html;
+}
+
+function getQuarterMonths(month) {
+    const q1 = ['January', 'February', 'March'];
+    const q2 = ['April', 'May', 'June'];
+    const q3 = ['July', 'August', 'September'];
+    const q4 = ['October', 'November', 'December'];
+    
+    if (q1.includes(month)) return q1;
+    if (q2.includes(month)) return q2;
+    if (q3.includes(month)) return q3;
+    if (q4.includes(month)) return q4;
+    return [month];
+}
+
+function openTrackerEditModal(jobNumber, month) {
+    const project = trackerData.find(p => p.jobNumber === jobNumber && p.month === month) ||
+                    trackerData.find(p => p.jobNumber === jobNumber);
+    if (!project) return;
+    
+    // For now, just log - modal functionality can be added later
+    console.log('Edit project:', project);
+    showToast('Edit modal coming soon', 'success');
 }
