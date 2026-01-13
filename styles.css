@@ -715,11 +715,28 @@ body {
     justify-content: space-between;
     align-items: center;
 }
-.desktop-footer.hidden { display: none; }
 .desktop-footer .footer-logo { height: 24px; }
 .desktop-footer .footer-right {
     font-size: 13px;
     color: var(--grey-400);
+}
+
+/* Minimal footer for non-home views */
+.desktop-footer.minimal {
+    border-top: none;
+    background: transparent;
+    justify-content: flex-end;
+}
+.desktop-footer.minimal .footer-left { display: none; }
+.desktop-footer.minimal .footer-right { display: none; }
+.desktop-footer.minimal::after {
+    content: '';
+    display: block;
+    width: 48px;
+    height: 24px;
+    background: url('images/dot-ai2-logo.png') no-repeat center;
+    background-size: contain;
+    opacity: 0.35;
 }
 
 /* =================================================================

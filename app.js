@@ -220,7 +220,7 @@ function navigateTo(view) {
     state.currentView = view;
     $$('.nav-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === view));
     $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
-    $('desktop-footer')?.classList.toggle('hidden', view !== 'home');
+    $('desktop-footer')?.classList.toggle('minimal', view !== 'home');
     
     if (!isDesktop()) {
         $('phone-home')?.classList.add('hidden');
