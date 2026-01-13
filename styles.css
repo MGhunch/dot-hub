@@ -560,7 +560,9 @@ body {
     color: var(--grey-400);
     cursor: pointer;
     transition: all 0.2s var(--ease-out);
+    outline: none;
 }
+.nav-tab:focus { outline: none; }
 .nav-tab:hover { color: var(--grey-800); }
 .nav-tab.active {
     background: var(--red);
