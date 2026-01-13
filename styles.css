@@ -745,7 +745,7 @@ body {
     overflow-y: auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 48px;
+    gap: 64px;
 }
 
 .wip-column {
@@ -941,7 +941,7 @@ body {
     color: var(--grey-400);
     font-size: 14px;
     font-weight: 500;
-    padding: 32px;
+    padding: 16px 18px;
     text-align: center;
     background: var(--white);
     border-radius: 12px;
@@ -949,10 +949,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 20px;
-    min-height: 100px;
+    gap: 16px;
 }
-.empty-section img { width: 60px; height: auto; }
+.empty-section img { width: 48px; height: auto; }
 
 /* =================================================================
    JOB CARDS (WIP)
