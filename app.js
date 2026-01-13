@@ -22,15 +22,16 @@ const PINS = {
 
 const KEYWORDS = {
     DUE: ['due', 'overdue', 'deadline', "what's next", 'next', 'urgent'],
-    FIND: ["what's on", 'show', 'check', 'find', 'jobs'],
+    FIND: ["what's on", 'show', 'check', 'find', 'jobs', 'list', 'all jobs'],
     UPDATE: ['update'],
     TRACKER: ['tracker', 'spend', 'budget'],
     HELP: ['help', 'what can dot do', 'about dot']
 };
 
-const STOP_WORDS = ['the', 'a', 'an', 'job', 'project', 'about', 'for', 'with', 'that', 'one', 
+const STOP_WORDS = ['the', 'a', 'an', 'job', 'jobs', 'project', 'about', 'for', 'with', 'that', 'one', 
     'whats', "what's", 'where', 'is', 'are', 'can', 'you', 'find', 'show', 'me', 'i', 'need', 
-    'looking', 'check', 'on', 'how', 'hows', "how's", 'going', 'doing'];
+    'looking', 'check', 'on', 'how', 'hows', "how's", 'going', 'doing', 'list', 'all', 'please', 
+    'could', 'would', 'get', 'give', 'tell'];
 
 // ===== STATE =====
 const state = {
@@ -293,25 +294,81 @@ function removeThinkingDots() {
 }
 
 // ===== QUERY PROCESSING =====
-function processQuestion(question) {
+async function processQuestion(question) {
     addThinkingDots();
-    setTimeout(() => {
-        removeThinkingDots();
-        let parsed = parseQuery(question);
-        parsed = applyDefaults(parsed);
-        
-        switch (parsed.coreRequest) {
-            case 'DUE': executeDue(parsed); break;
-            case 'FIND': executeFind(parsed); break;
-            case 'UPDATE': executeUpdate(parsed); break;
-            case 'TRACKER': executeTracker(parsed); break;
-            case 'HELP': executeHelp(); break;
-            default: executeHelp();
+    
+    let parsed = parseQuery(question);
+    parsed = applyDefaults(parsed);
+    
+    // Check if parser is confident enough
+    const isConfident = parsed.coreRequest && (
+        parsed.coreRequest === 'HELP' ||
+        parsed.coreRequest === 'TRACKER' ||
+        parsed.coreRequest === 'UPDATE' ||
+        (parsed.coreRequest === 'DUE') ||
+        (parsed.coreRequest === 'FIND' && parsed.modifiers.client)
+    );
+    
+    if (!isConfident) {
+        // Try Claude as fallback
+        const claudeResult = await askClaude(question);
+        if (claudeResult) {
+            parsed = claudeResult;
+            parsed = applyDefaults(parsed);
         }
-        
+    }
+    
+    removeThinkingDots();
+    
+    // If Claude couldn't understand, show fallback message
+    if (parsed.understood === false && parsed.fallbackMessage) {
+        renderResponse({ 
+            text: parsed.fallbackMessage, 
+            prompts: ['What can Dot do?', "What's due today?", 'Check a client'] 
+        });
         const area = getActiveConversationArea();
         if (area) area.scrollTop = area.scrollHeight;
-    }, 600);
+        return;
+    }
+    
+    switch (parsed.coreRequest) {
+        case 'DUE': executeDue(parsed); break;
+        case 'FIND': executeFind(parsed); break;
+        case 'UPDATE': executeUpdate(parsed); break;
+        case 'TRACKER': executeTracker(parsed); break;
+        case 'HELP': executeHelp(); break;
+        case 'UNKNOWN': renderResponse({ text: parsed.fallbackMessage || "Hmm, I'm not sure about that one. Try asking about jobs or clients?", prompts: ['What can Dot do?', "What's due today?"] }); break;
+        default: executeHelp();
+    }
+    
+    const area = getActiveConversationArea();
+    if (area) area.scrollTop = area.scrollHeight;
+}
+
+// Claude fallback for unclear queries
+async function askClaude(question) {
+    try {
+        // Use a session ID based on user (persists for conversation)
+        const sessionId = state.currentUser?.name || 'anonymous';
+        
+        const response = await fetch(`${API_BASE}/claude/parse`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                question,
+                clients: state.allClients.map(c => ({ code: c.code, name: c.name })),
+                sessionId
+            })
+        });
+        
+        if (!response.ok) return null;
+        
+        const result = await response.json();
+        return result.parsed || null;
+    } catch (e) {
+        console.log('Claude fallback failed:', e);
+        return null;
+    }
 }
 
 function parseQuery(query) {
@@ -727,7 +784,7 @@ function renderWip() {
 function renderWipSection(section) {
     let html = `<div class="section"><div class="section-title">${section.title}</div>`;
     if (section.jobs.length === 0) {
-        html += `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Nothing here</span></div>`;
+        html += `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Nothing to see here</span></div>`;
     } else {
         section.jobs.forEach(job => { html += section.compact ? createWipCompactCard(job) : createWipCard(job); });
     }
