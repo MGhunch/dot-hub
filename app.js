@@ -301,18 +301,19 @@ async function processQuestion(question) {
     parsed = applyDefaults(parsed);
     
     // Check if parser is confident enough
-    // Be generous - if we have ANY clear intent, run with it
-    const isConfident = parsed.coreRequest && (
-        parsed.coreRequest === 'HELP' ||
+    // Only confident if we matched actual keywords or a client
+    const hasRealIntent = parsed.coreRequest === 'HELP' ||
         parsed.coreRequest === 'TRACKER' ||
         parsed.coreRequest === 'UPDATE' ||
         parsed.coreRequest === 'DUE' ||
-        parsed.modifiers.client ||
-        parsed.modifiers.status === 'On Hold' ||
-        parsed.modifiers.status === 'Completed' ||
-        parsed.modifiers.withClient === true ||
-        parsed.searchTerms.length > 0
-    );
+        (parsed.coreRequest === 'FIND' && (
+            parsed.modifiers.client ||
+            parsed.modifiers.status === 'On Hold' ||
+            parsed.modifiers.status === 'Completed' ||
+            parsed.modifiers.withClient === true
+        ));
+    
+    const isConfident = hasRealIntent;
     
     if (!isConfident) {
         // Try Claude as fallback
