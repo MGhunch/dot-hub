@@ -1104,7 +1104,8 @@ function getPreviousQuarter(clientCode) {
 }
 
 function getTrackerMonthSpend(client, month) {
-    return trackerData.filter(d => d.client === client && d.month === month).reduce((sum, d) => sum + d.spend, 0);
+    // Only count Project budget for hero numbers (exclude Extra budget and Project on us)
+    return trackerData.filter(d => d.client === client && d.month === month && d.spendType === 'Project budget').reduce((sum, d) => sum + d.spend, 0);
 }
 
 function getTrackerProjectsForMonth(client, month) {
@@ -1338,7 +1339,14 @@ function renderTrackerContent() {
         return Object.values(grouped);
     };
     
-    const displayMainProjects = groupProjects(mainProjects);
+    const displayMainProjects = groupProjects(mainProjects).sort((a, b) => {
+        // Put 000 (Always on) at the bottom
+        const aNum = a.jobNumber.split(' ')[1] || '';
+        const bNum = b.jobNumber.split(' ')[1] || '';
+        if (aNum === '000') return 1;
+        if (bNum === '000') return -1;
+        return 0;
+    });
     const displayOtherProjects = groupProjects(otherProjects);
     
     // Calculate spend to date for each job
