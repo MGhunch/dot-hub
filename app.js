@@ -1492,7 +1492,6 @@ function renderTrackerContent() {
                         <ul class="notes-list">
                             <li><strong>Ballparks</strong> – Red numbers are ballparks. Most jobs start as a $5K ballpark before we lock in scope.</li>
                             <li><strong>Rollover</strong> – You can use your rollover credit any time during the quarter. It's extra on top of committed spend.</li>
-                            <li><strong>Always on</strong> – Numbers include always-on time for meetings, consults and reporting.</li>
                         </ul>
                         <button class="pdf-btn" onclick="getTrackerPDF()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
