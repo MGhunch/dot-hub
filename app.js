@@ -1589,11 +1589,12 @@ function renderTrackerChart() {
             .reduce((sum, d) => sum + d.spend, 0)
     );
     
-    // Current quarter spends
+    // Current quarter spends - split by ballpark flag
     const currentConfirmed = [], currentBallpark = [];
     qInfo.months.forEach(m => {
-        currentConfirmed.push(trackerData.filter(d => d.client === state.trackerClient && d.month === m && d.spendType === 'Project budget').reduce((sum, d) => sum + d.spend, 0));
-        currentBallpark.push(trackerData.filter(d => d.client === state.trackerClient && d.month === m && d.spendType !== 'Project budget').reduce((sum, d) => sum + d.spend, 0));
+        const monthProjects = trackerData.filter(d => d.client === state.trackerClient && d.month === m && d.spendType === 'Project budget');
+        currentConfirmed.push(monthProjects.filter(d => !d.ballpark).reduce((sum, d) => sum + d.spend, 0));
+        currentBallpark.push(monthProjects.filter(d => d.ballpark).reduce((sum, d) => sum + d.spend, 0));
     });
     
     // Y axis
