@@ -1,6 +1,6 @@
 /**
  * Dot Hub - Unified Interface
- * Combines Ask Dot, What's What (WIP), and Tracker
+ * Claude-only version - no keyword parser
  */
 
 // ===== CONFIGURATION =====
@@ -20,18 +20,7 @@ const PINS = {
     '1919': { name: 'Team', fullName: 'Hunch Team', client: 'ALL', clientName: 'Hunch', mode: 'hunch' }
 };
 
-const KEYWORDS = {
-    DUE: ['due', 'overdue', 'deadline', "what's next", 'next', 'urgent', 'tomorrow', "what's on"],
-    FIND: ['show', 'check', 'find', 'jobs', 'list', 'all jobs'],
-    UPDATE: ['update'],
-    TRACKER: ['tracker', 'spend', 'budget'],
-    HELP: ['help', 'what can dot do', 'about dot']
-};
-
-const STOP_WORDS = ['the', 'a', 'an', 'job', 'jobs', 'project', 'about', 'for', 'with', 'that', 'one', 
-    'whats', "what's", 'where', 'is', 'are', 'can', 'you', 'find', 'show', 'me', 'i', 'need', 
-    'looking', 'check', 'on', 'how', 'hows', "how's", 'going', 'doing', 'list', 'all', 'please', 
-    'could', 'would', 'get', 'give', 'tell'];
+const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 
 // ===== STATE =====
 const state = {
@@ -44,8 +33,11 @@ const state = {
     wipClient: 'all',
     trackerClient: null,
     trackerQuarter: 'Q4',
-    trackerMode: 'spend'
+    trackerMode: 'spend',
+    lastActivity: Date.now()
 };
+
+let inactivityTimer = null;
 
 const $ = (id) => document.getElementById(id);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -109,6 +101,13 @@ function setupEventListeners() {
         });
     });
 
+    // Check for stale session when tab becomes visible
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            checkIfStale();
+        }
+    });
+
     // Close dropdowns on outside click
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.custom-dropdown')) {
@@ -123,6 +122,35 @@ function setupEventListeners() {
 function isDesktop() { return window.innerWidth >= 900; }
 function getActiveConversationArea() { return isDesktop() ? $('desktop-conversation-area') : $('phone-conversation-area'); }
 function getClientDisplayName(client) { return CLIENT_DISPLAY_NAMES[client.code] || client.name; }
+
+// ===== INACTIVITY TIMER =====
+function resetInactivityTimer() {
+    state.lastActivity = Date.now();
+    
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    
+    inactivityTimer = setTimeout(() => {
+        clearSessionSilently();
+    }, INACTIVITY_TIMEOUT);
+}
+
+function checkIfStale() {
+    const now = Date.now();
+    if (now - state.lastActivity > INACTIVITY_TIMEOUT) {
+        clearSessionSilently();
+    }
+}
+
+function clearSessionSilently() {
+    // Clear backend context without showing anything
+    if (state.currentUser) {
+        fetch(`${API_BASE}/claude/clear`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: state.currentUser.name })
+        }).catch(() => {}); // Silently fail
+    }
+}
 
 // ===== PIN HANDLING =====
 function enterPin(digit) {
@@ -169,6 +197,7 @@ function unlockApp() {
     if ($('desktop-home-input')) $('desktop-home-input').placeholder = placeholder;
     loadClients();
     loadJobs();
+    resetInactivityTimer();
 }
 
 function checkSession() {
@@ -293,68 +322,66 @@ function removeThinkingDots() {
     $('currentThinking')?.remove();
 }
 
-// ===== QUERY PROCESSING =====
+// ===== QUERY PROCESSING (Claude-only) =====
 async function processQuestion(question) {
+    resetInactivityTimer();
     addThinkingDots();
     
-    let parsed = parseQuery(question);
-    parsed = applyDefaults(parsed);
+    // Log for debugging
+    console.log('Query:', question);
     
-    // Check if parser is confident enough
-    // Only confident if we matched actual keywords or a client
-    const hasRealIntent = parsed.coreRequest === 'HELP' ||
-        parsed.coreRequest === 'TRACKER' ||
-        parsed.coreRequest === 'UPDATE' ||
-        parsed.coreRequest === 'DUE' ||
-        (parsed.coreRequest === 'FIND' && (
-            parsed.modifiers.client ||
-            parsed.modifiers.status === 'On Hold' ||
-            parsed.modifiers.status === 'Completed' ||
-            parsed.modifiers.withClient === true
-        ));
-    
-    const isConfident = hasRealIntent;
-    
-    if (!isConfident) {
-        // Try Claude as fallback
-        const claudeResult = await askClaude(question);
-        if (claudeResult) {
-            parsed = claudeResult;
-            parsed = applyDefaults(parsed);
-        }
-    }
+    // Send everything to Claude
+    const parsed = await askClaude(question);
     
     removeThinkingDots();
     
-    // If Claude couldn't understand, show fallback message
-    if (parsed.understood === false && parsed.fallbackMessage) {
+    // Log Claude's response
+    console.log('Claude returned:', parsed);
+    
+    if (!parsed) {
+        // API error - show graceful fallback
         renderResponse({ 
-            text: parsed.fallbackMessage, 
-            prompts: ['What can Dot do?', "What's due today?", 'Check a client'] 
+            text: "Hmm, I'm having trouble thinking right now. Try again?", 
+            prompts: ['What can Dot do?'] 
         });
-        const area = getActiveConversationArea();
-        if (area) area.scrollTop = area.scrollHeight;
         return;
     }
     
+    // Handle CLARIFY - Dot needs more info
+    if (parsed.coreRequest === 'CLARIFY') {
+        renderResponse({ 
+            text: parsed.clarifyMessage || "Remind me, which client?",
+            nextPrompt: null
+        });
+        return;
+    }
+    
+    // Handle UNKNOWN - outside Dot's scope
+    if (parsed.understood === false || parsed.coreRequest === 'UNKNOWN') {
+        renderResponse({ 
+            text: parsed.fallbackMessage || "That's outside my wheelhouse. I just do projects.",
+            nextPrompt: parsed.nextPrompt
+        });
+        return;
+    }
+    
+    // Execute the parsed request
     switch (parsed.coreRequest) {
         case 'DUE': executeDue(parsed); break;
         case 'FIND': executeFind(parsed); break;
         case 'UPDATE': executeUpdate(parsed); break;
         case 'TRACKER': executeTracker(parsed); break;
-        case 'HELP': executeHelp(); break;
-        case 'UNKNOWN': renderResponse({ text: parsed.fallbackMessage || "Hmm, I'm not sure about that one. Try asking about jobs or clients?", prompts: ['What can Dot do?', "What's due today?"] }); break;
-        default: executeHelp();
+        case 'HELP': executeHelp(parsed); break;
+        default: executeHelp(parsed);
     }
     
     const area = getActiveConversationArea();
     if (area) area.scrollTop = area.scrollHeight;
 }
 
-// Claude fallback for unclear queries
+// ===== CLAUDE API =====
 async function askClaude(question) {
     try {
-        // Use a session ID based on user (persists for conversation)
         const sessionId = state.currentUser?.name || 'anonymous';
         
         const response = await fetch(`${API_BASE}/claude/parse`, {
@@ -372,69 +399,9 @@ async function askClaude(question) {
         const result = await response.json();
         return result.parsed || null;
     } catch (e) {
-        console.log('Claude fallback failed:', e);
+        console.log('Claude API error:', e);
         return null;
     }
-}
-
-function parseQuery(query) {
-    const q = query.toLowerCase().trim();
-    const result = {
-        coreRequest: null,
-        modifiers: { client: null, status: null, withClient: null, dateRange: null },
-        searchTerms: [],
-        raw: query
-    };
-    
-    const clientMatch = state.allClients.find(c => q.includes(c.name.toLowerCase()) || q.includes(c.code.toLowerCase()));
-    if (clientMatch) result.modifiers.client = clientMatch.code;
-    
-    if (matchesKeywords(q, KEYWORDS.HELP)) result.coreRequest = 'HELP';
-    else if (matchesKeywords(q, KEYWORDS.TRACKER)) result.coreRequest = 'TRACKER';
-    else if (matchesKeywords(q, KEYWORDS.UPDATE)) result.coreRequest = 'UPDATE';
-    else if (matchesKeywords(q, KEYWORDS.DUE)) {
-        result.coreRequest = 'DUE';
-        if (q.includes('today') || q.includes('now')) result.modifiers.dateRange = 'today';
-        else if (q.includes('tomorrow')) result.modifiers.dateRange = 'tomorrow';
-        else if (q.includes('this week') || q.includes('week')) result.modifiers.dateRange = 'week';
-        else if (q.includes('next')) result.modifiers.dateRange = 'next';
-        else result.modifiers.dateRange = 'week';  // Default to week, not today
-    } else if (matchesKeywords(q, KEYWORDS.FIND) || clientMatch) {
-        result.coreRequest = 'FIND';
-        if (clientMatch) result.searchTerms = extractSearchTerms(q, clientMatch);
-    }
-    
-    if (q.includes('on hold') || q.includes('hold')) result.modifiers.status = 'On Hold';
-    else if (q.includes('incoming') || q.includes('new')) result.modifiers.status = 'Incoming';
-    else if (q.includes('completed') || q.includes('done')) result.modifiers.status = 'Completed';
-    
-    if (q.includes('with client') || q.includes('with them') || q.includes('waiting')) result.modifiers.withClient = true;
-    
-    if (!result.coreRequest && q.length > 2) {
-        result.coreRequest = 'FIND';
-        result.searchTerms = extractSearchTermsRaw(q);
-    }
-    
-    return result;
-}
-
-function matchesKeywords(query, keywords) { return keywords.some(kw => query.includes(kw)); }
-
-function extractSearchTerms(query, clientMatch) {
-    let q = query.toLowerCase();
-    q = q.replace(clientMatch.name.toLowerCase(), '').replace(clientMatch.code.toLowerCase(), '');
-    return extractSearchTermsRaw(q);
-}
-
-function extractSearchTermsRaw(query) {
-    return query.split(/\s+/).filter(word => word.length > 2 && !STOP_WORDS.includes(word));
-}
-
-function applyDefaults(parsed) {
-    if (!parsed.modifiers.status) parsed.modifiers.status = 'In Progress';
-    if (parsed.modifiers.withClient === null) parsed.modifiers.withClient = false;
-    if (parsed.coreRequest === 'DUE' && !parsed.modifiers.dateRange) parsed.modifiers.dateRange = 'today';
-    return parsed;
 }
 
 // ===== EXECUTORS =====
@@ -444,10 +411,10 @@ function executeDue(parsed) {
     
     if (parsed.modifiers.dateRange === 'next') {
         if (jobs.length === 0) {
-            renderResponse({ text: client ? `No upcoming deadlines for ${client.name}.` : 'No upcoming deadlines.', prompts: ['Check a client', "What's due today?"] });
+            renderResponse({ text: client ? `No upcoming deadlines for ${client.name}.` : 'No upcoming deadlines.', nextPrompt: parsed.nextPrompt });
         } else {
             const nextJob = jobs[0];
-            renderResponse({ text: `Next up is <strong>${nextJob.jobNumber} | ${nextJob.jobName}</strong>, due ${formatDueDate(nextJob.updateDue)}.`, jobs: [nextJob], prompts: client ? ['Due today', `More ${client.name} jobs`] : ['Due today', 'Check a client'] });
+            renderResponse({ text: `Next up is <strong>${nextJob.jobNumber} | ${nextJob.jobName}</strong>, due ${formatDueDate(nextJob.updateDue)}.`, jobs: [nextJob], nextPrompt: parsed.nextPrompt });
         }
         return;
     }
@@ -456,36 +423,36 @@ function executeDue(parsed) {
     const dateLabel = dateLabels[parsed.modifiers.dateRange] || 'coming up';
     
     if (jobs.length === 0) {
-        renderResponse({ text: client ? `Nothing due ${dateLabel} for ${client.name}! 🎉` : `Nothing due ${dateLabel}! 🎉`, prompts: ['Due this week', 'On hold?', 'With client?'] });
+        renderResponse({ text: client ? `Nothing due ${dateLabel} for ${client.name}! 🎉` : `Nothing due ${dateLabel}! 🎉`, nextPrompt: parsed.nextPrompt });
     } else {
-        renderResponse({ text: client ? `${jobs.length} job${jobs.length === 1 ? '' : 's'} due ${dateLabel} for ${client.name}:` : `${jobs.length} job${jobs.length === 1 ? '' : 's'} due ${dateLabel}:`, jobs: jobs, prompts: ['Due this week', 'On hold?', 'With client?'] });
+        renderResponse({ text: client ? `${jobs.length} job${jobs.length === 1 ? '' : 's'} due ${dateLabel} for ${client.name}:` : `${jobs.length} job${jobs.length === 1 ? '' : 's'} due ${dateLabel}:`, jobs: jobs, nextPrompt: parsed.nextPrompt });
     }
 }
 
 function executeFind(parsed) {
     const client = parsed.modifiers.client ? state.allClients.find(c => c.code === parsed.modifiers.client) : null;
     
-    // If we have search terms, search across all jobs (or filtered by client)
-    if (parsed.searchTerms.length > 0) {
+    // If we have search terms, search across jobs
+    if (parsed.searchTerms && parsed.searchTerms.length > 0) {
         const jobs = searchJobs(parsed.modifiers, parsed.searchTerms);
         if (jobs.length === 0) {
-            renderResponse({ text: client ? `Couldn't find a ${client.name} job matching that.` : `Couldn't find a job matching that.`, prompts: client ? [`All ${client.name} jobs`, 'Check another client'] : ['Check a client', "What's due?"] });
+            renderResponse({ text: client ? `Couldn't find a ${client.name} job matching that.` : `Couldn't find a job matching that.`, nextPrompt: parsed.nextPrompt });
         } else if (jobs.length === 1) {
-            renderResponse({ text: `I think you mean <strong>${jobs[0].jobNumber} | ${jobs[0].jobName}</strong>?`, jobs: [jobs[0]], prompts: ['Check a client', "What's due?"] });
+            renderResponse({ text: `Found <strong>${jobs[0].jobNumber} | ${jobs[0].jobName}</strong>`, jobs: [jobs[0]], nextPrompt: parsed.nextPrompt });
         } else {
-            renderResponse({ text: `Found ${jobs.length} jobs that might match:`, jobs: jobs.slice(0, 5), prompts: ['Check a client', "What's due?"] });
+            renderResponse({ text: `Found ${jobs.length} jobs that might match:`, jobs: jobs.slice(0, 5), nextPrompt: parsed.nextPrompt });
         }
         return;
     }
     
-    // If we have a status or withClient filter, show results (with or without client)
+    // If we have a status or withClient filter
     if (parsed.modifiers.status === 'On Hold' || parsed.modifiers.status === 'Completed' || parsed.modifiers.withClient === true) {
         const jobs = getFilteredJobs(parsed.modifiers);
         const statusLabel = parsed.modifiers.withClient ? 'with client' : parsed.modifiers.status?.toLowerCase();
         if (jobs.length === 0) {
-            renderResponse({ text: client ? `No ${statusLabel} jobs for ${client.name}.` : `No jobs ${statusLabel} right now.`, prompts: ['Check a client', "What's due?"] });
+            renderResponse({ text: client ? `No ${statusLabel} jobs for ${client.name}.` : `No jobs ${statusLabel} right now.`, nextPrompt: parsed.nextPrompt });
         } else {
-            renderResponse({ text: client ? `${jobs.length} ${statusLabel} job${jobs.length === 1 ? '' : 's'} for ${client.name}:` : `${jobs.length} job${jobs.length === 1 ? '' : 's'} ${statusLabel}:`, jobs: jobs, prompts: ['Check a client', "What's due?"] });
+            renderResponse({ text: client ? `${jobs.length} ${statusLabel} job${jobs.length === 1 ? '' : 's'} for ${client.name}:` : `${jobs.length} job${jobs.length === 1 ? '' : 's'} ${statusLabel}:`, jobs: jobs, nextPrompt: parsed.nextPrompt });
         }
         return;
     }
@@ -494,38 +461,36 @@ function executeFind(parsed) {
     if (client) {
         const jobs = getFilteredJobs(parsed.modifiers);
         if (jobs.length === 0) {
-            renderResponse({ text: `No active jobs for ${client.name}.`, prompts: ['On hold?', 'With client?', 'Check another client'] });
+            renderResponse({ text: `No active jobs for ${client.name}.`, nextPrompt: parsed.nextPrompt });
         } else {
-            renderResponse({ text: `Here's what's on for ${client.name}:`, jobs: jobs, prompts: ['On hold?', 'With client?', 'Check another client'] });
+            renderResponse({ text: `Here's what's on for ${client.name}:`, jobs: jobs, nextPrompt: parsed.nextPrompt });
         }
         return;
     }
     
-    // No client, no filters - show everything in progress
-    const jobs = getFilteredJobs(parsed.modifiers);
-    if (jobs.length === 0) {
-        renderResponse({ text: `Nothing in progress right now.`, prompts: ["What's due?", 'On hold?'] });
-    } else {
-        renderResponse({ text: `Here's everything in progress:`, jobs: jobs.slice(0, 10), prompts: ["What's due?", 'On hold?', 'With client?'] });
-    }
+    // No client, no filters - show client picker
+    renderClientPicker();
 }
 
 function executeUpdate(parsed) {
     if (parsed.modifiers.client) {
         const client = state.allClients.find(c => c.code === parsed.modifiers.client);
-        renderResponse({ text: `Which ${client?.name} job do you want to update?`, prompts: [`Show ${client?.name} jobs`, 'Check another client'] });
+        renderResponse({ text: `Which ${client?.name} job do you want to update?`, nextPrompt: parsed.nextPrompt });
     } else {
-        renderResponse({ text: "Which job do you want to update? Tell me the client and I'll help you find it.", prompts: ['Check a client'] });
+        renderResponse({ text: "Which job do you want to update? Tell me the client and I'll help you find it.", nextPrompt: parsed.nextPrompt });
     }
 }
 
 function executeTracker(parsed) {
-    renderResponse({ text: "Opening Tracker...", prompts: ['Check a client', "What's due?"] });
+    renderResponse({ text: "Opening Tracker...", nextPrompt: null });
     setTimeout(() => navigateTo('tracker'), 500);
 }
 
-function executeHelp() {
-    renderResponse({ text: `I'm Dot, here to help you:<br><br>• Check on jobs and client work<br>• See what's due or coming up<br>• Find info on any job<br><br>Try asking about a client or what's due!`, prompts: ['Check a client', "What's due?"] });
+function executeHelp(parsed) {
+    renderResponse({ 
+        text: `I'm Dot, here to help you:<br><br>• Check on jobs and client work<br>• See what's due or coming up<br>• Find info on any job<br><br>Try asking about a client or what's due!`, 
+        nextPrompt: parsed?.nextPrompt || "What's due today?"
+    });
 }
 
 // ===== JOB FILTERING =====
@@ -551,32 +516,40 @@ function getFilteredJobs(modifiers, options = {}) {
         });
     }
     
+    // Apply default status filter if not specified
+    if (!modifiers.status && !options.includeAllStatuses) {
+        jobs = jobs.filter(j => j.status === 'In Progress');
+    }
+    
     jobs.sort((a, b) => { if (!a.updateDue) return 1; if (!b.updateDue) return -1; return new Date(a.updateDue) - new Date(b.updateDue); });
     return jobs;
 }
 
 function searchJobs(modifiers, searchTerms) {
     let jobs = getFilteredJobs({ client: modifiers.client }, { includeAllStatuses: true });
-    if (searchTerms.length === 0) return jobs;
+    if (!searchTerms || searchTerms.length === 0) return jobs;
     const scored = jobs.map(job => ({ job, score: scoreJobMatch(job, searchTerms) })).filter(item => item.score > 0).sort((a, b) => b.score - a.score);
     return scored.map(item => item.job);
 }
 
 function scoreJobMatch(job, searchTerms) {
+    const jobNumber = (job.jobNumber || '').toLowerCase();
     const jobName = (job.jobName || '').toLowerCase();
     const jobDesc = (job.description || '').toLowerCase();
     const jobUpdate = (job.update || '').toLowerCase();
     let score = 0;
     for (const term of searchTerms) {
-        if (jobName.includes(term)) score += 10;
-        if (jobDesc.includes(term)) score += 5;
-        if (jobUpdate.includes(term)) score += 2;
+        const t = term.toLowerCase();
+        if (jobNumber.includes(t)) score += 20;
+        if (jobName.includes(t)) score += 10;
+        if (jobDesc.includes(t)) score += 5;
+        if (jobUpdate.includes(t)) score += 2;
     }
     return score;
 }
 
 // ===== RENDERERS =====
-function renderResponse({ text, jobs = [], prompts = [] }) {
+function renderResponse({ text, jobs = [], nextPrompt = null }) {
     const area = getActiveConversationArea();
     const response = document.createElement('div');
     response.className = 'dot-response fade-in';
@@ -588,10 +561,9 @@ function renderResponse({ text, jobs = [], prompts = [] }) {
         html += '</div>';
     }
     
-    if (prompts.length > 0) {
-        html += '<div class="smart-prompts">';
-        prompts.forEach(p => { html += `<button class="smart-prompt" data-question="${p}">${p}</button>`; });
-        html += '</div>';
+    // Single contextual prompt from Claude (if provided)
+    if (nextPrompt) {
+        html += `<div class="smart-prompts"><button class="smart-prompt" data-question="${nextPrompt}">${nextPrompt}</button></div>`;
     }
     
     response.innerHTML = html;
@@ -613,7 +585,6 @@ function renderClientPicker() {
             ${keyClients.map(c => `<div class="client-card" data-client="${c.code}"><div><div class="client-name">${getClientDisplayName(c)}</div><div class="client-count">${c.jobCount} active job${c.jobCount === 1 ? '' : 's'}</div></div><span class="card-chevron">›</span></div>`).join('')}
             ${hasOther ? `<div class="client-card other-clients-btn"><div><div class="client-name">Other clients</div></div><span class="card-chevron">›</span></div>` : ''}
         </div>
-        <div class="smart-prompts"><button class="smart-prompt" data-question="What's due today?">What's due?</button></div>
     `;
     area?.appendChild(response);
     bindDynamicElements(response);
@@ -680,7 +651,6 @@ function showOtherClients() {
         response.innerHTML = `
             <p class="dot-text">Other clients:</p>
             <div class="client-cards">${otherClients.map(c => `<div class="client-card" data-client="${c.code}"><div><div class="client-name">${getClientDisplayName(c)}</div><div class="client-count">${c.jobCount} active job${c.jobCount === 1 ? '' : 's'}</div></div><span class="card-chevron">›</span></div>`).join('')}</div>
-            <div class="smart-prompts"><button class="smart-prompt" data-question="Check a client">Back to main clients</button></div>
         `;
         area?.appendChild(response);
         bindDynamicElements(response);
@@ -817,7 +787,6 @@ function renderWip() {
         </div>
     `;
     
-    // Bind card events
     content.querySelectorAll('.job-card').forEach(card => {
         card.addEventListener('click', () => card.classList.toggle('expanded'));
     });
