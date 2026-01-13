@@ -741,12 +741,11 @@ body {
 
 .wip-content {
     flex: 1;
-    padding: 24px 32px;
-    padding-left: 48px;
+    padding: 24px 48px;
     overflow-y: auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    gap: 48px;
 }
 
 .wip-column {
@@ -951,7 +950,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 20px;
-    padding-right: 48px;
+    min-height: 100px;
 }
 .empty-section img { width: 60px; height: auto; }
 
