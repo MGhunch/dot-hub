@@ -235,26 +235,28 @@
                             </button>
                             <div class="custom-dropdown-menu" id="tracker-client-menu"></div>
                         </div>
-                        <div class="custom-dropdown" id="tracker-quarter-dropdown">
-                            <button class="custom-dropdown-trigger" id="tracker-quarter-trigger">
-                                <span>Q4</span>
+                        <div class="custom-dropdown" id="tracker-month-dropdown">
+                            <button class="custom-dropdown-trigger" id="tracker-month-trigger">
+                                <span>January</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ED1C24" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                             </button>
-                            <div class="custom-dropdown-menu" id="tracker-quarter-menu">
-                                <div class="custom-dropdown-option" data-value="Q1">Q1</div>
-                                <div class="custom-dropdown-option" data-value="Q2">Q2</div>
-                                <div class="custom-dropdown-option" data-value="Q3">Q3</div>
-                                <div class="custom-dropdown-option selected" data-value="Q4">Q4</div>
+                            <div class="custom-dropdown-menu" id="tracker-month-menu">
+                                <div class="custom-dropdown-option selected" data-value="January">January</div>
+                                <div class="custom-dropdown-option" data-value="February">February</div>
+                                <div class="custom-dropdown-option" data-value="March">March</div>
+                                <div class="custom-dropdown-option" data-value="December">December</div>
+                                <div class="custom-dropdown-option" data-value="November">November</div>
+                                <div class="custom-dropdown-option" data-value="October">October</div>
                             </div>
                         </div>
                     </div>
                     <div class="mode-toggle">
-                        <span class="mode-label active" id="tracker-mode-spend">SPEND</span>
+                        <span class="mode-label active" id="tracker-mode-spend">Month</span>
                         <label class="mode-switch">
                             <input type="checkbox" id="tracker-mode-switch">
                             <span class="mode-switch-slider"></span>
                         </label>
-                        <span class="mode-label" id="tracker-mode-pipeline">PIPELINE</span>
+                        <span class="mode-label" id="tracker-mode-pipeline">Quarter</span>
                     </div>
                 </div>
                 <div class="tracker-content" id="tracker-content">
