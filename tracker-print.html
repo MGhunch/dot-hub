@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracker Report - Tower</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: white;
+            color: #333;
+            line-height: 1.4;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm 20mm 15mm 20mm;
+            margin: 0 auto;
+            background: white;
+            position: relative;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 3px solid #ED1C24;
+            margin-bottom: 16px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .header-logo {
+            height: 40px;
+            width: auto;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+        
+        .client-logo {
+            height: 40px;
+            width: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        /* Report title row */
+        .report-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .client-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            color: #1a1a1a;
+            letter-spacing: 1px;
+        }
+        
+        .report-meta-block {
+            text-align: right;
+        }
+        
+        .report-meta {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .report-date {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        /* Section titles */
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #666;
+            padding: 10px 0;
+            margin-bottom: 8px;
+        }
+        
+        .section-title .quarter-context {
+            color: #999;
+            margin-left: 8px;
+        }
+        
+        /* The Numbers */
+        .numbers-section {
+            margin-bottom: 20px;
+        }
+        
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .stat-box {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 14px 12px;
+            text-align: center;
+        }
+        
+        .stat-box.rollover-box {
+            background: #fafafa;
+        }
+        
+        .stat-box.rollover-box .stat-value {
+            color: #666;
+        }
+        
+        .stat-value {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            color: #333;
+        }
+        
+        .stat-value.grey { color: #666; }
+        .stat-value.red { color: #ED1C24; }
+        .stat-value.orange { color: #f59e0b; }
+        
+        .stat-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: #e5e5e5;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #ED1C24;
+            border-radius: 3px;
+        }
+        
+        .progress-fill.over { background: #f59e0b; }
+        
+        .rollover-credit {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .rollover-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        
+        .rollover-amount {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .rollover-amount strong {
+            font-weight: 600;
+            color: #666;
+        }
+        
+        /* Two column layout */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Projects table */
+        .projects-section {
+            margin-bottom: 20px;
+        }
+        
+        .projects-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        
+        .projects-table th {
+            text-align: left;
+            font-size: 9px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 0;
+            border-bottom: 2px solid #e5e5e5;
+        }
+        
+        .projects-table th:last-child {
+            text-align: right;
+        }
+        
+        .projects-table td {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            color: #666;
+            vertical-align: top;
+        }
+        
+        .projects-table td.description {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
+        
+        .projects-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .project-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .amount {
+            text-align: right;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .amount.ballpark {
+            color: #ED1C24;
+        }
+        
+        .amount.onus {
+            color: #666;
+        }
+        
+        .more-projects {
+            text-align: right;
+            font-size: 10px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        /* Chart */
+        .chart-section {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            padding-left: 32px;
+            height: 120px;
+        }
+        
+        .y-axis {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 20px;
+            width: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .y-label {
+            font-size: 8px;
+            color: #666;
+            text-align: right;
+            padding-right: 4px;
+        }
+        
+        .chart-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 100px;
+            position: relative;
+        }
+        
+        .committed-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            border-top: 1.5px dashed #c0c0c0;
+            z-index: 5;
+        }
+        
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .bar-stack {
+            position: relative;
+            width: 24px;
+        }
+        
+        .bar-committed {
+            width: 100%;
+            background: #e0e0e0;
+            border-radius: 2px 2px 0 0;
+        }
+        
+        .bar-spend {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #ED1C24;
+            border-radius: 2px 2px 0 0;
+        }
+        
+        .bar-label {
+            font-size: 8px;
+            color: #666;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+        
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e5e5;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 8px;
+            color: #666;
+        }
+        
+        .legend-swatch {
+            width: 12px;
+            height: 8px;
+            border-radius: 1px;
+        }
+        
+        .legend-swatch.spend { background: #ED1C24; }
+        .legend-swatch.committed { background: #e0e0e0; }
+        
+        /* Notes */
+        .notes-section {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .notes-list {
+            list-style: none;
+        }
+        
+        .notes-list li {
+            font-size: 11px;
+            color: #666;
+            padding: 6px 0 6px 14px;
+            position: relative;
+            line-height: 1.4;
+        }
+        
+        .notes-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #ED1C24;
+            font-weight: bold;
+        }
+        
+        /* Footer */
+        .footer {
+            position: absolute;
+            bottom: 15mm;
+            left: 20mm;
+            right: 20mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid #e5e5e5;
+        }
+        
+        .footer-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .footer-logo {
+            height: 32px;
+            width: auto;
+        }
+        
+        .footer-tagline {
+            font-size: 10px;
+            color: #666;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+            }
+            .page {
+                margin: 0;
+                padding: 20mm;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <img src="images/tracker-header.png" alt="Tracker" class="header-logo">
+            </div>
+            <div class="header-right">
+                <img src="images/logos/TOW.png" alt="Tower" class="client-logo">
+            </div>
+        </header>
+        
+        <!-- Report title -->
+        <div class="report-title-row">
+            <div class="client-name">Tower</div>
+            <div class="report-meta-block">
+                <div class="report-meta">Q2 · January 2026</div>
+                <div class="report-date">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    10 Jan
+                </div>
+            </div>
+        </div>
+        
+        <!-- The Numbers -->
+        <div class="numbers-section">
+            <div class="numbers-grid">
+                <div class="stat-box">
+                    <div class="stat-value grey">$10K</div>
+                    <div class="stat-label">Committed</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">$6K</div>
+                    <div class="stat-label">To Date</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value red">$4K</div>
+                    <div class="stat-label">To Spend</div>
+                </div>
+                <div class="stat-box rollover-box">
+                    <div class="stat-value grey">+$500</div>
+                    <div class="stat-label">Q1 Rollover</div>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 60%;"></div>
+            </div>
+        </div>
+        
+        <!-- Projects -->
+        <div class="projects-section">
+            <div class="section-title">The Work</div>
+            <table class="projects-table">
+                <thead>
+                    <tr>
+                        <th style="width: 35%;">Project</th>
+                        <th style="width: 20%;">Owner</th>
+                        <th>Description</th>
+                        <th style="width: 70px;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="project-name">TOW 096 · App Screens</td>
+                        <td>Stu</td>
+                        <td class="description">New feature screen designs</td>
+                        <td class="amount ballpark">$3,000</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 095 · Video Script</td>
+                        <td>Michael</td>
+                        <td class="description">Explainer video script and storyboard</td>
+                        <td class="amount">$2,200</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 094 · Banner Ads</td>
+                        <td>Jess</td>
+                        <td class="description">Q2 campaign banners</td>
+                        <td class="amount ballpark">$1,800</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 093 · FAQ Update</td>
+                        <td>Emma</td>
+                        <td class="description">Refresh help centre content</td>
+                        <td class="amount">$800</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="more-projects">Full list over the page →</div>
+        </div>
+        
+        <!-- Other Stuff -->
+        <div class="projects-section">
+            <div class="section-title">Other Stuff</div>
+            <table class="projects-table">
+                <thead>
+                    <tr>
+                        <th style="width: 35%;">Project</th>
+                        <th style="width: 20%;">Owner</th>
+                        <th>Description</th>
+                        <th style="width: 70px;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="project-name">TOW 097 · Workshop Support</td>
+                        <td>Michael</td>
+                        <td class="description">Extra budget: Strategy session</td>
+                        <td class="amount">$1,500</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 098 · Quick Fixes</td>
+                        <td>Jess</td>
+                        <td class="description">On us: Minor amends batch</td>
+                        <td class="amount onus">$0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Two column: Chart + Notes -->
+        <div class="two-col">
+            <div class="chart-section">
+                <div class="section-title">Tracker</div>
+                <div class="chart-wrapper">
+                    <div class="y-axis">
+                        <span class="y-label">$20k</span>
+                        <span class="y-label">$15k</span>
+                        <span class="y-label">$10k</span>
+                        <span class="y-label">$5k</span>
+                        <span class="y-label">$0</span>
+                    </div>
+                    <div class="committed-line" style="bottom: 50%;"></div>
+                    <div class="chart-container">
+                        <div class="bar-group">
+                            <div class="bar-stack" style="height: 80px;">
+                                <div class="bar-committed" style="height: 100%;"></div>
+                                <div class="bar-spend" style="height: 45%;"></div>
+                            </div>
+                            <span class="bar-label">Oct</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-stack" style="height: 80px;">
+                                <div class="bar-committed" style="height: 100%;"></div>
+                                <div class="bar-spend" style="height: 52%;"></div>
+                            </div>
+                            <span class="bar-label">Nov</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-stack" style="height: 80px;">
+                                <div class="bar-committed" style="height: 100%;"></div>
+                                <div class="bar-spend" style="height: 48%;"></div>
+                            </div>
+                            <span class="bar-label">Dec</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-stack" style="height: 80px;">
+                                <div class="bar-committed" style="height: 100%;"></div>
+                                <div class="bar-spend" style="height: 60%;"></div>
+                            </div>
+                            <span class="bar-label">Jan</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-stack" style="height: 80px;">
+                                <div class="bar-committed" style="height: 100%; opacity: 0.5;"></div>
+                            </div>
+                            <span class="bar-label">Feb</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-stack" style="height: 80px;">
+                                <div class="bar-committed" style="height: 100%; opacity: 0.5;"></div>
+                            </div>
+                            <span class="bar-label">Mar</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item"><div class="legend-swatch spend"></div><span>Spend</span></div>
+                    <div class="legend-item"><div class="legend-swatch committed"></div><span>Committed</span></div>
+                </div>
+            </div>
+            
+            <div class="notes-section">
+                <div class="section-title">Notes</div>
+                <ul class="notes-list">
+                    <li><strong>Ballparks</strong> – Red amounts are estimates, not locked in yet.</li>
+                    <li><strong>Rollover</strong> – Credit from Q1 underspend available this quarter.</li>
+                    <li><strong>Always on</strong> – Includes 10% for meetings and ad-hoc consults.</li>
+                    <li>TOW 087 on track for Feb delivery.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-left">
+                <img src="images/dot-ai2-logo.png" alt="ai²" class="footer-logo">
+            </div>
+            <div class="footer-tagline">agency intuition × artificial intelligence</div>
+        </footer>
+    </div>
+    
+    <!-- Page 2 -->
+    <div class="page page-continuation">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <img src="images/tracker-header.png" alt="Tracker" class="header-logo">
+            </div>
+            <div class="header-right">
+                <img src="images/logos/TOW.png" alt="Tower" class="client-logo">
+            </div>
+        </header>
+        
+        <!-- Page title -->
+        <div class="report-title-row">
+            <div class="client-name">Tower</div>
+            <div class="report-meta-block">
+                <div class="report-meta">Q2 · January 2026</div>
+                <div class="report-date">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    10 Jan
+                </div>
+            </div>
+        </div>
+        
+        <!-- Full Projects List -->
+        <div class="projects-section">
+            <div class="section-title">The Work</div>
+            <table class="projects-table">
+                <thead>
+                    <tr>
+                        <th style="width: 35%;">Project</th>
+                        <th style="width: 20%;">Owner</th>
+                        <th>Description</th>
+                        <th style="width: 70px;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="project-name">TOW 087 · Summer Promo</td>
+                        <td>Caroline</td>
+                        <td>Campaign creative and assets</td>
+                        <td class="amount">$3,500</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 088 · Email Tips</td>
+                        <td>Emma</td>
+                        <td>Monthly tips series</td>
+                        <td class="amount ballpark">$1,500</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 089 · Landing Page</td>
+                        <td>Jess</td>
+                        <td>Quote journey refresh</td>
+                        <td class="amount ballpark">$1,000</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 090 · Brand Guidelines</td>
+                        <td>Michael</td>
+                        <td>Update digital brand book</td>
+                        <td class="amount">$2,800</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 091 · Social Templates</td>
+                        <td>Caroline</td>
+                        <td>Instagram and Facebook templates</td>
+                        <td class="amount ballpark">$1,200</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 092 · Claims Portal</td>
+                        <td>Stu</td>
+                        <td>UX improvements to claims flow</td>
+                        <td class="amount">$4,500</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 093 · FAQ Update</td>
+                        <td>Emma</td>
+                        <td>Refresh help centre content</td>
+                        <td class="amount">$800</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 094 · Banner Ads</td>
+                        <td>Jess</td>
+                        <td>Q2 campaign banners</td>
+                        <td class="amount ballpark">$1,800</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 095 · Video Script</td>
+                        <td>Michael</td>
+                        <td>Explainer video script and storyboard</td>
+                        <td class="amount">$2,200</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 096 · App Screens</td>
+                        <td>Stu</td>
+                        <td>New feature screen designs</td>
+                        <td class="amount ballpark">$3,000</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Full Other Stuff List -->
+        <div class="projects-section">
+            <div class="section-title">Other Stuff</div>
+            <table class="projects-table">
+                <thead>
+                    <tr>
+                        <th style="width: 35%;">Project</th>
+                        <th style="width: 20%;">Owner</th>
+                        <th>Description</th>
+                        <th style="width: 70px;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="project-name">TOW 097 · Workshop Support</td>
+                        <td>Michael</td>
+                        <td>Extra budget: Strategy session</td>
+                        <td class="amount">$1,500</td>
+                    </tr>
+                    <tr>
+                        <td class="project-name">TOW 098 · Quick Fixes</td>
+                        <td>Jess</td>
+                        <td>On us: Minor amends batch</td>
+                        <td class="amount onus">$0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-left">
+                <img src="images/dot-ai2-logo.png" alt="ai²" class="footer-logo">
+            </div>
+            <div class="footer-tagline">agency intuition × artificial intelligence</div>
+        </footer>
+    </div>
+</body>
+</html>
