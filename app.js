@@ -21,8 +21,8 @@ const PINS = {
 };
 
 const KEYWORDS = {
-    DUE: ['due', 'overdue', 'deadline', "what's next", 'next', 'urgent'],
-    FIND: ["what's on", 'show', 'check', 'find', 'jobs', 'list', 'all jobs'],
+    DUE: ['due', 'overdue', 'deadline', "what's next", 'next', 'urgent', 'tomorrow', "what's on"],
+    FIND: ['show', 'check', 'find', 'jobs', 'list', 'all jobs'],
     UPDATE: ['update'],
     TRACKER: ['tracker', 'spend', 'budget'],
     HELP: ['help', 'what can dot do', 'about dot']
@@ -301,12 +301,17 @@ async function processQuestion(question) {
     parsed = applyDefaults(parsed);
     
     // Check if parser is confident enough
+    // Be generous - if we have ANY clear intent, run with it
     const isConfident = parsed.coreRequest && (
         parsed.coreRequest === 'HELP' ||
         parsed.coreRequest === 'TRACKER' ||
         parsed.coreRequest === 'UPDATE' ||
-        (parsed.coreRequest === 'DUE') ||
-        (parsed.coreRequest === 'FIND' && parsed.modifiers.client)
+        parsed.coreRequest === 'DUE' ||
+        parsed.modifiers.client ||
+        parsed.modifiers.status === 'On Hold' ||
+        parsed.modifiers.status === 'Completed' ||
+        parsed.modifiers.withClient === true ||
+        parsed.searchTerms.length > 0
     );
     
     if (!isConfident) {
@@ -389,9 +394,10 @@ function parseQuery(query) {
     else if (matchesKeywords(q, KEYWORDS.DUE)) {
         result.coreRequest = 'DUE';
         if (q.includes('today') || q.includes('now')) result.modifiers.dateRange = 'today';
+        else if (q.includes('tomorrow')) result.modifiers.dateRange = 'tomorrow';
         else if (q.includes('this week') || q.includes('week')) result.modifiers.dateRange = 'week';
         else if (q.includes('next')) result.modifiers.dateRange = 'next';
-        else result.modifiers.dateRange = 'today';
+        else result.modifiers.dateRange = 'week';  // Default to week, not today
     } else if (matchesKeywords(q, KEYWORDS.FIND) || clientMatch) {
         result.coreRequest = 'FIND';
         if (clientMatch) result.searchTerms = extractSearchTerms(q, clientMatch);
@@ -445,7 +451,9 @@ function executeDue(parsed) {
         return;
     }
     
-    const dateLabel = parsed.modifiers.dateRange === 'week' ? 'this week' : 'today';
+    const dateLabels = { today: 'today', tomorrow: 'by tomorrow', week: 'this week' };
+    const dateLabel = dateLabels[parsed.modifiers.dateRange] || 'coming up';
+    
     if (jobs.length === 0) {
         renderResponse({ text: client ? `Nothing due ${dateLabel} for ${client.name}! 🎉` : `Nothing due ${dateLabel}! 🎉`, prompts: ['Due this week', 'On hold?', 'With client?'] });
     } else {
@@ -454,20 +462,51 @@ function executeDue(parsed) {
 }
 
 function executeFind(parsed) {
-    if (!parsed.modifiers.client) { renderClientPicker(); return; }
-    const client = state.allClients.find(c => c.code === parsed.modifiers.client);
+    const client = parsed.modifiers.client ? state.allClients.find(c => c.code === parsed.modifiers.client) : null;
     
+    // If we have search terms, search across all jobs (or filtered by client)
     if (parsed.searchTerms.length > 0) {
         const jobs = searchJobs(parsed.modifiers, parsed.searchTerms);
-        if (jobs.length === 0) renderResponse({ text: `Couldn't find a ${client?.name || parsed.modifiers.client} job matching that.`, prompts: [`All ${client?.name} jobs`, 'Check another client'] });
-        else if (jobs.length === 1) renderResponse({ text: `I think you mean <strong>${jobs[0].jobNumber} | ${jobs[0].jobName}</strong>?`, jobs: [jobs[0]], prompts: [`All ${client?.name} jobs`, 'Check another client'] });
-        else renderResponse({ text: `Found ${jobs.length} ${client?.name} jobs that might match:`, jobs: jobs.slice(0, 3), prompts: [`All ${client?.name} jobs`, 'Check another client'] });
+        if (jobs.length === 0) {
+            renderResponse({ text: client ? `Couldn't find a ${client.name} job matching that.` : `Couldn't find a job matching that.`, prompts: client ? [`All ${client.name} jobs`, 'Check another client'] : ['Check a client', "What's due?"] });
+        } else if (jobs.length === 1) {
+            renderResponse({ text: `I think you mean <strong>${jobs[0].jobNumber} | ${jobs[0].jobName}</strong>?`, jobs: [jobs[0]], prompts: ['Check a client', "What's due?"] });
+        } else {
+            renderResponse({ text: `Found ${jobs.length} jobs that might match:`, jobs: jobs.slice(0, 5), prompts: ['Check a client', "What's due?"] });
+        }
         return;
     }
     
+    // If we have a status or withClient filter, show results (with or without client)
+    if (parsed.modifiers.status === 'On Hold' || parsed.modifiers.status === 'Completed' || parsed.modifiers.withClient === true) {
+        const jobs = getFilteredJobs(parsed.modifiers);
+        const statusLabel = parsed.modifiers.withClient ? 'with client' : parsed.modifiers.status?.toLowerCase();
+        if (jobs.length === 0) {
+            renderResponse({ text: client ? `No ${statusLabel} jobs for ${client.name}.` : `No jobs ${statusLabel} right now.`, prompts: ['Check a client', "What's due?"] });
+        } else {
+            renderResponse({ text: client ? `${jobs.length} ${statusLabel} job${jobs.length === 1 ? '' : 's'} for ${client.name}:` : `${jobs.length} job${jobs.length === 1 ? '' : 's'} ${statusLabel}:`, jobs: jobs, prompts: ['Check a client', "What's due?"] });
+        }
+        return;
+    }
+    
+    // If we have a client, show their jobs
+    if (client) {
+        const jobs = getFilteredJobs(parsed.modifiers);
+        if (jobs.length === 0) {
+            renderResponse({ text: `No active jobs for ${client.name}.`, prompts: ['On hold?', 'With client?', 'Check another client'] });
+        } else {
+            renderResponse({ text: `Here's what's on for ${client.name}:`, jobs: jobs, prompts: ['On hold?', 'With client?', 'Check another client'] });
+        }
+        return;
+    }
+    
+    // No client, no filters - show everything in progress
     const jobs = getFilteredJobs(parsed.modifiers);
-    if (jobs.length === 0) renderResponse({ text: `No active jobs for ${client?.name || parsed.modifiers.client}.`, prompts: ['On hold?', 'With client?', 'Check another client'] });
-    else renderResponse({ text: `Here's what's on for ${client?.name || parsed.modifiers.client}:`, jobs: jobs, prompts: ['On hold?', 'With client?', 'Check another client'] });
+    if (jobs.length === 0) {
+        renderResponse({ text: `Nothing in progress right now.`, prompts: ["What's due?", 'On hold?'] });
+    } else {
+        renderResponse({ text: `Here's everything in progress:`, jobs: jobs.slice(0, 10), prompts: ["What's due?", 'On hold?', 'With client?'] });
+    }
 }
 
 function executeUpdate(parsed) {
@@ -498,11 +537,13 @@ function getFilteredJobs(modifiers, options = {}) {
     
     if (modifiers.dateRange) {
         const today = new Date(); today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
         jobs = jobs.filter(j => {
             if (!j.updateDue) return false;
             const dueDate = new Date(j.updateDue); dueDate.setHours(0, 0, 0, 0);
             switch (modifiers.dateRange) {
                 case 'today': return dueDate <= today;
+                case 'tomorrow': return dueDate <= tomorrow;
                 case 'week': const weekFromNow = new Date(today); weekFromNow.setDate(weekFromNow.getDate() + 7); return dueDate <= weekFromNow;
                 default: return true;
             }
