@@ -655,7 +655,7 @@ body {
 }
 
 .chat-input-area {
-    padding: 20px 32px;
+    padding: 20px 24px;
     border-top: 1px solid var(--grey-100);
     background: var(--white);
 }
@@ -663,6 +663,7 @@ body {
     max-width: 600px;
     margin: 0 auto;
     position: relative;
+    width: 100%;
 }
 .chat-input {
     width: 100%;
@@ -741,6 +742,7 @@ body {
 .wip-content {
     flex: 1;
     padding: 24px 32px;
+    padding-left: 48px;
     overflow-y: auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -937,9 +939,9 @@ body {
 
 /* Empty Section */
 .empty-section {
-    color: var(--grey-800);
+    color: var(--grey-400);
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     padding: 32px;
     text-align: center;
     background: var(--white);
@@ -949,6 +951,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 20px;
+    padding-right: 48px;
 }
 .empty-section img { width: 60px; height: auto; }
 
