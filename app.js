@@ -243,6 +243,7 @@ function goHome() {
     if ($('phone-conversation-area')) $('phone-conversation-area').innerHTML = '';
     $('desktop-home-state')?.classList.remove('hidden');
     $('desktop-conversation-state')?.classList.remove('visible');
+    $('desktop-footer')?.classList.remove('hidden');
     if ($('desktop-home-input')) $('desktop-home-input').value = '';
     if ($('desktop-conversation-area')) $('desktop-conversation-area').innerHTML = '';
     navigateTo('home');

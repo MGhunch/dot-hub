@@ -598,7 +598,6 @@ body {
 
 .view-home {
     background: var(--white);
-    overflow: hidden;
 }
 
 .home-state {
@@ -647,8 +646,6 @@ body {
     flex: 1;
     flex-direction: column;
     min-height: 0;
-    height: 100%;
-    overflow: hidden;
 }
 .conversation-state.visible { display: flex; }
 
@@ -664,13 +661,22 @@ body {
     gap: 16px;
 }
 
+.conversation-area::after {
+    content: '';
+    display: block;
+    width: 48px;
+    height: 48px;
+    margin: 24px auto 0;
+    background: url('images/dot-sitting.png') no-repeat center;
+    background-size: contain;
+    opacity: 0.4;
+    flex-shrink: 0;
+}
+
 .chat-input-area {
     padding: 20px 24px;
-    border-top: 1px solid var(--grey-100);
     background: var(--white);
     flex-shrink: 0;
-    position: sticky;
-    bottom: 0;
 }
 .chat-input-wrapper {
     max-width: 600px;
@@ -728,6 +734,7 @@ body {
     justify-content: space-between;
     align-items: center;
 }
+.desktop-footer.hidden { display: none; }
 .desktop-footer .footer-logo { height: 24px; }
 .desktop-footer .footer-right {
     font-size: 13px;
@@ -1330,21 +1337,19 @@ body {
     gap: 8px;
 }
 .smart-prompt {
-    padding: 10px 16px;
-    background: var(--grey-50);
-    border: 1.5px solid var(--grey-200);
-    border-radius: var(--radius-full);
+    padding: 6px 0;
+    background: none;
+    border: none;
     font-family: var(--font-body);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--grey-600);
+    font-size: 14px;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--grey-400);
     cursor: pointer;
     transition: all 0.2s var(--ease-out);
 }
 .smart-prompt:hover {
-    border-color: var(--red);
     color: var(--red);
-    background: var(--white);
 }
 
 /* Job Cards in conversation */
