@@ -598,6 +598,7 @@ body {
 
 .view-home {
     background: var(--white);
+    overflow: hidden;
 }
 
 .home-state {
@@ -646,6 +647,8 @@ body {
     flex: 1;
     flex-direction: column;
     min-height: 0;
+    height: 100%;
+    overflow: hidden;
 }
 .conversation-state.visible { display: flex; }
 
@@ -665,6 +668,9 @@ body {
     padding: 20px 24px;
     border-top: 1px solid var(--grey-100);
     background: var(--white);
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
 }
 .chat-input-wrapper {
     max-width: 600px;
