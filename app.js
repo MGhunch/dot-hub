@@ -383,6 +383,7 @@ async function processQuestion(question) {
         case 'UPDATE': executeUpdate(parsed); break;
         case 'TRACKER': executeTracker(parsed); break;
         case 'QUERY': executeQuery(parsed); break;
+        case 'LOG': executeLog(parsed); break;
         case 'HELP': executeHelp(parsed); break;
         default: executeHelp(parsed);
     }
@@ -564,6 +565,73 @@ function executeHelp(parsed) {
         text: parsed.responseText || `I'm Dot, Hunch's admin-bot! I can help you:<br><br>• Check on jobs and client work<br>• See what's due or coming up<br>• Find contact info<br>• Look up budget and spend<br><br>Try asking about a client or what's due!`, 
         nextPrompt: parsed.nextPrompt || "What's most urgent?"
     });
+}
+
+async function executeLog(parsed) {
+    // If we have a title, we're logging something
+    if (parsed.logTitle) {
+        try {
+            const response = await fetch(`${API_BASE}/log`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: parsed.logTitle,
+                    notes: parsed.logNotes || ''
+                })
+            });
+            
+            if (response.ok) {
+                renderResponse({
+                    text: parsed.responseText || `Noted! Added "${parsed.logTitle}" to the list.`,
+                    nextPrompt: parsed.nextPrompt
+                });
+            } else {
+                renderResponse({
+                    text: "Hmm, couldn't save that. Try again?",
+                    nextPrompt: parsed.nextPrompt
+                });
+            }
+        } catch (e) {
+            renderResponse({
+                text: "Hmm, couldn't save that. Try again?",
+                nextPrompt: parsed.nextPrompt
+            });
+        }
+        return;
+    }
+    
+    // Otherwise, we're reading the list
+    try {
+        const response = await fetch(`${API_BASE}/log`);
+        const data = await response.json();
+        const items = data.items || [];
+        
+        if (items.length === 0) {
+            renderResponse({
+                text: parsed.responseText || "Nothing on the list yet!",
+                nextPrompt: parsed.nextPrompt || "Log a bug?"
+            });
+            return;
+        }
+        
+        const done = items.filter(i => i.done).length;
+        const todo = items.filter(i => !i.done);
+        
+        let listHtml = todo.map(i => `• ${i.title}`).join('<br>');
+        if (done > 0) {
+            listHtml += `<br><br><em>${done} item${done === 1 ? '' : 's'} done</em>`;
+        }
+        
+        renderResponse({
+            text: (parsed.responseText || `${items.length} thing${items.length === 1 ? '' : 's'} on the list:`) + `<br><br>${listHtml}`,
+            nextPrompt: parsed.nextPrompt
+        });
+    } catch (e) {
+        renderResponse({
+            text: "Couldn't fetch the list right now.",
+            nextPrompt: parsed.nextPrompt
+        });
+    }
 }
 
 // ===== JOB FILTERING =====
