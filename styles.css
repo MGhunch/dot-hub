@@ -196,6 +196,13 @@ body {
     transform: translateY(0);
 }
 
+.pin-footer-logo {
+    height: 24px;
+    width: auto;
+    margin-top: 40px;
+    opacity: 0.6;
+}
+
 /* ===== LAYOUT SWITCHING ===== */
 .phone-container { display: none; }
 .desktop-container { display: none; }
