@@ -220,9 +220,31 @@ function navigateTo(view) {
         $('phone-conversation')?.classList.remove('visible');
         $('phone-wip-message')?.classList.remove('visible');
         $('phone-tracker-message')?.classList.remove('visible');
-        if (view === 'home') $('phone-home')?.classList.remove('hidden');
+        if (view === 'home') {
+            // Check if there's an active conversation
+            const hasConversation = $('phone-conversation-area')?.children.length > 0;
+            if (hasConversation) {
+                $('phone-conversation')?.classList.add('visible');
+            } else {
+                $('phone-home')?.classList.remove('hidden');
+            }
+        }
         else if (view === 'wip') $('phone-wip-message')?.classList.add('visible');
         else if (view === 'tracker') $('phone-tracker-message')?.classList.add('visible');
+    } else {
+        // Desktop: restore conversation state if exists
+        if (view === 'home') {
+            const hasConversation = $('desktop-conversation-area')?.children.length > 0;
+            if (hasConversation) {
+                $('desktop-home-state')?.classList.add('hidden');
+                $('desktop-conversation-state')?.classList.add('visible');
+                $('desktop-footer')?.classList.add('hidden');
+            } else {
+                $('desktop-home-state')?.classList.remove('hidden');
+                $('desktop-conversation-state')?.classList.remove('visible');
+                $('desktop-footer')?.classList.remove('hidden');
+            }
+        }
     }
     
     if (view === 'wip') { setupWipDropdown(); renderWip(); }
@@ -551,15 +573,15 @@ function formatMessage(message) {
     
     // Fix encoding issues
     let text = message
-        .replace(/Ã¢â‚¬Â¢/g, 'â€¢')
-        .replace(/Ã¢â‚¬"/g, 'â€“')
-        .replace(/Ã¢â‚¬â„¢/g, "'");
+        .replace(/ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢/g, 'Ã¢â‚¬Â¢')
+        .replace(/ÃƒÂ¢Ã¢â€šÂ¬"/g, 'Ã¢â‚¬â€œ')
+        .replace(/ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢/g, "'");
     
     // Split into lines
     const lines = text.split('\n').map(l => l.trim()).filter(l => l);
     
     // Check if we have bullet points
-    const hasBullets = lines.some(l => /^[â€¢\-\*]\s/.test(l));
+    const hasBullets = lines.some(l => /^[Ã¢â‚¬Â¢\-\*]\s/.test(l));
     
     if (!hasBullets) {
         // No bullets - just join with <br> for line breaks
@@ -571,14 +593,14 @@ function formatMessage(message) {
     let inList = false;
     
     lines.forEach(line => {
-        const isBullet = /^[â€¢\-\*]\s/.test(line);
+        const isBullet = /^[Ã¢â‚¬Â¢\-\*]\s/.test(line);
         
         if (isBullet) {
             if (!inList) {
                 html += '<ul class="dot-list">';
                 inList = true;
             }
-            html += `<li>${line.replace(/^[â€¢\-\*]\s*/, '')}</li>`;
+            html += `<li>${line.replace(/^[Ã¢â‚¬Â¢\-\*]\s*/, '')}</li>`;
         } else {
             if (inList) {
                 html += '</ul>';
@@ -822,7 +844,7 @@ async function submitWipUpdate(jobNumber, btn) {
         const job = state.allJobs.find(j => j.jobNumber === jobNumber);
         if (job) { job.stage = stage; job.status = status; if (updateDue) job.updateDue = updateDue; if (liveDate) job.liveDate = liveDate; if (message) job.update = message; }
         
-        btn.textContent = 'âœ“ Done'; btn.classList.add('success');
+        btn.textContent = 'Ã¢Å“â€œ Done'; btn.classList.add('success');
         showToast('On it.', 'success');
         setTimeout(() => { btn.textContent = 'Update'; btn.classList.remove('success'); btn.disabled = false; renderWip(); }, 1500);
     } catch (e) {
