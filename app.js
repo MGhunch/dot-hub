@@ -532,12 +532,12 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysAgo = getDaysSinceUpdate(job.lastUpdated);
     
-    // Build summary line: Stage → Live Date · With client
+    // Build summary line: Stage â†’ Live Date Â· With client
     let summaryParts = [];
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' · ') || '';
+    const summaryLine = summaryParts.join(' Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -556,7 +556,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> · </span>
+                        <span class="dot"> Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
@@ -597,7 +597,7 @@ function formatRecentActivity(updateHistory) {
 // ===== JOB EDIT MODAL =====
 let currentEditJob = null;
 
-function openJobModal(jobNumber) {
+async function openJobModal(jobNumber) {
     const job = state.allJobs.find(j => j.jobNumber === jobNumber);
     if (!job) return;
     
@@ -609,8 +609,7 @@ function openJobModal(jobNumber) {
     
     $('job-modal-title').textContent = jobNumber;
     $('job-edit-name').value = job.jobName || '';
-    $('job-edit-description').value = job.description || '';
-    $('job-edit-owner').value = job.projectOwner || '';
+    $('job-edit-description').value = job.description || "What's this job all about?";
     $('job-edit-stage').value = job.stage || 'Clarify';
     $('job-edit-status').value = job.status || 'Incoming';
     $('job-edit-update-due').value = formatDateForInput(job.updateDue);
@@ -627,7 +626,37 @@ function openJobModal(jobNumber) {
         teamsLink.style.display = 'none';
     }
     
+    // Populate client owner dropdown
+    const ownerSelect = $('job-edit-owner');
+    ownerSelect.innerHTML = '<option value="">Loading...</option>';
+    
+    // Show modal immediately
     modal.classList.add('visible');
+    
+    // Fetch people for this client
+    try {
+        const clientCode = job.clientCode;
+        const response = await fetch(`${API_BASE}/people/${clientCode}`);
+        if (response.ok) {
+            const people = await response.json();
+            ownerSelect.innerHTML = '<option value="">Select...</option>';
+            people.forEach(person => {
+                const option = document.createElement('option');
+                option.value = person.name;
+                option.textContent = person.name;
+                if (person.name === job.projectOwner) {
+                    option.selected = true;
+                }
+                ownerSelect.appendChild(option);
+            });
+        } else {
+            // Fallback to text display if API fails
+            ownerSelect.innerHTML = `<option value="${job.projectOwner || ''}">${job.projectOwner || 'Unknown'}</option>`;
+        }
+    } catch (e) {
+        console.log('Failed to load people:', e);
+        ownerSelect.innerHTML = `<option value="${job.projectOwner || ''}">${job.projectOwner || 'Unknown'}</option>`;
+    }
 }
 
 function closeJobModal() {
@@ -648,10 +677,10 @@ async function saveJobUpdate() {
     const message = $('job-edit-message').value.trim();
     const withClient = $('job-edit-with-client').checked;
     const description = $('job-edit-description').value.trim();
-    const projectOwner = $('job-edit-owner').value.trim();
+    const projectOwner = $('job-edit-owner').value;
     
     btn.disabled = true;
-    btn.textContent = 'Saving...';
+    btn.textContent = 'Updating...';
     
     const payload = { stage, status, withClient };
     if (updateDue) payload.updateDue = updateDue;
@@ -709,7 +738,7 @@ async function saveJobUpdate() {
     } catch (e) {
         console.error('Save failed:', e);
         showToast("Doh, that didn't work.", 'error');
-        btn.textContent = 'Save';
+        btn.textContent = 'Update';
         btn.disabled = false;
     }
 }
@@ -732,15 +761,15 @@ function formatMessage(message) {
     
     // Fix encoding issues
     let text = message
-        .replace(/ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢/g, 'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢')
-        .replace(/ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬"/g, 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“')
-        .replace(/ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢/g, "'");
+        .replace(/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢/g, 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢')
+        .replace(/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬"/g, 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ')
+        .replace(/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢/g, "'");
     
     // Split into lines
     const lines = text.split('\n').map(l => l.trim()).filter(l => l);
     
     // Check if we have bullet points
-    const hasBullets = lines.some(l => /^[ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢\-\*]\s/.test(l));
+    const hasBullets = lines.some(l => /^[ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢\-\*]\s/.test(l));
     
     if (!hasBullets) {
         // No bullets - just join with <br> for line breaks
@@ -752,14 +781,14 @@ function formatMessage(message) {
     let inList = false;
     
     lines.forEach(line => {
-        const isBullet = /^[ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢\-\*]\s/.test(line);
+        const isBullet = /^[ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢\-\*]\s/.test(line);
         
         if (isBullet) {
             if (!inList) {
                 html += '<ul class="dot-list">';
                 inList = true;
             }
-            html += `<li>${line.replace(/^[ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢\-\*]\s*/, '')}</li>`;
+            html += `<li>${line.replace(/^[ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢\-\*]\s*/, '')}</li>`;
         } else {
             if (inList) {
                 html += '</ul>';

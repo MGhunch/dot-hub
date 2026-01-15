@@ -1301,7 +1301,7 @@ body {
     line-height: 1.5;
 }
 .dot-list li::before {
-    content: 'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢';
+    content: 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢';
     position: absolute;
     left: 0;
     color: var(--red);
@@ -1781,7 +1781,7 @@ body {
 }
 
 .notes-list li::before {
-    content: 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢';
+    content: 'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢';
     position: absolute;
     left: 0;
     color: var(--red);
@@ -2177,6 +2177,12 @@ body {
     margin-top: 24px;
     padding-top: 16px;
     border-top: 1px solid var(--grey-100);
+}
+
+.job-modal-footer-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
 }
 
 .job-modal-actions {
