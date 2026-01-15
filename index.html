@@ -40,7 +40,7 @@
             <button class="pin-key" data-digit="9">9</button>
             <button class="pin-key empty"></button>
             <button class="pin-key" data-digit="0">0</button>
-            <button class="pin-key delete" id="pin-delete">âŒ«</button>
+            <button class="pin-key delete" id="pin-delete">Ã¢Å’Â«</button>
         </div>
         <p class="pin-error-msg" id="pin-error">Sorry, try that again</p>
     </div>
@@ -95,7 +95,7 @@
                 <button class="example-btn" data-question="What can Dot do?">What can Dot do?</button>
             </div>
             <footer class="phone-footer">
-                <img src="images/ai2-logo.png" alt="aiÂ²" class="footer-logo">
+                <img src="images/ai2-logo.png" alt="aiÃ‚Â²" class="footer-logo">
             </footer>
         </main>
         
@@ -147,7 +147,7 @@
                 </nav>
             </div>
             <div class="header-right">
-                <img src="images/dot-ai2-logo.png" alt="aiÂ²" class="header-ai-logo">
+                <img src="images/dot-ai2-logo.png" alt="aiÃ‚Â²" class="header-ai-logo">
             </div>
         </header>
 
@@ -271,10 +271,83 @@
         <!-- Desktop Footer (home view only) -->
         <footer class="desktop-footer" id="desktop-footer">
             <div class="footer-left">
-                <img src="images/ai2-logo.png" alt="aiÂ²" class="footer-logo">
+                <img src="images/ai2-logo.png" alt="aiÃ‚Â²" class="footer-logo">
             </div>
-            <div class="footer-right">agency intuition Ã— artificial intelligence</div>
+            <div class="footer-right">agency intuition Ãƒâ€” artificial intelligence</div>
         </footer>
+    </div>
+
+    <!-- Job Edit Modal -->
+    <div class="job-modal-overlay" id="job-edit-modal">
+        <div class="job-modal">
+            <div class="job-modal-header">
+                <span class="job-modal-title" id="job-modal-title">Update Job</span>
+                <button class="job-modal-close" onclick="closeJobModal()">&times;</button>
+            </div>
+            <div class="job-modal-body">
+                <div class="job-form-group">
+                    <label class="job-form-label">Project Name</label>
+                    <input type="text" class="job-form-input" id="job-edit-name">
+                </div>
+                <div class="job-form-group">
+                    <label class="job-form-label">Description</label>
+                    <textarea class="job-form-input job-form-textarea" id="job-edit-description" rows="2"></textarea>
+                </div>
+                <div class="job-form-group">
+                    <label class="job-form-label">Client Owner</label>
+                    <input type="text" class="job-form-input" id="job-edit-owner">
+                </div>
+                <div class="job-form-row">
+                    <div class="job-form-group">
+                        <label class="job-form-label">Stage</label>
+                        <select class="job-form-input" id="job-edit-stage">
+                            <option value="Clarify">Clarify</option>
+                            <option value="Simplify">Simplify</option>
+                            <option value="Craft">Craft</option>
+                            <option value="Refine">Refine</option>
+                            <option value="Deliver">Deliver</option>
+                        </select>
+                    </div>
+                    <div class="job-form-group">
+                        <label class="job-form-label">Status</label>
+                        <select class="job-form-input" id="job-edit-status">
+                            <option value="Incoming">Incoming</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="On Hold">On Hold</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="job-form-row">
+                    <div class="job-form-group">
+                        <label class="job-form-label">Update Due</label>
+                        <input type="date" class="job-form-input" id="job-edit-update-due">
+                    </div>
+                    <div class="job-form-group">
+                        <label class="job-form-label">Live Date</label>
+                        <input type="date" class="job-form-input" id="job-edit-live-date">
+                    </div>
+                </div>
+                <div class="job-form-group">
+                    <label class="job-form-label">New Update</label>
+                    <input type="text" class="job-form-input" id="job-edit-message" placeholder="What's the latest?">
+                </div>
+            </div>
+            <div class="job-modal-footer">
+                <a href="#" class="teams-link" id="job-modal-teams-link" target="_blank" onclick="event.stopPropagation()">&rarr; TEAMS</a>
+                <div class="job-modal-actions">
+                    <div class="with-client-toggle">
+                        <span class="with-client-label">With Client</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="job-edit-with-client">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <button class="job-btn job-btn-secondary" onclick="closeJobModal()">Cancel</button>
+                    <button class="job-btn job-btn-primary" id="job-save-btn" onclick="saveJobUpdate()">Save</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>

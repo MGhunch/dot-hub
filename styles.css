@@ -1301,7 +1301,7 @@ body {
     line-height: 1.5;
 }
 .dot-list li::before {
-    content: 'Ã¢â‚¬Â¢';
+    content: 'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢';
     position: absolute;
     left: 0;
     color: var(--red);
@@ -1781,7 +1781,7 @@ body {
 }
 
 .notes-list li::before {
-    content: 'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢';
+    content: 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢';
     position: absolute;
     left: 0;
     color: var(--red);
@@ -1987,4 +1987,241 @@ body {
 .quarter-context {
     color: var(--grey-300);
     margin-left: 8px;
+}
+
+/* =================================================================
+   UNIVERSAL JOB CARD
+   ================================================================= */
+
+/* Summary line in expanded card */
+.job-summary-line {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--grey-600);
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: var(--grey-50);
+    border-radius: var(--radius-sm);
+    display: inline-block;
+}
+
+/* Recent Activity */
+.recent-activity {
+    margin-bottom: 16px;
+}
+
+.activity-item {
+    font-size: 13px;
+    color: var(--grey-600);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--grey-100);
+    line-height: 1.5;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-item.latest {
+    font-weight: 500;
+    color: var(--grey-800);
+}
+
+.no-activity {
+    font-size: 13px;
+    color: var(--grey-400);
+    font-style: italic;
+    padding: 12px 0;
+}
+
+/* Update button in expanded footer */
+.job-expanded-footer {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--grey-100);
+}
+
+.update-btn {
+    padding: 10px 24px;
+}
+
+/* =================================================================
+   JOB EDIT MODAL
+   ================================================================= */
+
+.job-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.job-modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.job-modal {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(20px);
+    transition: transform 0.2s ease;
+}
+
+.job-modal-overlay.visible .job-modal {
+    transform: translateY(0);
+}
+
+.job-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--grey-100);
+}
+
+.job-modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--grey-800);
+}
+
+.job-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--grey-400);
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+}
+
+.job-modal-close:hover {
+    color: var(--red);
+    background: var(--grey-50);
+}
+
+.job-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.job-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.job-form-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--grey-400);
+}
+
+.job-form-input {
+    padding: 10px 12px;
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--grey-800);
+    transition: border-color 0.15s ease;
+}
+
+.job-form-input:focus {
+    outline: none;
+    border-color: var(--red);
+}
+
+.job-form-textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.job-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.job-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--grey-100);
+}
+
+.job-modal-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.job-btn {
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.job-btn-secondary {
+    background: var(--white);
+    border: 1.5px solid var(--grey-200);
+    color: var(--grey-600);
+}
+
+.job-btn-secondary:hover {
+    border-color: var(--grey-400);
+}
+
+.job-btn-primary {
+    background: var(--red);
+    border: none;
+    color: var(--white);
+}
+
+.job-btn-primary:hover {
+    background: var(--red-dark);
+}
+
+.job-btn-primary:disabled {
+    background: var(--grey-300);
+    cursor: not-allowed;
+}
+
+/* Teams link in modal */
+.job-modal-footer .teams-link {
+    font-size: 11px;
 }

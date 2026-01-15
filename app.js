@@ -523,12 +523,27 @@ function renderResponse({ message, jobs = [], nextPrompt = null }) {
 }
 
 function createJobCard(job, index) {
-    const id = `job-${Date.now()}-${index}`;
+    // Use universal card for Ask Dot results
+    return createUniversalCard(job, `job-${Date.now()}-${index}`);
+}
+
+// ===== UNIVERSAL JOB CARD =====
+function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysAgo = getDaysSinceUpdate(job.lastUpdated);
     
+    // Build summary line: Stage → Live Date · With client
+    let summaryParts = [];
+    if (job.stage) summaryParts.push(job.stage);
+    if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
+    if (job.withClient) summaryParts.push('With client');
+    const summaryLine = summaryParts.join(' · ') || '';
+    
+    // Build recent activity HTML
+    const recentActivity = formatRecentActivity(job.updateHistory);
+    
     return `
-        <div class="job-card" id="${id}">
+        <div class="job-card" id="${id}" data-job="${job.jobNumber}">
             <div class="job-header" data-job-id="${id}">
                 <div class="job-logo">
                     <img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'">
@@ -541,24 +556,168 @@ function createJobCard(job, index) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> - </span>
+                        <span class="dot"> · </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
-                        ${job.withClient ? `<span class="dot"> - </span>${ICON_EXCHANGE} With client` : ''}
                     </div>
                 </div>
             </div>
             <div class="job-expanded">
+                ${summaryLine ? `<div class="job-summary-line">${summaryLine}</div>` : ''}
                 <div class="section-label">The Project</div>
                 <div class="job-description">${job.description || 'No description'}</div>
-                <div class="section-label" style="margin-top:14px">Client Owner</div>
-                <div class="job-owner">${job.projectOwner || 'TBC'}</div>
-                <div class="job-footer">
-                    ${job.channelUrl ? `<a href="${job.channelUrl}" target="_blank" class="teams-link" onclick="event.stopPropagation()">-> TEAMS</a>` : '<span></span>'}
+                <div class="section-label" style="margin-top:14px">Recent Activity</div>
+                ${recentActivity}
+                <div class="job-expanded-footer">
+                    <button class="pill-btn update-btn" onclick="event.stopPropagation(); openJobModal('${job.jobNumber}')">Update</button>
                 </div>
             </div>
         </div>
     `;
 }
+
+function formatRecentActivity(updateHistory) {
+    if (!updateHistory || updateHistory.length === 0) {
+        return '<div class="no-activity">No recent activity</div>';
+    }
+    
+    // Take up to 5 most recent updates
+    const recent = updateHistory.slice(0, 5);
+    
+    let html = '<div class="recent-activity">';
+    recent.forEach((update, i) => {
+        // Handle different formats - could be "12 Jan | Update text" or just text
+        const isFirst = i === 0;
+        html += `<div class="activity-item ${isFirst ? 'latest' : ''}">${update}</div>`;
+    });
+    html += '</div>';
+    
+    return html;
+}
+
+// ===== JOB EDIT MODAL =====
+let currentEditJob = null;
+
+function openJobModal(jobNumber) {
+    const job = state.allJobs.find(j => j.jobNumber === jobNumber);
+    if (!job) return;
+    
+    currentEditJob = job;
+    
+    // Populate modal fields
+    const modal = $('job-edit-modal');
+    if (!modal) return;
+    
+    $('job-modal-title').textContent = jobNumber;
+    $('job-edit-name').value = job.jobName || '';
+    $('job-edit-description').value = job.description || '';
+    $('job-edit-owner').value = job.projectOwner || '';
+    $('job-edit-stage').value = job.stage || 'Clarify';
+    $('job-edit-status').value = job.status || 'Incoming';
+    $('job-edit-update-due').value = formatDateForInput(job.updateDue);
+    $('job-edit-live-date').value = formatDateForInput(job.liveDate);
+    $('job-edit-message').value = '';
+    $('job-edit-with-client').checked = job.withClient || false;
+    
+    // Set Teams link
+    const teamsLink = $('job-modal-teams-link');
+    if (job.channelUrl) {
+        teamsLink.href = job.channelUrl;
+        teamsLink.style.display = 'inline-flex';
+    } else {
+        teamsLink.style.display = 'none';
+    }
+    
+    modal.classList.add('visible');
+}
+
+function closeJobModal() {
+    $('job-edit-modal')?.classList.remove('visible');
+    currentEditJob = null;
+}
+
+async function saveJobUpdate() {
+    if (!currentEditJob) return;
+    
+    const jobNumber = currentEditJob.jobNumber;
+    const btn = $('job-save-btn');
+    
+    const stage = $('job-edit-stage').value;
+    const status = $('job-edit-status').value;
+    const updateDue = $('job-edit-update-due').value;
+    const liveDate = $('job-edit-live-date').value;
+    const message = $('job-edit-message').value.trim();
+    const withClient = $('job-edit-with-client').checked;
+    const description = $('job-edit-description').value.trim();
+    const projectOwner = $('job-edit-owner').value.trim();
+    
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    
+    const payload = { stage, status, withClient };
+    if (updateDue) payload.updateDue = updateDue;
+    if (liveDate) payload.liveDate = liveDate;
+    if (description !== currentEditJob.description) payload.description = description;
+    if (projectOwner !== currentEditJob.projectOwner) payload.projectOwner = projectOwner;
+    
+    try {
+        const promises = [
+            fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+        ];
+        
+        if (message) {
+            promises.push(
+                fetch(`${PROXY_BASE}/proxy/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clientCode: jobNumber.split(' ')[0],
+                        jobNumber,
+                        message
+                    })
+                })
+            );
+        }
+        
+        const responses = await Promise.all(promises);
+        if (!responses.every(r => r.ok)) throw new Error('Update failed');
+        
+        // Update local state
+        const job = state.allJobs.find(j => j.jobNumber === jobNumber);
+        if (job) {
+            job.stage = stage;
+            job.status = status;
+            job.withClient = withClient;
+            if (updateDue) job.updateDue = updateDue;
+            if (liveDate) job.liveDate = liveDate;
+            if (message) job.update = message;
+            if (description) job.description = description;
+            if (projectOwner) job.projectOwner = projectOwner;
+        }
+        
+        showToast('On it.', 'success');
+        closeJobModal();
+        
+        // Refresh WIP if visible
+        if (state.currentView === 'wip') {
+            renderWip();
+        }
+        
+    } catch (e) {
+        console.error('Save failed:', e);
+        showToast("Doh, that didn't work.", 'error');
+        btn.textContent = 'Save';
+        btn.disabled = false;
+    }
+}
+
+// Make modal functions global
+window.openJobModal = openJobModal;
+window.closeJobModal = closeJobModal;
+window.saveJobUpdate = saveJobUpdate;
 
 // ===== SVG ICONS =====
 const ICON_CLOCK = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
@@ -573,15 +732,15 @@ function formatMessage(message) {
     
     // Fix encoding issues
     let text = message
-        .replace(/ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢/g, 'Ã¢â‚¬Â¢')
-        .replace(/ÃƒÂ¢Ã¢â€šÂ¬"/g, 'Ã¢â‚¬â€œ')
-        .replace(/ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢/g, "'");
+        .replace(/ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢/g, 'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢')
+        .replace(/ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬"/g, 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“')
+        .replace(/ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢/g, "'");
     
     // Split into lines
     const lines = text.split('\n').map(l => l.trim()).filter(l => l);
     
     // Check if we have bullet points
-    const hasBullets = lines.some(l => /^[Ã¢â‚¬Â¢\-\*]\s/.test(l));
+    const hasBullets = lines.some(l => /^[ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢\-\*]\s/.test(l));
     
     if (!hasBullets) {
         // No bullets - just join with <br> for line breaks
@@ -593,14 +752,14 @@ function formatMessage(message) {
     let inList = false;
     
     lines.forEach(line => {
-        const isBullet = /^[Ã¢â‚¬Â¢\-\*]\s/.test(line);
+        const isBullet = /^[ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢\-\*]\s/.test(line);
         
         if (isBullet) {
             if (!inList) {
                 html += '<ul class="dot-list">';
                 inList = true;
             }
-            html += `<li>${line.replace(/^[Ã¢â‚¬Â¢\-\*]\s*/, '')}</li>`;
+            html += `<li>${line.replace(/^[ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢\-\*]\s*/, '')}</li>`;
         } else {
             if (inList) {
                 html += '</ul>';
@@ -753,104 +912,16 @@ function renderWipSection(section) {
     if (section.jobs.length === 0) {
         html += `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Nothing to see here</span></div>`;
     } else {
-        section.jobs.forEach(job => { html += section.compact ? createWipCompactCard(job) : createWipCard(job); });
+        section.jobs.forEach((job, i) => {
+            html += createUniversalCard(job, `wip-${section.title.replace(/\s+/g, '-')}-${i}`);
+        });
     }
     return html + '</div>';
 }
 
-function createWipCard(job) {
-    const dueDate = formatDueDate(job.updateDue);
-    const daysAgo = getDaysSinceUpdate(job.lastUpdated);
-    return `
-        <div class="job-card" data-job="${job.jobNumber}">
-            <div class="job-header">
-                <div class="job-logo"><img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'"></div>
-                <div class="job-main">
-                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">${ICON_CHEVRON}</span></div>
-                    <div class="job-update-preview">${job.update || 'No updates yet'}</div>
-                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot"> - </span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot"> - </span>${ICON_EXCHANGE} With client` : ''}</div>
-                </div>
-            </div>
-            <div class="job-expanded">
-                <div class="section-label">The Project</div>
-                <div class="job-description">${job.description || 'No description'}</div>
-                <div class="section-label" style="margin-top:14px">Client Owner</div>
-                <div class="job-owner">${job.projectOwner || 'TBC'}</div>
-                <div class="job-controls">
-                    <div class="control-group"><span class="control-label">Stage</span><select class="control-select" onclick="event.stopPropagation()" data-field="stage"><option ${job.stage==='Clarify'?'selected':''}>Clarify</option><option ${job.stage==='Simplify'?'selected':''}>Simplify</option><option ${job.stage==='Craft'?'selected':''}>Craft</option><option ${job.stage==='Refine'?'selected':''}>Refine</option><option ${job.stage==='Deliver'?'selected':''}>Deliver</option></select></div>
-                    <div class="control-group"><span class="control-label">Status</span><select class="control-select" onclick="event.stopPropagation()" data-field="status"><option ${job.status==='Incoming'?'selected':''}>Incoming</option><option ${job.status==='In Progress'?'selected':''}>In Progress</option><option ${job.status==='On Hold'?'selected':''}>On Hold</option><option ${job.status==='Completed'?'selected':''}>Completed</option></select></div>
-                </div>
-                <div class="job-dates">
-                    <div class="date-group"><span class="control-label">Update Due</span><input type="date" class="date-input" value="${formatDateForInput(job.updateDue)}" onclick="event.stopPropagation()" data-field="updateDue"></div>
-                    <div class="date-group"><span class="control-label">Live Date</span><input type="date" class="date-input" value="${formatDateForInput(job.liveDate)}" onclick="event.stopPropagation()" data-field="liveDate"></div>
-                </div>
-                <div class="section-label">New Update</div>
-                <input type="text" class="update-input" placeholder="What's the latest?" onclick="event.stopPropagation()" data-field="message">
-                <button class="pill-btn" onclick="event.stopPropagation();submitWipUpdate('${job.jobNumber}',this)" style="margin-top:8px">Update</button>
-                <div class="job-footer">
-                    ${job.channelUrl ? `<a href="${job.channelUrl}" class="teams-link" target="_blank" onclick="event.stopPropagation()">-> TEAMS</a>` : '<span></span>'}
-                    <div class="with-client-toggle" onclick="event.stopPropagation()"><span class="with-client-label">With Client</span><label class="toggle"><input type="checkbox" ${job.withClient?'checked':''} onchange="toggleWipWithClient('${job.jobNumber}',this.checked)"><span class="toggle-slider"></span></label></div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function createWipCompactCard(job) {
-    const dueDate = formatDueDate(job.updateDue);
-    const daysAgo = getDaysSinceUpdate(job.lastUpdated);
-    return `
-        <div class="job-card compact" data-job="${job.jobNumber}">
-            <div class="job-header">
-                <div class="job-logo"><img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'"></div>
-                <div class="job-main">
-                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">${ICON_CHEVRON}</span></div>
-                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot"> - </span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo}d</span>${job.withClient ? `<span class="dot"> - </span>${ICON_EXCHANGE} With client` : ''}</div>
-                </div>
-            </div>
-            <div class="job-expanded">
-                <div class="section-label">Update</div>
-                <div class="job-description">${job.update || 'No updates yet'}</div>
-                <div class="job-footer">
-                    ${job.channelUrl ? `<a href="${job.channelUrl}" class="teams-link" target="_blank" onclick="event.stopPropagation()">-> TEAMS</a>` : '<span></span>'}
-                    <span class="job-meta-compact">${job.projectOwner || 'TBC'}</span>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
+// Old submitWipUpdate - redirects to modal
 async function submitWipUpdate(jobNumber, btn) {
-    const card = btn.closest('.job-card');
-    const stage = card.querySelector('[data-field="stage"]')?.value;
-    const status = card.querySelector('[data-field="status"]')?.value;
-    const updateDue = card.querySelector('[data-field="updateDue"]')?.value;
-    const liveDate = card.querySelector('[data-field="liveDate"]')?.value;
-    const message = card.querySelector('[data-field="message"]')?.value.trim();
-    
-    btn.disabled = true; btn.textContent = 'Saving...';
-    
-    const payload = { stage, status };
-    if (updateDue) payload.updateDue = updateDue;
-    if (liveDate) payload.liveDate = liveDate;
-    
-    try {
-        const promises = [fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })];
-        if (message) promises.push(fetch(`${PROXY_BASE}/proxy/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientCode: jobNumber.split(' ')[0], jobNumber, message }) }));
-        
-        const responses = await Promise.all(promises);
-        if (!responses.every(r => r.ok)) throw new Error('Update failed');
-        
-        const job = state.allJobs.find(j => j.jobNumber === jobNumber);
-        if (job) { job.stage = stage; job.status = status; if (updateDue) job.updateDue = updateDue; if (liveDate) job.liveDate = liveDate; if (message) job.update = message; }
-        
-        btn.textContent = 'Ã¢Å“â€œ Done'; btn.classList.add('success');
-        showToast('On it.', 'success');
-        setTimeout(() => { btn.textContent = 'Update'; btn.classList.remove('success'); btn.disabled = false; renderWip(); }, 1500);
-    } catch (e) {
-        btn.textContent = 'Error'; showToast("Doh, that didn't work.", 'error');
-        setTimeout(() => { btn.textContent = 'Update'; btn.disabled = false; }, 2000);
-    }
+    openJobModal(jobNumber);
 }
 
 function toggleWipWithClient(jobNumber, isWithClient) {
