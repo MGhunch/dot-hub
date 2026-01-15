@@ -1680,7 +1680,7 @@ body {
     left: 0;
     right: 0;
     background: rgba(237, 28, 36, 0.15);
-    border: 2px dashed rgba(237, 28, 36, 0.5);
+    border: none;
     border-radius: 3px 3px 0 0;
 }
 
