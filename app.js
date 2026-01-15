@@ -532,12 +532,12 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysAgo = getDaysSinceUpdate(job.lastUpdated);
     
-    // Build summary line: Stage â†’ Live Date Â· With client
+    // Build summary line: Stage Ã¢â€ â€™ Live Date · With client
     let summaryParts = [];
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' Â· ') || '';
+    const summaryLine = summaryParts.join(' · ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -556,7 +556,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> Â· </span>
+                        <span class="dot"> · </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
@@ -759,20 +759,13 @@ const ICON_CHEVRON_RIGHT = `<svg class="chevron-icon" viewBox="0 0 24 24" width=
 function formatMessage(message) {
     if (!message) return '';
     
-    // Fix encoding issues
-    let text = message
-        .replace(/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢/g, 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢')
-        .replace(/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬"/g, 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ')
-        .replace(/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢/g, "'");
-    
     // Split into lines
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+    const lines = message.split('\n').map(l => l.trim()).filter(l => l);
     
     // Check if we have bullet points
-    const hasBullets = lines.some(l => /^[ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢\-\*]\s/.test(l));
+    const hasBullets = lines.some(l => /^[\u2022\-\*]\s/.test(l));
     
     if (!hasBullets) {
-        // No bullets - just join with <br> for line breaks
         return lines.map(l => `<p>${l}</p>`).join('');
     }
     
@@ -781,14 +774,14 @@ function formatMessage(message) {
     let inList = false;
     
     lines.forEach(line => {
-        const isBullet = /^[ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢\-\*]\s/.test(line);
+        const isBullet = /^[\u2022\-\*]\s/.test(line);
         
         if (isBullet) {
             if (!inList) {
                 html += '<ul class="dot-list">';
                 inList = true;
             }
-            html += `<li>${line.replace(/^[ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢\-\*]\s*/, '')}</li>`;
+            html += `<li>${line.replace(/^[\u2022\-\*]\s*/, '')}</li>`;
         } else {
             if (inList) {
                 html += '</ul>';
@@ -802,6 +795,7 @@ function formatMessage(message) {
     
     return html;
 }
+
 
 // ===== HELPERS =====
 function formatDueDate(isoDate) {

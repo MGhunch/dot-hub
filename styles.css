@@ -1301,7 +1301,7 @@ body {
     line-height: 1.5;
 }
 .dot-list li::before {
-    content: 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢';
+    content: '\2022';
     position: absolute;
     left: 0;
     color: var(--red);
@@ -1781,7 +1781,7 @@ body {
 }
 
 .notes-list li::before {
-    content: 'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢';
+    content: '\2022';
     position: absolute;
     left: 0;
     color: var(--red);
