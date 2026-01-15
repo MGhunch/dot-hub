@@ -318,16 +318,15 @@ body {
 .dropdown-item:last-child { border-bottom: none; }
 .dropdown-item:hover { background: var(--grey-50); }
 .dropdown-item:active { background: var(--grey-100); }
-.dropdown-item .chevron {
+.dropdown-item .chevron-icon-right {
     color: var(--red);
     margin-right: 10px;
-    font-weight: 700;
-    font-size: 18px;
+    flex-shrink: 0;
     transition: transform 0.2s var(--ease-out);
 }
-.dropdown-item:hover .chevron { transform: translateX(3px); }
+.dropdown-item:hover .chevron-icon-right { transform: translateX(3px); }
 .dropdown-item.muted { color: var(--grey-400); }
-.dropdown-item.muted .chevron { color: var(--grey-300); }
+.dropdown-item.muted .chevron-icon-right { color: var(--grey-300); }
 
 /* Overlay */
 .overlay {
@@ -1299,7 +1298,7 @@ body {
     line-height: 1.5;
 }
 .dot-list li::before {
-    content: '•';
+    content: 'â€¢';
     position: absolute;
     left: 0;
     color: var(--red);
@@ -1605,11 +1604,14 @@ body {
     cursor: pointer;
     padding: 0;
     color: var(--red);
-    font-size: 16px;
     transition: opacity 0.15s ease;
     line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .chevron-btn:hover { opacity: 0.7; }
+.chevron-btn .chevron-icon { width: 16px; height: 16px; }
 
 /* Tracker Bottom Row (Chart + Notes) */
 .tracker-bottom-row {
@@ -1776,7 +1778,7 @@ body {
 }
 
 .notes-list li::before {
-    content: 'â€¢';
+    content: 'Ã¢â‚¬Â¢';
     position: absolute;
     left: 0;
     color: var(--red);

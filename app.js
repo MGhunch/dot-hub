@@ -543,6 +543,7 @@ const ICON_CLOCK = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" 
 const ICON_REFRESH = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>`;
 const ICON_EXCHANGE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12l-3-3M20 15H8l3 3"/></svg>`;
 const ICON_CHEVRON = `<svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+const ICON_CHEVRON_RIGHT = `<svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>`;
 
 // ===== MESSAGE FORMATTING =====
 function formatMessage(message) {
@@ -550,15 +551,15 @@ function formatMessage(message) {
     
     // Fix encoding issues
     let text = message
-        .replace(/â€¢/g, '•')
-        .replace(/â€"/g, '–')
-        .replace(/â€™/g, "'");
+        .replace(/Ã¢â‚¬Â¢/g, 'â€¢')
+        .replace(/Ã¢â‚¬"/g, 'â€“')
+        .replace(/Ã¢â‚¬â„¢/g, "'");
     
     // Split into lines
     const lines = text.split('\n').map(l => l.trim()).filter(l => l);
     
     // Check if we have bullet points
-    const hasBullets = lines.some(l => /^[•\-\*]\s/.test(l));
+    const hasBullets = lines.some(l => /^[â€¢\-\*]\s/.test(l));
     
     if (!hasBullets) {
         // No bullets - just join with <br> for line breaks
@@ -570,14 +571,14 @@ function formatMessage(message) {
     let inList = false;
     
     lines.forEach(line => {
-        const isBullet = /^[•\-\*]\s/.test(line);
+        const isBullet = /^[â€¢\-\*]\s/.test(line);
         
         if (isBullet) {
             if (!inList) {
                 html += '<ul class="dot-list">';
                 inList = true;
             }
-            html += `<li>${line.replace(/^[•\-\*]\s*/, '')}</li>`;
+            html += `<li>${line.replace(/^[â€¢\-\*]\s*/, '')}</li>`;
         } else {
             if (inList) {
                 html += '</ul>';
@@ -821,7 +822,7 @@ async function submitWipUpdate(jobNumber, btn) {
         const job = state.allJobs.find(j => j.jobNumber === jobNumber);
         if (job) { job.stage = stage; job.status = status; if (updateDue) job.updateDue = updateDue; if (liveDate) job.liveDate = liveDate; if (message) job.update = message; }
         
-        btn.textContent = '✓ Done'; btn.classList.add('success');
+        btn.textContent = 'âœ“ Done'; btn.classList.add('success');
         showToast('On it.', 'success');
         setTimeout(() => { btn.textContent = 'Update'; btn.classList.remove('success'); btn.disabled = false; renderWip(); }, 1500);
     } catch (e) {
@@ -1209,7 +1210,7 @@ function renderTrackerContent() {
                             const chevronDisabled = p._isGrouped ? 'style="color:var(--grey-200);cursor:default;"' : '';
                             return `
                                 <tr>
-                                    <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">></button></td>
+                                    <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">${ICON_CHEVRON_RIGHT}</button></td>
                                     <td class="project-name">${p.jobNumber}  -  ${p.projectName}</td>
                                     <td>${p.owner || ''}</td>
                                     <td>${p.description || ''}</td>
@@ -1243,7 +1244,7 @@ function renderTrackerContent() {
                                 const chevronDisabled = p._isGrouped ? 'style="color:var(--grey-200);cursor:default;"' : '';
                                 return `
                                     <tr>
-                                        <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">></button></td>
+                                        <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">${ICON_CHEVRON_RIGHT}</button></td>
                                         <td class="project-name">${p.jobNumber}  -  ${p.projectName}</td>
                                         <td>${p.owner || ''}</td>
                                         <td>${p.description || ''}</td>
