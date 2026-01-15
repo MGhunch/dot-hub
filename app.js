@@ -1,12 +1,11 @@
 /**
  * Dot Hub - Unified Interface
- * Claude-only version with HANDOFF support
+ * Simplified: Claude responds naturally, frontend renders
  */
 
 // ===== CONFIGURATION =====
 const API_BASE = 'https://dot-remote-api.up.railway.app';
 const PROXY_BASE = 'https://dot-proxy.up.railway.app';
-const HANDOFF_EMAIL = 'michael@hunch.co.nz';
 
 const KEY_CLIENTS = ['ONE', 'ONB', 'ONS', 'SKY', 'TOW'];
 
@@ -127,29 +126,23 @@ function getClientDisplayName(client) { return CLIENT_DISPLAY_NAMES[client.code]
 // ===== INACTIVITY TIMER =====
 function resetInactivityTimer() {
     state.lastActivity = Date.now();
-    
     if (inactivityTimer) clearTimeout(inactivityTimer);
-    
-    inactivityTimer = setTimeout(() => {
-        clearSessionSilently();
-    }, INACTIVITY_TIMEOUT);
+    inactivityTimer = setTimeout(() => clearSessionSilently(), INACTIVITY_TIMEOUT);
 }
 
 function checkIfStale() {
-    const now = Date.now();
-    if (now - state.lastActivity > INACTIVITY_TIMEOUT) {
+    if (Date.now() - state.lastActivity > INACTIVITY_TIMEOUT) {
         clearSessionSilently();
     }
 }
 
 function clearSessionSilently() {
-    // Clear backend context without showing anything
     if (state.currentUser) {
         fetch(`${API_BASE}/claude/clear`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId: state.currentUser.name })
-        }).catch(() => {}); // Silently fail
+        }).catch(() => {});
     }
 }
 
@@ -279,7 +272,7 @@ async function loadJobs() {
 // ===== CONVERSATION =====
 function startConversation(layout) {
     const input = $(layout + '-home-input');
-    const question = input?.value.trim() || 'Check a client';
+    const question = input?.value.trim() || 'What can Dot do?';
     if (layout === 'phone') {
         $('phone-home')?.classList.add('hidden');
         $('phone-conversation')?.classList.add('visible');
@@ -324,73 +317,38 @@ function removeThinkingDots() {
     $('currentThinking')?.remove();
 }
 
-// ===== QUERY PROCESSING (Claude-only) =====
+// ===== QUERY PROCESSING (Simplified) =====
 async function processQuestion(question) {
     resetInactivityTimer();
     addThinkingDots();
     
-    // Log for debugging
     console.log('Query:', question);
     
-    // Send everything to Claude
-    const parsed = await askClaude(question);
+    const response = await askClaude(question);
     
     removeThinkingDots();
     
-    // Log Claude's response
-    console.log('Claude returned:', parsed);
+    console.log('Claude response:', response);
     
-    if (!parsed) {
-        // API error - show graceful fallback
+    if (!response) {
         renderResponse({ 
-            text: "Hmm, I'm having trouble thinking right now. Try again?", 
-            nextPrompt: 'What can Dot do?' 
+            message: "Hmm, I'm having trouble thinking right now. Try again?",
+            nextPrompt: "What can Dot do?"
         });
         return;
     }
     
-    // Use Claude's responseText if provided, otherwise fall back to defaults
-    const responseText = parsed.responseText;
-    
-    // Handle CLARIFY - Dot needs more info
-    if (parsed.coreRequest === 'CLARIFY') {
-        renderResponse({ 
-            text: responseText || "Remind me, which client?",
-            nextPrompt: parsed.nextPrompt
-        });
-        return;
+    // Get jobs if requested
+    let jobs = [];
+    if (response.jobs?.show) {
+        jobs = getFilteredJobsFromResponse(response.jobs);
     }
     
-    // Handle HANDOFF - needs a human
-    if (parsed.coreRequest === 'HANDOFF') {
-        const handoffQuestion = parsed.handoffQuestion || question;
-        renderHandoff(responseText || "That's a question for a human...", handoffQuestion, parsed.nextPrompt);
-        return;
-    }
-    
-    // Handle UNKNOWN - outside Dot's scope
-    if (parsed.understood === false || parsed.coreRequest === 'UNKNOWN') {
-        renderResponse({ 
-            text: responseText || "That's outside my wheelhouse. I just do Hunch stuff!",
-            nextPrompt: parsed.nextPrompt
-        });
-        return;
-    }
-    
-    // Execute the parsed request
-    switch (parsed.coreRequest) {
-        case 'DUE': executeDue(parsed); break;
-        case 'FIND': executeFind(parsed); break;
-        case 'UPDATE': executeUpdate(parsed); break;
-        case 'TRACKER': executeTracker(parsed); break;
-        case 'QUERY': executeQuery(parsed); break;
-        case 'LOG': executeLog(parsed); break;
-        case 'HELP': executeHelp(parsed); break;
-        default: executeHelp(parsed);
-    }
-    
-    const area = getActiveConversationArea();
-    if (area) area.scrollTop = area.scrollHeight;
+    renderResponse({
+        message: response.message,
+        jobs: jobs,
+        nextPrompt: response.nextPrompt
+    });
 }
 
 // ===== CLAUDE API =====
@@ -418,382 +376,150 @@ async function askClaude(question) {
     }
 }
 
-// ===== EXECUTORS =====
-function executeDue(parsed) {
-    const jobs = getFilteredJobs(parsed.modifiers);
-    const client = parsed.modifiers.client ? state.allClients.find(c => c.code === parsed.modifiers.client) : null;
-    const responseText = parsed.responseText;
-    
-    if (parsed.modifiers.dateRange === 'next') {
-        if (jobs.length === 0) {
-            renderResponse({ text: responseText || (client ? `No upcoming deadlines for ${client.name}.` : 'No upcoming deadlines.'), nextPrompt: parsed.nextPrompt });
-        } else {
-            const nextJob = jobs[0];
-            renderResponse({ text: responseText || `Next up is <strong>${nextJob.jobNumber} | ${nextJob.jobName}</strong>, due ${formatDueDate(nextJob.updateDue)}.`, jobs: [nextJob], nextPrompt: parsed.nextPrompt });
-        }
-        return;
-    }
-    
-    const dateLabels = { today: 'today', tomorrow: 'by tomorrow', week: 'this week' };
-    const dateLabel = dateLabels[parsed.modifiers.dateRange] || 'coming up';
-    
-    if (jobs.length === 0) {
-        renderResponse({ text: responseText || (client ? `Nothing due ${dateLabel} for ${client.name}! ðŸŽ‰` : `Nothing due ${dateLabel}! ðŸŽ‰`), nextPrompt: parsed.nextPrompt });
-    } else {
-        renderResponse({ text: responseText || (client ? `${jobs.length} job${jobs.length === 1 ? '' : 's'} due ${dateLabel} for ${client.name}:` : `${jobs.length} job${jobs.length === 1 ? '' : 's'} due ${dateLabel}:`), jobs: jobs, nextPrompt: parsed.nextPrompt });
-    }
-}
-
-function executeFind(parsed) {
-    const client = parsed.modifiers.client ? state.allClients.find(c => c.code === parsed.modifiers.client) : null;
-    const responseText = parsed.responseText;
-    
-    // If we have search terms, search across jobs
-    if (parsed.searchTerms && parsed.searchTerms.length > 0) {
-        const jobs = searchJobs(parsed.modifiers, parsed.searchTerms);
-        if (jobs.length === 0) {
-            renderResponse({ text: responseText || (client ? `Couldn't find a ${client.name} job matching that.` : `Couldn't find a job matching that.`), nextPrompt: parsed.nextPrompt });
-        } else if (jobs.length === 1) {
-            renderResponse({ text: responseText || `Found it! <strong>${jobs[0].jobNumber} | ${jobs[0].jobName}</strong>`, jobs: [jobs[0]], nextPrompt: parsed.nextPrompt });
-        } else {
-            renderResponse({ text: responseText || `Found ${jobs.length} jobs that might match:`, jobs: jobs.slice(0, 5), nextPrompt: parsed.nextPrompt });
-        }
-        return;
-    }
-    
-    // If we have a status or withClient filter
-    if (parsed.modifiers.status === 'On Hold' || parsed.modifiers.status === 'Completed' || parsed.modifiers.withClient === true) {
-        const jobs = getFilteredJobs(parsed.modifiers);
-        const statusLabel = parsed.modifiers.withClient ? 'with client' : parsed.modifiers.status?.toLowerCase();
-        if (jobs.length === 0) {
-            renderResponse({ text: responseText || (client ? `No ${statusLabel} jobs for ${client.name}.` : `No jobs ${statusLabel} right now.`), nextPrompt: parsed.nextPrompt });
-        } else {
-            renderResponse({ text: responseText || (client ? `${jobs.length} ${statusLabel} job${jobs.length === 1 ? '' : 's'} for ${client.name}:` : `${jobs.length} job${jobs.length === 1 ? '' : 's'} ${statusLabel}:`), jobs: jobs, nextPrompt: parsed.nextPrompt });
-        }
-        return;
-    }
-    
-    // If we have a client, show their jobs
-    if (client) {
-        const jobs = getFilteredJobs(parsed.modifiers);
-        if (jobs.length === 0) {
-            renderResponse({ text: responseText || `No active jobs for ${client.name}.`, nextPrompt: parsed.nextPrompt });
-        } else {
-            renderResponse({ text: responseText || `Here's what's on for ${client.name}:`, jobs: jobs, nextPrompt: parsed.nextPrompt });
-        }
-        return;
-    }
-    
-    // No client, no filters - show client picker
-    renderClientPicker();
-}
-
-function executeUpdate(parsed) {
-    const responseText = parsed.responseText;
-    if (parsed.modifiers.client) {
-        const client = state.allClients.find(c => c.code === parsed.modifiers.client);
-        renderResponse({ text: responseText || `Which ${client?.name} job do you want to update?`, nextPrompt: parsed.nextPrompt });
-    } else {
-        renderResponse({ text: responseText || "Which job do you want to update? Tell me the client and I'll help you find it.", nextPrompt: parsed.nextPrompt });
-    }
-}
-
-async function executeTracker(parsed) {
-    const client = parsed.modifiers?.client;
-    const period = parsed.modifiers?.period || 'this_month';
-    
-    // If no client specified, just open the tracker
-    if (!client) {
-        renderResponse({ text: parsed.responseText || "Opening Tracker...", nextPrompt: null });
-        setTimeout(() => navigateTo('tracker'), 500);
-        return;
-    }
-    
-    // Fetch the summary for inline display
-    try {
-        const response = await fetch(`${API_BASE}/tracker/summary?client=${client}&period=${period}`);
-        
-        if (!response.ok) {
-            renderResponse({ text: "Hmm, couldn't pull those numbers. Try opening the tracker?", nextPrompt: "Open Tracker" });
-            return;
-        }
-        
-        const data = await response.json();
-        
-        // Format currency
-        const formatMoney = (n) => {
-            if (n >= 1000) return '$' + (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + 'K';
-            return '$' + n;
-        };
-        
-        // Build the response
-        const clientName = data.client;
-        const spent = formatMoney(data.spent);
-        const remaining = formatMoney(Math.abs(data.remaining));
-        const percent = data.percentUsed;
-        
-        let statusText = '';
-        if (data.status === 'over') {
-            statusText = `${clientName}'s ${data.period}: ${spent} spent, ${remaining} over budget! ðŸ˜¬`;
-        } else if (data.status === 'high') {
-            statusText = `${clientName}'s ${data.period}: ${spent} spent, ${remaining} left (${percent}% used)`;
-        } else {
-            statusText = `${clientName}'s ${data.period}: ${spent} spent, ${remaining} still to play with ðŸ‘`;
-        }
-        
-        renderResponse({ 
-            text: statusText, 
-            nextPrompt: parsed.nextPrompt || "Open full tracker?"
-        });
-        
-    } catch (e) {
-        console.log('Tracker fetch error:', e);
-        renderResponse({ text: "Couldn't grab those numbers right now. Try the tracker directly?", nextPrompt: "Open Tracker" });
-    }
-}
-
-function executeQuery(parsed) {
-    // TODO: Wire up additional Airtable queries for contacts, details, etc.
-    // For now, acknowledge and suggest this is coming
-    renderResponse({ 
-        text: parsed.responseText || "I can look that up! (This feature is coming soon)", 
-        nextPrompt: parsed.nextPrompt 
-    });
-}
-
-function executeHelp(parsed) {
-    renderResponse({ 
-        text: parsed.responseText || `I'm Dot, Hunch's admin-bot! I can help you:<br><br>â€¢ Check on jobs and client work<br>â€¢ See what's due or coming up<br>â€¢ Find contact info<br>â€¢ Look up budget and spend<br><br>Try asking about a client or what's due!`, 
-        nextPrompt: parsed.nextPrompt || "What's most urgent?"
-    });
-}
-
-async function executeLog(parsed) {
-    // If we have a title, we're logging something
-    if (parsed.logTitle) {
-        try {
-            const response = await fetch(`${API_BASE}/log`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: parsed.logTitle,
-                    notes: parsed.logNotes || ''
-                })
-            });
-            
-            if (response.ok) {
-                renderResponse({
-                    text: parsed.responseText || `Noted! Added "${parsed.logTitle}" to the list.`,
-                    nextPrompt: parsed.nextPrompt
-                });
-            } else {
-                renderResponse({
-                    text: "Hmm, couldn't save that. Try again?",
-                    nextPrompt: parsed.nextPrompt
-                });
-            }
-        } catch (e) {
-            renderResponse({
-                text: "Hmm, couldn't save that. Try again?",
-                nextPrompt: parsed.nextPrompt
-            });
-        }
-        return;
-    }
-    
-    // Otherwise, we're reading the list
-    try {
-        const response = await fetch(`${API_BASE}/log`);
-        const data = await response.json();
-        const items = data.items || [];
-        
-        if (items.length === 0) {
-            renderResponse({
-                text: parsed.responseText || "Nothing on the list yet!",
-                nextPrompt: parsed.nextPrompt || "Log a bug?"
-            });
-            return;
-        }
-        
-        const done = items.filter(i => i.done).length;
-        const todo = items.filter(i => !i.done);
-        
-        let listHtml = todo.map(i => `â€¢ ${i.title}`).join('<br>');
-        if (done > 0) {
-            listHtml += `<br><br><em>${done} item${done === 1 ? '' : 's'} done</em>`;
-        }
-        
-        renderResponse({
-            text: (parsed.responseText || `${items.length} thing${items.length === 1 ? '' : 's'} on the list:`) + `<br><br>${listHtml}`,
-            nextPrompt: parsed.nextPrompt
-        });
-    } catch (e) {
-        renderResponse({
-            text: "Couldn't fetch the list right now.",
-            nextPrompt: parsed.nextPrompt
-        });
-    }
-}
-
 // ===== JOB FILTERING =====
-function getFilteredJobs(modifiers, options = {}) {
-    let jobs = [...state.allJobs];
-    if (modifiers.client) jobs = jobs.filter(j => j.clientCode === modifiers.client);
-    if (!options.includeAllStatuses && modifiers.status) jobs = jobs.filter(j => j.status === modifiers.status);
-    if (modifiers.withClient === true) jobs = jobs.filter(j => j.withClient === true);
-    else if (modifiers.withClient === false) jobs = jobs.filter(j => !j.withClient);
+function getFilteredJobsFromResponse(jobFilter) {
+    if (!jobFilter) return [];
     
-    if (modifiers.dateRange) {
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-        jobs = jobs.filter(j => {
-            if (!j.updateDue) return false;
-            const dueDate = new Date(j.updateDue); dueDate.setHours(0, 0, 0, 0);
-            switch (modifiers.dateRange) {
-                case 'today': return dueDate <= today;
-                case 'tomorrow': return dueDate <= tomorrow;
-                case 'week': const weekFromNow = new Date(today); weekFromNow.setDate(weekFromNow.getDate() + 7); return dueDate <= weekFromNow;
-                default: return true;
-            }
-        });
+    let jobs = [...state.allJobs];
+    
+    // Filter by client
+    if (jobFilter.client) {
+        jobs = jobs.filter(j => j.clientCode === jobFilter.client);
     }
     
-    // Apply default status filter if not specified
-    if (!modifiers.status && !options.includeAllStatuses) {
+    // Filter by status
+    if (jobFilter.status) {
+        jobs = jobs.filter(j => j.status === jobFilter.status);
+    } else {
+        // Default to active jobs only
         jobs = jobs.filter(j => j.status === 'In Progress');
     }
     
-    // Sorting
-    const sortBy = modifiers.sortBy || 'dueDate';
-    const sortOrder = modifiers.sortOrder || 'asc';
+    // Filter by with client
+    if (jobFilter.withClient === true) {
+        jobs = jobs.filter(j => j.withClient === true);
+    } else if (jobFilter.withClient === false) {
+        jobs = jobs.filter(j => !j.withClient);
+    }
     
-    jobs.sort((a, b) => {
-        let aVal, bVal;
-        switch (sortBy) {
-            case 'updated':
-                aVal = a.lastUpdated ? new Date(a.lastUpdated) : new Date(0);
-                bVal = b.lastUpdated ? new Date(b.lastUpdated) : new Date(0);
-                break;
-            case 'jobNumber':
-                aVal = a.jobNumber || '';
-                bVal = b.jobNumber || '';
-                break;
-            case 'dueDate':
-            default:
-                aVal = a.updateDue ? new Date(a.updateDue) : new Date('9999-12-31');
-                bVal = b.updateDue ? new Date(b.updateDue) : new Date('9999-12-31');
-        }
+    // Filter by date range
+    if (jobFilter.dateRange) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
-        if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
-        if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
-        return 0;
+        jobs = jobs.filter(j => {
+            if (!j.updateDue) return false;
+            const due = new Date(j.updateDue);
+            due.setHours(0, 0, 0, 0);
+            
+            switch (jobFilter.dateRange) {
+                case 'today':
+                    return due <= today;
+                case 'tomorrow':
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    return due <= tomorrow;
+                case 'week':
+                    const week = new Date(today);
+                    week.setDate(week.getDate() + 7);
+                    return due <= week;
+                default:
+                    return true;
+            }
+        });
+    }
+    
+    // Search filter
+    if (jobFilter.search?.length) {
+        jobs = jobs.filter(job => {
+            const searchable = `${job.jobNumber} ${job.jobName} ${job.description || ''} ${job.update || ''}`.toLowerCase();
+            return jobFilter.search.some(term => searchable.includes(term.toLowerCase()));
+        });
+    }
+    
+    // Sort by due date
+    jobs.sort((a, b) => {
+        const aDate = a.updateDue ? new Date(a.updateDue) : new Date('9999-12-31');
+        const bDate = b.updateDue ? new Date(b.updateDue) : new Date('9999-12-31');
+        return aDate - bDate;
+    });
+    
+    // Exclude 000 and 999 jobs
+    jobs = jobs.filter(j => {
+        const num = j.jobNumber.split(' ')[1];
+        return num !== '000' && num !== '999';
     });
     
     return jobs;
 }
 
-function searchJobs(modifiers, searchTerms) {
-    let jobs = getFilteredJobs({ client: modifiers.client }, { includeAllStatuses: true });
-    if (!searchTerms || searchTerms.length === 0) return jobs;
-    const scored = jobs.map(job => ({ job, score: scoreJobMatch(job, searchTerms) })).filter(item => item.score > 0).sort((a, b) => b.score - a.score);
-    return scored.map(item => item.job);
-}
-
-function scoreJobMatch(job, searchTerms) {
-    const jobNumber = (job.jobNumber || '').toLowerCase();
-    const jobName = (job.jobName || '').toLowerCase();
-    const jobDesc = (job.description || '').toLowerCase();
-    const jobUpdate = (job.update || '').toLowerCase();
-    let score = 0;
-    for (const term of searchTerms) {
-        const t = term.toLowerCase();
-        if (jobNumber.includes(t)) score += 20;
-        if (jobName.includes(t)) score += 10;
-        if (jobDesc.includes(t)) score += 5;
-        if (jobUpdate.includes(t)) score += 2;
-    }
-    return score;
-}
-
-// ===== RENDERERS =====
-function renderResponse({ text, jobs = [], nextPrompt = null }) {
+// ===== RENDERING =====
+function renderResponse({ message, jobs = [], nextPrompt = null }) {
     const area = getActiveConversationArea();
     const response = document.createElement('div');
     response.className = 'dot-response fade-in';
-    let html = `<p class="dot-text">${text}</p>`;
+    
+    let html = `<p class="dot-text">${message}</p>`;
     
     if (jobs.length > 0) {
         html += '<div class="job-cards">';
-        jobs.forEach((job, i) => { html += createConversationJobCard(job, i); });
+        jobs.forEach((job, i) => {
+            html += createJobCard(job, i);
+        });
         html += '</div>';
     }
     
-    // Single contextual prompt from Claude (if provided)
     if (nextPrompt) {
-        html += `<div class="smart-prompts"><button class="smart-prompt" data-question="${nextPrompt}"><img src="images/dot-sitting.png" class="prompt-dot">${nextPrompt}</button></div>`;
+        html += `<div class="smart-prompts">
+            <button class="smart-prompt" data-question="${nextPrompt}">
+                <img src="images/dot-sitting.png" class="prompt-dot">${nextPrompt}
+            </button>
+        </div>`;
     }
     
     response.innerHTML = html;
     area?.appendChild(response);
-    bindDynamicElements(response);
+    
+    // Bind click handlers
+    response.querySelectorAll('.smart-prompt').forEach(btn => {
+        btn.addEventListener('click', () => {
+            addUserMessage(btn.dataset.question);
+            processQuestion(btn.dataset.question);
+        });
+    });
+    
+    response.querySelectorAll('.job-header[data-job-id]').forEach(header => {
+        header.addEventListener('click', () => {
+            document.getElementById(header.dataset.jobId)?.classList.toggle('expanded');
+        });
+    });
+    
+    if (area) area.scrollTop = area.scrollHeight;
 }
 
-function renderHandoff(text, question, nextPrompt = null) {
-    const area = getActiveConversationArea();
-    const response = document.createElement('div');
-    response.className = 'dot-response fade-in';
-    
-    const subject = encodeURIComponent('Question for a human');
-    const body = encodeURIComponent(`Dot couldn't help with this one:\n\n"${question}"\n\nCan you take a look?`);
-    const mailtoLink = `mailto:${HANDOFF_EMAIL}?subject=${subject}&body=${body}`;
-    
-    let html = `<p class="dot-text">${text}</p>`;
-    html += `<div class="smart-prompts"><a href="${mailtoLink}" class="smart-prompt handoff-btn">Send an email</a></div>`;
-    
-    if (nextPrompt) {
-        html += `<div class="smart-prompts" style="margin-top: 8px;"><button class="smart-prompt" data-question="${nextPrompt}"><img src="images/dot-sitting.png" class="prompt-dot">${nextPrompt}</button></div>`;
-    }
-    
-    response.innerHTML = html;
-    area?.appendChild(response);
-    bindDynamicElements(response);
-}
-
-function renderClientPicker() {
-    const area = getActiveConversationArea();
-    const clientsWithCounts = getClientsWithJobCounts();
-    const keyClients = clientsWithCounts.filter(c => KEY_CLIENTS.includes(c.code));
-    const hasOther = clientsWithCounts.some(c => !KEY_CLIENTS.includes(c.code));
-    
-    const response = document.createElement('div');
-    response.className = 'dot-response fade-in';
-    response.innerHTML = `
-        <p class="dot-text">Which client?</p>
-        <div class="client-cards">
-            ${keyClients.map(c => `<div class="client-card" data-client="${c.code}"><div><div class="client-name">${getClientDisplayName(c)}</div><div class="client-count">${c.jobCount} active job${c.jobCount === 1 ? '' : 's'}</div></div><span class="card-chevron">></span></div>`).join('')}
-            ${hasOther ? `<div class="client-card other-clients-btn"><div><div class="client-name">Other clients</div></div><span class="card-chevron">></span></div>` : ''}
-        </div>
-    `;
-    area?.appendChild(response);
-    bindDynamicElements(response);
-}
-
-function getClientsWithJobCounts() {
-    return state.allClients.map(c => ({ ...c, jobCount: state.allJobs.filter(j => j.clientCode === c.code && j.status === 'In Progress').length })).filter(c => c.jobCount > 0);
-}
-
-function createConversationJobCard(job, index) {
+function createJobCard(job, index) {
     const id = `job-${Date.now()}-${index}`;
     const dueDate = formatDueDate(job.updateDue);
     const daysAgo = getDaysSinceUpdate(job.lastUpdated);
+    
     return `
         <div class="job-card" id="${id}">
             <div class="job-header" data-job-id="${id}">
-                <div class="job-logo"><img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'"></div>
+                <div class="job-logo">
+                    <img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'">
+                </div>
                 <div class="job-main">
-                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">v</span></div>
+                    <div class="job-title-row">
+                        <span class="job-title">${job.jobNumber} | ${job.jobName}</span>
+                        <span class="expand-icon">v</span>
+                    </div>
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
-                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot"> - </span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot"> - </span>${ICON_EXCHANGE} With client` : ''}</div>
+                    <div class="job-meta-compact">
+                        ${ICON_CLOCK} ${dueDate}
+                        <span class="dot"> - </span>
+                        ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
+                        ${job.withClient ? `<span class="dot"> - </span>${ICON_EXCHANGE} With client` : ''}
+                    </div>
                 </div>
             </div>
             <div class="job-expanded">
@@ -807,45 +533,6 @@ function createConversationJobCard(job, index) {
             </div>
         </div>
     `;
-}
-
-function bindDynamicElements(container) {
-    container.querySelectorAll('.smart-prompt').forEach(btn => {
-        if (!btn.classList.contains('handoff-btn')) {
-            btn.addEventListener('click', () => { addUserMessage(btn.dataset.question); processQuestion(btn.dataset.question); });
-        }
-    });
-    container.querySelectorAll('.client-card:not(.other-clients-btn)').forEach(card => {
-        card.addEventListener('click', () => {
-            const client = state.allClients.find(c => c.code === card.dataset.client);
-            addUserMessage(client?.name || card.dataset.client);
-            processQuestion(client?.name || card.dataset.client);
-        });
-    });
-    container.querySelectorAll('.other-clients-btn').forEach(btn => {
-        btn.addEventListener('click', () => { addUserMessage('Other clients'); showOtherClients(); });
-    });
-    container.querySelectorAll('.job-header[data-job-id]').forEach(header => {
-        header.addEventListener('click', () => $(header.dataset.jobId)?.classList.toggle('expanded'));
-    });
-}
-
-function showOtherClients() {
-    const area = getActiveConversationArea();
-    addThinkingDots();
-    setTimeout(() => {
-        removeThinkingDots();
-        const otherClients = getClientsWithJobCounts().filter(c => !KEY_CLIENTS.includes(c.code));
-        const response = document.createElement('div');
-        response.className = 'dot-response fade-in';
-        response.innerHTML = `
-            <p class="dot-text">Other clients:</p>
-            <div class="client-cards">${otherClients.map(c => `<div class="client-card" data-client="${c.code}"><div><div class="client-name">${getClientDisplayName(c)}</div><div class="client-count">${c.jobCount} active job${c.jobCount === 1 ? '' : 's'}</div></div><span class="card-chevron">></span></div>`).join('')}</div>
-        `;
-        area?.appendChild(response);
-        bindDynamicElements(response);
-        if (area) area.scrollTop = area.scrollHeight;
-    }, 400);
 }
 
 // ===== SVG ICONS =====
@@ -874,7 +561,11 @@ function getLogoUrl(code) { const logoCode = (code === 'ONB' || code === 'ONS') 
 
 function showToast(message, type) {
     const toast = $('toast');
-    if (toast) { toast.textContent = message; toast.className = `toast ${type} visible`; setTimeout(() => toast.classList.remove('visible'), 2500); }
+    if (toast) { 
+        toast.textContent = message; 
+        toast.className = `toast ${type} visible`; 
+        setTimeout(() => toast.classList.remove('visible'), 2500); 
+    }
 }
 
 // ===== WIP VIEW =====
@@ -1078,7 +769,7 @@ async function submitWipUpdate(jobNumber, btn) {
         const job = state.allJobs.find(j => j.jobNumber === jobNumber);
         if (job) { job.stage = stage; job.status = status; if (updateDue) job.updateDue = updateDue; if (liveDate) job.liveDate = liveDate; if (message) job.update = message; }
         
-        btn.textContent = 'âœ“ Done'; btn.classList.add('success');
+        btn.textContent = '✓ Done'; btn.classList.add('success');
         showToast('On it.', 'success');
         setTimeout(() => { btn.textContent = 'Update'; btn.classList.remove('success'); btn.disabled = false; renderWip(); }, 1500);
     } catch (e) {
@@ -1098,15 +789,14 @@ function toggleWipWithClient(jobNumber, isWithClient) {
 }
 
 // ===== TRACKER VIEW =====
+// (Keeping tracker code as-is since it's separate from Ask Dot)
 
-// Tracker data storage
 let trackerClients = {};
 let trackerData = [];
 let trackerCurrentMonth = 'January';
 let trackerIsQuarterView = false;
 let trackerCurrentEditData = null;
 
-// Calendar quarters (fixed) - clients just label them differently
 const calendarQuarters = {
     'Q1-cal': { months: ['January', 'February', 'March'], label: 'Jan > Mar' },
     'Q2-cal': { months: ['April', 'May', 'June'], label: 'Apr > Jun' },
@@ -1114,16 +804,13 @@ const calendarQuarters = {
     'Q4-cal': { months: ['October', 'November', 'December'], label: 'Oct > Dec' }
 };
 
-// Current calendar quarter (Jan-Mar 2026)
 const currentCalendarQuarter = 'Q1-cal';
 
-// Map client's Q label to calendar quarter
 const clientQuarterLabels = {
     'ONE': 'Q4', 'ONS': 'Q4', 'ONB': 'Q4',
     'SKY': 'Q3', 'TOW': 'Q2', 'FIS': 'Q4'
 };
 
-// Fallback data
 const fallbackTrackerClients = [
     { code: 'ONS', name: 'One NZ - Simplification', committed: 25000, rollover: 0, rolloverUseIn: '', yearEnd: 'March', currentQuarter: 'Q4' },
     { code: 'ONE', name: 'One NZ - Marketing', committed: 12500, rollover: 2400, rolloverUseIn: 'JAN-MAR', yearEnd: 'March', currentQuarter: 'Q4' },
@@ -1173,7 +860,6 @@ function getPreviousQuarter(clientCode) {
 }
 
 function getTrackerMonthSpend(client, month) {
-    // Only count Project budget for hero numbers (exclude Extra budget and Project on us)
     return trackerData.filter(d => d.client === client && d.month === month && d.spendType === 'Project budget').reduce((sum, d) => sum + d.spend, 0);
 }
 
@@ -1209,7 +895,6 @@ function populateTrackerClients(data) {
         };
     });
     
-    // Populate dropdown
     const menu = $('tracker-client-menu');
     const trigger = $('tracker-client-trigger');
     if (!menu || !trigger) return;
@@ -1257,7 +942,6 @@ async function loadTrackerData(clientCode) {
 }
 
 function setupTrackerDropdowns() {
-    // Client dropdown
     setupTrackerDropdown('tracker-client-trigger', 'tracker-client-menu', async (value) => {
         state.trackerClient = value;
         localStorage.setItem('trackerLastClient', value);
@@ -1267,13 +951,11 @@ function setupTrackerDropdowns() {
         renderTrackerContent();
     });
     
-    // Month dropdown
     setupTrackerDropdown('tracker-month-trigger', 'tracker-month-menu', (value) => {
         trackerCurrentMonth = value;
         renderTrackerContent();
     });
     
-    // Mode toggle (Month/Quarter)
     const toggle = $('tracker-mode-switch');
     const labelMonth = $('tracker-mode-spend');
     const labelQuarter = $('tracker-mode-pipeline');
@@ -1335,23 +1017,17 @@ async function renderTracker() {
     const content = $('tracker-content');
     if (!content) return;
     
-    // Show loading
     content.innerHTML = `<div class="loading"><div class="loading-spinner"></div><p>Loading tracker...</p></div>`;
     
-    // Load clients if not already loaded
     if (Object.keys(trackerClients).length === 0) {
         await loadTrackerClients();
     }
     
-    // Load data for current client
     if (state.trackerClient) {
         await loadTrackerData(state.trackerClient);
     }
     
-    // Setup dropdowns
     setupTrackerDropdowns();
-    
-    // Render content
     renderTrackerContent();
 }
 
@@ -1374,7 +1050,6 @@ function renderTrackerContent() {
     const labelMap = { 'Jan > Mar': 'JAN-MAR', 'Apr > Jun': 'APR-JUN', 'Jul > Sep': 'JUL-SEP', 'Oct > Dec': 'OCT-DEC' };
     const viewedQuarterKey = labelMap[qInfo.label] || '';
     
-    // Calculate spend
     let toDate, projects, monthsInQuarter;
     if (trackerIsQuarterView) {
         toDate = qInfo.months.reduce((sum, m) => sum + getTrackerMonthSpend(state.trackerClient, m), 0);
@@ -1392,11 +1067,9 @@ function renderTrackerContent() {
     const isOver = toDate > totalBudget;
     const showRollover = rollover > 0 && rolloverUseIn && viewedQuarterKey === rolloverUseIn;
     
-    // Separate projects by type
     const mainProjects = projects.filter(p => p.spendType === 'Project budget');
     const otherProjects = projects.filter(p => p.spendType === 'Extra budget' || p.spendType === 'Project on us');
     
-    // Group for quarter view
     const groupProjects = (arr) => {
         if (!trackerIsQuarterView) return arr;
         const grouped = {};
@@ -1409,7 +1082,6 @@ function renderTrackerContent() {
     };
     
     const displayMainProjects = groupProjects(mainProjects).sort((a, b) => {
-        // Put 000 (Always on) at the bottom
         const aNum = a.jobNumber.split(' ')[1] || '';
         const bNum = b.jobNumber.split(' ')[1] || '';
         if (aNum === '000') return 1;
@@ -1418,7 +1090,6 @@ function renderTrackerContent() {
     });
     const displayOtherProjects = groupProjects(otherProjects);
     
-    // Calculate spend to date for each job (only months BEFORE current month)
     const spendToDate = {};
     if (!trackerIsQuarterView) {
         const monthOrder = ['October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September'];
@@ -1426,7 +1097,6 @@ function renderTrackerContent() {
         
         trackerData.forEach(d => {
             const dataMonthIndex = monthOrder.indexOf(d.month);
-            // Only count if this month comes before the current viewed month
             if (dataMonthIndex !== -1 && currentMonthIndex !== -1 && dataMonthIndex < currentMonthIndex) {
                 spendToDate[d.jobNumber] = (spendToDate[d.jobNumber] || 0) + d.spend;
             }
@@ -1438,7 +1108,6 @@ function renderTrackerContent() {
     
     content.innerHTML = `
         <div class="tracker-inner">
-            <!-- Numbers Section -->
             <div class="section-title"><span>${numbersTitle}</span> <span class="quarter-context">${qInfo.quarter} (${qInfo.label})</span></div>
             <div class="numbers-section">
                 <div class="numbers-grid">
@@ -1466,7 +1135,6 @@ function renderTrackerContent() {
                 ` : ''}
             </div>
             
-            <!-- Projects Table -->
             <div class="section-title">The Work</div>
             <div class="projects-section">
                 <table class="projects-table">
@@ -1503,7 +1171,6 @@ function renderTrackerContent() {
             </div>
             
             ${displayOtherProjects.length > 0 ? `
-                <!-- Other Work Table -->
                 <div class="section-title">Other Stuff</div>
                 <div class="projects-section">
                     <table class="projects-table">
@@ -1538,7 +1205,6 @@ function renderTrackerContent() {
                 </div>
             ` : ''}
             
-            <!-- Bottom Row: Chart + Notes -->
             <div class="tracker-bottom-row">
                 <div>
                     <div class="section-title">Tracker</div>
@@ -1576,7 +1242,6 @@ function renderTrackerContent() {
             </div>
         </div>
         
-        <!-- Edit Modal -->
         <div class="tracker-modal-overlay" id="tracker-edit-modal">
             <div class="tracker-modal">
                 <div class="tracker-modal-header">
@@ -1635,10 +1300,7 @@ function renderTrackerContent() {
         </div>
     `;
     
-    // Render chart after DOM is ready
     setTimeout(renderTrackerChart, 0);
-    
-    // Setup modal listeners
     setupTrackerModalListeners();
 }
 
@@ -1652,13 +1314,11 @@ function renderTrackerChart() {
     const chartHeight = 160;
     const yMax = committed + 10000;
     
-    // Previous quarter spends
     const prevSpends = prevQ.months.map(m => 
         trackerData.filter(d => d.client === state.trackerClient && d.month === m && d.spendType === 'Project budget')
             .reduce((sum, d) => sum + d.spend, 0)
     );
     
-    // Current quarter spends - split by ballpark flag
     const currentConfirmed = [], currentBallpark = [];
     qInfo.months.forEach(m => {
         const monthProjects = trackerData.filter(d => d.client === state.trackerClient && d.month === m && d.spendType === 'Project budget');
@@ -1666,7 +1326,6 @@ function renderTrackerChart() {
         currentBallpark.push(monthProjects.filter(d => d.ballpark).reduce((sum, d) => sum + d.spend, 0));
     });
     
-    // Y axis
     const yAxis = $('tracker-y-axis');
     if (yAxis) {
         yAxis.innerHTML = '';
@@ -1678,7 +1337,6 @@ function renderTrackerChart() {
         }
     }
     
-    // Committed line
     const greyBarHeight = chartHeight - (10000 / yMax * chartHeight);
     const committedLine = $('tracker-committed-line');
     if (committedLine) {
@@ -1686,7 +1344,6 @@ function renderTrackerChart() {
         committedLine.style.top = 'auto';
     }
     
-    // Chart bars
     const container = $('tracker-chart-container');
     if (!container) return;
     container.innerHTML = '';
@@ -1697,7 +1354,6 @@ function renderTrackerChart() {
     const currentMonthName = today.toLocaleString('en-US', { month: 'long' });
     const currentMonthIndex = qInfo.months.indexOf(currentMonthName);
     
-    // Previous quarter bars
     prevMonthLabels.forEach((label, i) => {
         const group = document.createElement('div');
         group.className = 'bar-group';
@@ -1726,7 +1382,6 @@ function renderTrackerChart() {
         container.appendChild(group);
     });
     
-    // Current quarter bars
     currMonthLabels.forEach((label, i) => {
         const group = document.createElement('div');
         group.className = 'bar-group';
@@ -1851,11 +1506,9 @@ async function saveTrackerProject() {
         
         if (!response.ok) throw new Error('Failed to save');
         
-        // Update local data
         Object.assign(trackerCurrentEditData, updates);
         closeTrackerModal();
         
-        // Reload and re-render
         await loadTrackerData(state.trackerClient);
         renderTrackerContent();
         showToast('On it.', 'success');
@@ -1872,8 +1525,13 @@ function getTrackerPDF() {
     window.open(url, '_blank');
 }
 
-// Make functions available globally for onclick handlers
+// Make functions available globally
 window.openTrackerEditModal = openTrackerEditModal;
 window.closeTrackerModal = closeTrackerModal;
 window.saveTrackerProject = saveTrackerProject;
 window.getTrackerPDF = getTrackerPDF;
+window.navigateTo = navigateTo;
+window.setWipMode = setWipMode;
+window.toggleWipMode = toggleWipMode;
+window.submitWipUpdate = submitWipUpdate;
+window.toggleWipWithClient = toggleWipWithClient;
