@@ -459,7 +459,10 @@ function renderResponse({ message, jobs = [], nextPrompt = null }) {
     const response = document.createElement('div');
     response.className = 'dot-response fade-in';
     
-    let html = `<p class="dot-text">${message}</p>`;
+    // Format message - handle bullets and line breaks
+    let formattedMessage = formatMessage(message);
+    
+    let html = `<div class="dot-text">${formattedMessage}</div>`;
     
     if (jobs.length > 0) {
         html += '<div class="job-cards">';
@@ -511,7 +514,7 @@ function createJobCard(job, index) {
                 <div class="job-main">
                     <div class="job-title-row">
                         <span class="job-title">${job.jobNumber} | ${job.jobName}</span>
-                        <span class="expand-icon">v</span>
+                        <span class="expand-icon">${ICON_CHEVRON}</span>
                     </div>
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
@@ -539,6 +542,55 @@ function createJobCard(job, index) {
 const ICON_CLOCK = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 const ICON_REFRESH = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>`;
 const ICON_EXCHANGE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12l-3-3M20 15H8l3 3"/></svg>`;
+const ICON_CHEVRON = `<svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+
+// ===== MESSAGE FORMATTING =====
+function formatMessage(message) {
+    if (!message) return '';
+    
+    // Fix encoding issues
+    let text = message
+        .replace(/â€¢/g, '•')
+        .replace(/â€"/g, '–')
+        .replace(/â€™/g, "'");
+    
+    // Split into lines
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+    
+    // Check if we have bullet points
+    const hasBullets = lines.some(l => /^[•\-\*]\s/.test(l));
+    
+    if (!hasBullets) {
+        // No bullets - just join with <br> for line breaks
+        return lines.map(l => `<p>${l}</p>`).join('');
+    }
+    
+    // Process bullets into proper lists
+    let html = '';
+    let inList = false;
+    
+    lines.forEach(line => {
+        const isBullet = /^[•\-\*]\s/.test(line);
+        
+        if (isBullet) {
+            if (!inList) {
+                html += '<ul class="dot-list">';
+                inList = true;
+            }
+            html += `<li>${line.replace(/^[•\-\*]\s*/, '')}</li>`;
+        } else {
+            if (inList) {
+                html += '</ul>';
+                inList = false;
+            }
+            html += `<p>${line}</p>`;
+        }
+    });
+    
+    if (inList) html += '</ul>';
+    
+    return html;
+}
 
 // ===== HELPERS =====
 function formatDueDate(isoDate) {
@@ -691,7 +743,7 @@ function createWipCard(job) {
             <div class="job-header">
                 <div class="job-logo"><img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'"></div>
                 <div class="job-main">
-                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">v</span></div>
+                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">${ICON_CHEVRON}</span></div>
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot"> - </span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot"> - </span>${ICON_EXCHANGE} With client` : ''}</div>
                 </div>
@@ -729,7 +781,7 @@ function createWipCompactCard(job) {
             <div class="job-header">
                 <div class="job-logo"><img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'"></div>
                 <div class="job-main">
-                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">v</span></div>
+                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">${ICON_CHEVRON}</span></div>
                     <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot"> - </span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo}d</span>${job.withClient ? `<span class="dot"> - </span>${ICON_EXCHANGE} With client` : ''}</div>
                 </div>
             </div>

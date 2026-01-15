@@ -1038,11 +1038,17 @@ body {
 }
 .expand-icon {
     color: var(--red);
-    font-size: 18px;
     transition: transform 0.2s ease;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
 }
-.job-card.expanded .expand-icon { transform: rotate(180deg); }
+.expand-icon .chevron-icon {
+    transition: transform 0.2s ease;
+}
+.job-card.expanded .expand-icon .chevron-icon { 
+    transform: rotate(180deg); 
+}
 
 .job-update-preview {
     font-size: 13px;
@@ -1274,6 +1280,30 @@ body {
     color: var(--grey-800);
     margin-bottom: 14px;
     line-height: 1.6;
+}
+.dot-text p {
+    margin-bottom: 8px;
+}
+.dot-text p:last-child {
+    margin-bottom: 0;
+}
+.dot-list {
+    list-style: none;
+    margin: 8px 0;
+    padding: 0;
+}
+.dot-list li {
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+.dot-list li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--red);
+    font-weight: bold;
 }
 
 .thinking-dots {
@@ -1680,7 +1710,7 @@ body {
     left: 0;
     right: 0;
     background: rgba(237, 28, 36, 0.15);
-    border: none;
+    border: 2px dashed rgba(237, 28, 36, 0.5);
     border-radius: 3px 3px 0 0;
 }
 
@@ -1746,7 +1776,7 @@ body {
 }
 
 .notes-list li::before {
-    content: '•';
+    content: 'â€¢';
     position: absolute;
     left: 0;
     color: var(--red);
