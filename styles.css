@@ -661,20 +661,12 @@ body {
     gap: 16px;
 }
 
-.conversation-area::after {
-    content: '';
-    display: block;
-    width: 30px;
-    height: 30px;
-    margin: 8px 0 0;
-    background: url('images/dot-sitting.png') no-repeat center;
-    background-size: contain;
-    flex-shrink: 0;
-}
-
-/* Hide dot while thinking */
-.conversation-area:has(.thinking-dots)::after {
-    display: none;
+/* Dot icon inline with smart prompts */
+.prompt-dot {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+    margin-right: 6px;
 }
 
 .chat-input-area {

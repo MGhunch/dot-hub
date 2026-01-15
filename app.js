@@ -438,7 +438,7 @@ function executeDue(parsed) {
     const dateLabel = dateLabels[parsed.modifiers.dateRange] || 'coming up';
     
     if (jobs.length === 0) {
-        renderResponse({ text: responseText || (client ? `Nothing due ${dateLabel} for ${client.name}! 🎉` : `Nothing due ${dateLabel}! 🎉`), nextPrompt: parsed.nextPrompt });
+        renderResponse({ text: responseText || (client ? `Nothing due ${dateLabel} for ${client.name}! ðŸŽ‰` : `Nothing due ${dateLabel}! ðŸŽ‰`), nextPrompt: parsed.nextPrompt });
     } else {
         renderResponse({ text: responseText || (client ? `${jobs.length} job${jobs.length === 1 ? '' : 's'} due ${dateLabel} for ${client.name}:` : `${jobs.length} job${jobs.length === 1 ? '' : 's'} due ${dateLabel}:`), jobs: jobs, nextPrompt: parsed.nextPrompt });
     }
@@ -534,11 +534,11 @@ async function executeTracker(parsed) {
         
         let statusText = '';
         if (data.status === 'over') {
-            statusText = `${clientName}'s ${data.period}: ${spent} spent, ${remaining} over budget! 😬`;
+            statusText = `${clientName}'s ${data.period}: ${spent} spent, ${remaining} over budget! ðŸ˜¬`;
         } else if (data.status === 'high') {
             statusText = `${clientName}'s ${data.period}: ${spent} spent, ${remaining} left (${percent}% used)`;
         } else {
-            statusText = `${clientName}'s ${data.period}: ${spent} spent, ${remaining} still to play with 👍`;
+            statusText = `${clientName}'s ${data.period}: ${spent} spent, ${remaining} still to play with ðŸ‘`;
         }
         
         renderResponse({ 
@@ -563,7 +563,7 @@ function executeQuery(parsed) {
 
 function executeHelp(parsed) {
     renderResponse({ 
-        text: parsed.responseText || `I'm Dot, Hunch's admin-bot! I can help you:<br><br>• Check on jobs and client work<br>• See what's due or coming up<br>• Find contact info<br>• Look up budget and spend<br><br>Try asking about a client or what's due!`, 
+        text: parsed.responseText || `I'm Dot, Hunch's admin-bot! I can help you:<br><br>â€¢ Check on jobs and client work<br>â€¢ See what's due or coming up<br>â€¢ Find contact info<br>â€¢ Look up budget and spend<br><br>Try asking about a client or what's due!`, 
         nextPrompt: parsed.nextPrompt || "What's most urgent?"
     });
 }
@@ -618,7 +618,7 @@ async function executeLog(parsed) {
         const done = items.filter(i => i.done).length;
         const todo = items.filter(i => !i.done);
         
-        let listHtml = todo.map(i => `• ${i.title}`).join('<br>');
+        let listHtml = todo.map(i => `â€¢ ${i.title}`).join('<br>');
         if (done > 0) {
             listHtml += `<br><br><em>${done} item${done === 1 ? '' : 's'} done</em>`;
         }
@@ -730,7 +730,7 @@ function renderResponse({ text, jobs = [], nextPrompt = null }) {
     
     // Single contextual prompt from Claude (if provided)
     if (nextPrompt) {
-        html += `<div class="smart-prompts"><button class="smart-prompt" data-question="${nextPrompt}">${nextPrompt}</button></div>`;
+        html += `<div class="smart-prompts"><button class="smart-prompt" data-question="${nextPrompt}"><img src="images/dot-sitting.png" class="prompt-dot">${nextPrompt}</button></div>`;
     }
     
     response.innerHTML = html;
@@ -751,7 +751,7 @@ function renderHandoff(text, question, nextPrompt = null) {
     html += `<div class="smart-prompts"><a href="${mailtoLink}" class="smart-prompt handoff-btn">Send an email</a></div>`;
     
     if (nextPrompt) {
-        html += `<div class="smart-prompts" style="margin-top: 8px;"><button class="smart-prompt" data-question="${nextPrompt}">${nextPrompt}</button></div>`;
+        html += `<div class="smart-prompts" style="margin-top: 8px;"><button class="smart-prompt" data-question="${nextPrompt}"><img src="images/dot-sitting.png" class="prompt-dot">${nextPrompt}</button></div>`;
     }
     
     response.innerHTML = html;
@@ -770,8 +770,8 @@ function renderClientPicker() {
     response.innerHTML = `
         <p class="dot-text">Which client?</p>
         <div class="client-cards">
-            ${keyClients.map(c => `<div class="client-card" data-client="${c.code}"><div><div class="client-name">${getClientDisplayName(c)}</div><div class="client-count">${c.jobCount} active job${c.jobCount === 1 ? '' : 's'}</div></div><span class="card-chevron">›</span></div>`).join('')}
-            ${hasOther ? `<div class="client-card other-clients-btn"><div><div class="client-name">Other clients</div></div><span class="card-chevron">›</span></div>` : ''}
+            ${keyClients.map(c => `<div class="client-card" data-client="${c.code}"><div><div class="client-name">${getClientDisplayName(c)}</div><div class="client-count">${c.jobCount} active job${c.jobCount === 1 ? '' : 's'}</div></div><span class="card-chevron">â€º</span></div>`).join('')}
+            ${hasOther ? `<div class="client-card other-clients-btn"><div><div class="client-name">Other clients</div></div><span class="card-chevron">â€º</span></div>` : ''}
         </div>
     `;
     area?.appendChild(response);
@@ -791,9 +791,9 @@ function createConversationJobCard(job, index) {
             <div class="job-header" data-job-id="${id}">
                 <div class="job-logo"><img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'"></div>
                 <div class="job-main">
-                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">⌄</span></div>
+                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">âŒ„</span></div>
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
-                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE} With client` : ''}</div>
+                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">Â·</span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot">Â·</span>${ICON_EXCHANGE} With client` : ''}</div>
                 </div>
             </div>
             <div class="job-expanded">
@@ -802,7 +802,7 @@ function createConversationJobCard(job, index) {
                 <div class="section-label" style="margin-top:14px">Client Owner</div>
                 <div class="job-owner">${job.projectOwner || 'TBC'}</div>
                 <div class="job-footer">
-                    ${job.channelUrl ? `<a href="${job.channelUrl}" target="_blank" class="teams-link" onclick="event.stopPropagation()">↗ TEAMS</a>` : '<span></span>'}
+                    ${job.channelUrl ? `<a href="${job.channelUrl}" target="_blank" class="teams-link" onclick="event.stopPropagation()">â†— TEAMS</a>` : '<span></span>'}
                 </div>
             </div>
         </div>
@@ -840,7 +840,7 @@ function showOtherClients() {
         response.className = 'dot-response fade-in';
         response.innerHTML = `
             <p class="dot-text">Other clients:</p>
-            <div class="client-cards">${otherClients.map(c => `<div class="client-card" data-client="${c.code}"><div><div class="client-name">${getClientDisplayName(c)}</div><div class="client-count">${c.jobCount} active job${c.jobCount === 1 ? '' : 's'}</div></div><span class="card-chevron">›</span></div>`).join('')}</div>
+            <div class="client-cards">${otherClients.map(c => `<div class="client-card" data-client="${c.code}"><div><div class="client-name">${getClientDisplayName(c)}</div><div class="client-count">${c.jobCount} active job${c.jobCount === 1 ? '' : 's'}</div></div><span class="card-chevron">â€º</span></div>`).join('')}</div>
         `;
         area?.appendChild(response);
         bindDynamicElements(response);
@@ -1000,9 +1000,9 @@ function createWipCard(job) {
             <div class="job-header">
                 <div class="job-logo"><img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'"></div>
                 <div class="job-main">
-                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">⌄</span></div>
+                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">âŒ„</span></div>
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
-                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE} With client` : ''}</div>
+                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">Â·</span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>${job.withClient ? `<span class="dot">Â·</span>${ICON_EXCHANGE} With client` : ''}</div>
                 </div>
             </div>
             <div class="job-expanded">
@@ -1022,7 +1022,7 @@ function createWipCard(job) {
                 <input type="text" class="update-input" placeholder="What's the latest?" onclick="event.stopPropagation()" data-field="message">
                 <button class="pill-btn" onclick="event.stopPropagation();submitWipUpdate('${job.jobNumber}',this)" style="margin-top:8px">Update</button>
                 <div class="job-footer">
-                    ${job.channelUrl ? `<a href="${job.channelUrl}" class="teams-link" target="_blank" onclick="event.stopPropagation()">↗ TEAMS</a>` : '<span></span>'}
+                    ${job.channelUrl ? `<a href="${job.channelUrl}" class="teams-link" target="_blank" onclick="event.stopPropagation()">â†— TEAMS</a>` : '<span></span>'}
                     <div class="with-client-toggle" onclick="event.stopPropagation()"><span class="with-client-label">With Client</span><label class="toggle"><input type="checkbox" ${job.withClient?'checked':''} onchange="toggleWipWithClient('${job.jobNumber}',this.checked)"><span class="toggle-slider"></span></label></div>
                 </div>
             </div>
@@ -1038,15 +1038,15 @@ function createWipCompactCard(job) {
             <div class="job-header">
                 <div class="job-logo"><img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'"></div>
                 <div class="job-main">
-                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">⌄</span></div>
-                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">·</span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo}d</span>${job.withClient ? `<span class="dot">·</span>${ICON_EXCHANGE} With client` : ''}</div>
+                    <div class="job-title-row"><span class="job-title">${job.jobNumber} | ${job.jobName}</span><span class="expand-icon">âŒ„</span></div>
+                    <div class="job-meta-compact">${ICON_CLOCK} ${dueDate}<span class="dot">Â·</span>${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo}d</span>${job.withClient ? `<span class="dot">Â·</span>${ICON_EXCHANGE} With client` : ''}</div>
                 </div>
             </div>
             <div class="job-expanded">
                 <div class="section-label">Update</div>
                 <div class="job-description">${job.update || 'No updates yet'}</div>
                 <div class="job-footer">
-                    ${job.channelUrl ? `<a href="${job.channelUrl}" class="teams-link" target="_blank" onclick="event.stopPropagation()">↗ TEAMS</a>` : '<span></span>'}
+                    ${job.channelUrl ? `<a href="${job.channelUrl}" class="teams-link" target="_blank" onclick="event.stopPropagation()">â†— TEAMS</a>` : '<span></span>'}
                     <span class="job-meta-compact">${job.projectOwner || 'TBC'}</span>
                 </div>
             </div>
@@ -1078,7 +1078,7 @@ async function submitWipUpdate(jobNumber, btn) {
         const job = state.allJobs.find(j => j.jobNumber === jobNumber);
         if (job) { job.stage = stage; job.status = status; if (updateDue) job.updateDue = updateDue; if (liveDate) job.liveDate = liveDate; if (message) job.update = message; }
         
-        btn.textContent = '✓ Done'; btn.classList.add('success');
+        btn.textContent = 'âœ“ Done'; btn.classList.add('success');
         showToast('On it.', 'success');
         setTimeout(() => { btn.textContent = 'Update'; btn.classList.remove('success'); btn.disabled = false; renderWip(); }, 1500);
     } catch (e) {
@@ -1108,10 +1108,10 @@ let trackerCurrentEditData = null;
 
 // Calendar quarters (fixed) - clients just label them differently
 const calendarQuarters = {
-    'Q1-cal': { months: ['January', 'February', 'March'], label: 'Jan › Mar' },
-    'Q2-cal': { months: ['April', 'May', 'June'], label: 'Apr › Jun' },
-    'Q3-cal': { months: ['July', 'August', 'September'], label: 'Jul › Sep' },
-    'Q4-cal': { months: ['October', 'November', 'December'], label: 'Oct › Dec' }
+    'Q1-cal': { months: ['January', 'February', 'March'], label: 'Jan â€º Mar' },
+    'Q2-cal': { months: ['April', 'May', 'June'], label: 'Apr â€º Jun' },
+    'Q3-cal': { months: ['July', 'August', 'September'], label: 'Jul â€º Sep' },
+    'Q4-cal': { months: ['October', 'November', 'December'], label: 'Oct â€º Dec' }
 };
 
 // Current calendar quarter (Jan-Mar 2026)
@@ -1125,9 +1125,9 @@ const clientQuarterLabels = {
 
 // Fallback data
 const fallbackTrackerClients = [
-    { code: 'ONS', name: 'One NZ – Simplification', committed: 25000, rollover: 0, rolloverUseIn: '', yearEnd: 'March', currentQuarter: 'Q4' },
-    { code: 'ONE', name: 'One NZ – Marketing', committed: 12500, rollover: 2400, rolloverUseIn: 'JAN-MAR', yearEnd: 'March', currentQuarter: 'Q4' },
-    { code: 'ONB', name: 'One NZ – Business', committed: 12500, rollover: 0, rolloverUseIn: '', yearEnd: 'March', currentQuarter: 'Q4' },
+    { code: 'ONS', name: 'One NZ â€“ Simplification', committed: 25000, rollover: 0, rolloverUseIn: '', yearEnd: 'March', currentQuarter: 'Q4' },
+    { code: 'ONE', name: 'One NZ â€“ Marketing', committed: 12500, rollover: 2400, rolloverUseIn: 'JAN-MAR', yearEnd: 'March', currentQuarter: 'Q4' },
+    { code: 'ONB', name: 'One NZ â€“ Business', committed: 12500, rollover: 0, rolloverUseIn: '', yearEnd: 'March', currentQuarter: 'Q4' },
     { code: 'SKY', name: 'Sky', committed: 10000, rollover: 0, rolloverUseIn: '', yearEnd: 'June', currentQuarter: 'Q3' },
     { code: 'TOW', name: 'Tower', committed: 10000, rollover: 1500, rolloverUseIn: 'JAN-MAR', yearEnd: 'September', currentQuarter: 'Q2' },
     { code: 'FIS', name: 'Fisher Funds', committed: 4500, rollover: 500, rolloverUseIn: 'JAN-MAR', yearEnd: 'March', currentQuarter: 'Q4' }
@@ -1371,7 +1371,7 @@ function renderTrackerContent() {
     const qInfo = getQuarterInfoForMonth(state.trackerClient, trackerCurrentMonth);
     const prevQ = getPreviousQuarter(state.trackerClient);
     
-    const labelMap = { 'Jan › Mar': 'JAN-MAR', 'Apr › Jun': 'APR-JUN', 'Jul › Sep': 'JUL-SEP', 'Oct › Dec': 'OCT-DEC' };
+    const labelMap = { 'Jan â€º Mar': 'JAN-MAR', 'Apr â€º Jun': 'APR-JUN', 'Jul â€º Sep': 'JUL-SEP', 'Oct â€º Dec': 'OCT-DEC' };
     const viewedQuarterKey = labelMap[qInfo.label] || '';
     
     // Calculate spend
@@ -1489,8 +1489,8 @@ function renderTrackerContent() {
                             const chevronDisabled = p._isGrouped ? 'style="color:var(--grey-200);cursor:default;"' : '';
                             return `
                                 <tr>
-                                    <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">›</button></td>
-                                    <td class="project-name">${p.jobNumber} · ${p.projectName}</td>
+                                    <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">â€º</button></td>
+                                    <td class="project-name">${p.jobNumber} Â· ${p.projectName}</td>
                                     <td>${p.owner || ''}</td>
                                     <td>${p.description || ''}</td>
                                     ${!trackerIsQuarterView ? `<td class="amount" style="color:var(--grey-400);font-weight:normal;">${showToDateCol ? '(' + formatTrackerCurrency(spendToDate[p.jobNumber]) + ')' : ''}</td>` : ''}
@@ -1524,8 +1524,8 @@ function renderTrackerContent() {
                                 const chevronDisabled = p._isGrouped ? 'style="color:var(--grey-200);cursor:default;"' : '';
                                 return `
                                     <tr>
-                                        <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">›</button></td>
-                                        <td class="project-name">${p.jobNumber} · ${p.projectName}</td>
+                                        <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">â€º</button></td>
+                                        <td class="project-name">${p.jobNumber} Â· ${p.projectName}</td>
                                         <td>${p.owner || ''}</td>
                                         <td>${p.description || ''}</td>
                                         ${!trackerIsQuarterView ? `<td class="amount" style="color:var(--grey-400);font-weight:normal;">${showToDateCol ? '(' + formatTrackerCurrency(spendToDate[p.jobNumber]) + ')' : ''}</td>` : ''}
@@ -1559,8 +1559,8 @@ function renderTrackerContent() {
                     <div class="section-title">Notes</div>
                     <div class="notes-section">
                         <ul class="notes-list">
-                            <li><strong>Ballparks</strong> – Red numbers are ballparks. Most jobs start as a $5K ballpark before we lock in scope.</li>
-                            <li><strong>Rollover</strong> – You can use your rollover credit any time during the quarter. It's extra on top of committed spend.</li>
+                            <li><strong>Ballparks</strong> â€“ Red numbers are ballparks. Most jobs start as a $5K ballpark before we lock in scope.</li>
+                            <li><strong>Rollover</strong> â€“ You can use your rollover credit any time during the quarter. It's extra on top of committed spend.</li>
                         </ul>
                         <button class="pdf-btn" onclick="getTrackerPDF()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1589,7 +1589,7 @@ function renderTrackerContent() {
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
-                        <button class="tracker-modal-close" onclick="closeTrackerModal()">×</button>
+                        <button class="tracker-modal-close" onclick="closeTrackerModal()">Ã—</button>
                     </div>
                 </div>
                 <div class="tracker-modal-body">
