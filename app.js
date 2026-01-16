@@ -29,6 +29,7 @@ const state = {
     currentView: 'home',
     allClients: [],
     allJobs: [],
+    jobsLoaded: false,
     wipMode: 'todo',
     wipClient: 'all',
     trackerClient: null,
@@ -323,6 +324,7 @@ async function loadJobs() {
         const response = await fetch(`${API_BASE}/jobs/all`);
         state.allJobs = await response.json();
     } catch (e) { state.allJobs = []; }
+    state.jobsLoaded = true;
 }
 
 // ===== CONVERSATION =====
@@ -571,7 +573,7 @@ function createUniversalCard(job, id) {
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' - ') || '';
+    const summaryLine = summaryParts.join(' Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -590,7 +592,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> - </span>
+                        <span class="dot"> Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
@@ -943,6 +945,23 @@ function groupByWip(jobs) {
 }
 
 function renderWip() {
+    const content = $('wip-content');
+    if (!content) return;
+    
+    // Show loading if jobs haven't loaded yet
+    if (!state.jobsLoaded) {
+        content.innerHTML = `
+            <div class="dot-loading">
+                <div class="dot-with-heart">
+                    <img src="images/Robot.png" alt="Dot">
+                    <div class="dot-heart"></div>
+                </div>
+                <p>Grabbing all your jobs...</p>
+            </div>
+        `;
+        return;
+    }
+    
     const jobs = getWipFilteredJobs();
     const sections = state.wipMode === 'wip' ? groupByWip(jobs) : groupByTodo(jobs);
     const content = $('wip-content');

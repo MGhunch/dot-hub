@@ -958,6 +958,55 @@ body {
     margin: 0 auto 16px;
 }
 
+/* Dot Loading (with pulsing heart) */
+.dot-loading {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--grey-400);
+    grid-column: 1 / -1;
+}
+
+.dot-loading p {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.dot-with-heart {
+    position: relative;
+    display: inline-block;
+    width: 80px;
+    margin-bottom: 16px;
+}
+
+.dot-with-heart img {
+    width: 100%;
+}
+
+.dot-heart {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    background: var(--red);
+    border-radius: 50%;
+    animation: heartbeat 1.2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+    0%, 100% { 
+        transform: translate(-50%, -50%) scale(1); 
+        opacity: 0.7;
+        box-shadow: 0 0 4px var(--red);
+    }
+    50% { 
+        transform: translate(-50%, -50%) scale(1.5); 
+        opacity: 1; 
+        box-shadow: 0 0 16px var(--red), 0 0 24px var(--red-glow);
+    }
+}
+
 /* Empty Section */
 .empty-section {
     color: var(--grey-400);
