@@ -371,7 +371,22 @@ function addThinkingDots() {
     const dots = document.createElement('div');
     dots.className = 'thinking-dots';
     dots.id = 'currentThinking';
-    dots.innerHTML = '<div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div>';
+    
+    // ORIGINAL - uncomment to restore bouncing dots
+    // dots.innerHTML = '<div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div>';
+    
+    // EXPERIMENT - Dot with pulsing heart
+    dots.innerHTML = `
+        <div class="dot-with-heart" style="width:60px;">
+            <img src="images/Dot-blank-heart.png" alt="Dot">
+            <div class="dot-heart">
+                <svg viewBox="0 0 24 24" fill="#ED1C24" stroke="#1a1a1a" stroke-width="2">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </div>
+        </div>
+    `;
+    
     area?.appendChild(dots);
     if (area) area.scrollTop = area.scrollHeight;
 }
@@ -578,7 +593,7 @@ function createUniversalCard(job, id) {
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' Ã‚Â· ') || '';
+    const summaryLine = summaryParts.join(' Ãƒâ€šÃ‚Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -597,7 +612,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> Ã‚Â· </span>
+                        <span class="dot"> Ãƒâ€šÃ‚Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
@@ -959,7 +974,11 @@ function renderWip() {
             <div class="dot-loading">
                 <div class="dot-with-heart">
                     <img src="images/Dot-blank-heart.png" alt="Dot">
-                    <div class="dot-heart"></div>
+                    <div class="dot-heart">
+                        <svg viewBox="0 0 24 24" fill="#ED1C24" stroke="#1a1a1a" stroke-width="2">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                    </div>
                 </div>
                 <p>Grabbing all your jobs...</p>
             </div>
