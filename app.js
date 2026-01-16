@@ -325,6 +325,11 @@ async function loadJobs() {
         state.allJobs = await response.json();
     } catch (e) { state.allJobs = []; }
     state.jobsLoaded = true;
+    
+    // Re-render WIP if we're on that view
+    if (state.currentView === 'wip') {
+        renderWip();
+    }
 }
 
 // ===== CONVERSATION =====
@@ -573,7 +578,7 @@ function createUniversalCard(job, id) {
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' Â· ') || '';
+    const summaryLine = summaryParts.join(' Ã‚Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -592,7 +597,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> Â· </span>
+                        <span class="dot"> Ã‚Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
@@ -953,7 +958,7 @@ function renderWip() {
         content.innerHTML = `
             <div class="dot-loading">
                 <div class="dot-with-heart">
-                    <img src="images/Robot.png" alt="Dot">
+                    <img src="images/Dot-blank-heart.png" alt="Dot">
                     <div class="dot-heart"></div>
                 </div>
                 <p>Grabbing all your jobs...</p>
