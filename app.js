@@ -213,7 +213,9 @@ function navigateTo(view) {
     state.currentView = view;
     $$('.nav-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === view));
     $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
-    $('desktop-footer')?.classList.toggle('minimal', view !== 'home');
+    
+    // Footer: only show on home view when NOT in conversation
+    const footer = $('desktop-footer');
     
     if (!isDesktop()) {
         $('phone-home')?.classList.add('hidden');
@@ -238,12 +240,15 @@ function navigateTo(view) {
             if (hasConversation) {
                 $('desktop-home-state')?.classList.add('hidden');
                 $('desktop-conversation-state')?.classList.add('visible');
-                $('desktop-footer')?.classList.add('hidden');
+                footer?.classList.add('hidden');
             } else {
                 $('desktop-home-state')?.classList.remove('hidden');
                 $('desktop-conversation-state')?.classList.remove('visible');
-                $('desktop-footer')?.classList.remove('hidden');
+                footer?.classList.remove('hidden');
             }
+        } else {
+            // Non-home views: hide footer
+            footer?.classList.add('hidden');
         }
     }
     
@@ -532,12 +537,12 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysAgo = getDaysSinceUpdate(job.lastUpdated);
     
-    // Build summary line: Stage Ã¢â€ â€™ Live Date · With client
+    // Build summary line: Stage ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Live Date Â· With client
     let summaryParts = [];
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' · ') || '';
+    const summaryLine = summaryParts.join(' Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -556,7 +561,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> · </span>
+                        <span class="dot"> Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
