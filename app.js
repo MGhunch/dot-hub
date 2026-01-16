@@ -116,6 +116,35 @@ function setupEventListeners() {
                 m.previousElementSibling?.classList.remove('open');
             });
         }
+        // Close plus menus on outside click
+        if (!e.target.closest('.input-plus') && !e.target.closest('.plus-menu')) {
+            $$('.plus-menu.open').forEach(m => m.classList.remove('open'));
+        }
+    });
+
+    // Plus button click handlers
+    $$('.input-plus').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const menu = btn.nextElementSibling;
+            // Close other plus menus first
+            $$('.plus-menu.open').forEach(m => {
+                if (m !== menu) m.classList.remove('open');
+            });
+            menu?.classList.toggle('open');
+        });
+    });
+
+    // Plus menu item click handlers
+    $$('.plus-menu-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const action = item.dataset.action;
+            // Close the menu
+            item.closest('.plus-menu')?.classList.remove('open');
+            // Show coming soon modal
+            showComingSoonModal(action);
+        });
     });
 }
 
@@ -537,12 +566,12 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysAgo = getDaysSinceUpdate(job.lastUpdated);
     
-    // Build summary line: Stage ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Live Date Â· With client
+    // Build summary line: Stage ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Live Date Ã‚Â· With client
     let summaryParts = [];
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' Â· ') || '';
+    const summaryLine = summaryParts.join(' Ã‚Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -561,7 +590,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> Â· </span>
+                        <span class="dot"> Ã‚Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
@@ -1698,6 +1727,38 @@ function getTrackerPDF() {
     const url = `https://dot-tracker-pdf.up.railway.app/pdf?client=${state.trackerClient}&month=${trackerCurrentMonth}${trackerIsQuarterView ? '&quarter=true' : ''}`;
     window.open(url, '_blank');
 }
+
+// ===== COMING SOON MODAL =====
+function showComingSoonModal(action) {
+    const modal = $('coming-soon-modal');
+    const text = $('coming-soon-text');
+    if (!modal || !text) return;
+    
+    if (action === 'new-job') {
+        text.textContent = 'New job coming soon';
+    } else if (action === 'upload') {
+        text.textContent = 'Uploads coming soon';
+    } else {
+        text.textContent = 'Coming soon';
+    }
+    
+    modal.classList.add('visible');
+}
+
+function closeComingSoonModal() {
+    $('coming-soon-modal')?.classList.remove('visible');
+}
+
+// Close modal on overlay click
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'coming-soon-modal') {
+        closeComingSoonModal();
+    }
+});
+
+// Make functions available globally
+window.showComingSoonModal = showComingSoonModal;
+window.closeComingSoonModal = closeComingSoonModal;
 
 // Make functions available globally
 window.openTrackerEditModal = openTrackerEditModal;

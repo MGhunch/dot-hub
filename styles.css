@@ -2218,3 +2218,184 @@ body {
 .job-modal-footer .teams-link {
     font-size: 11px;
 }
+
+/* =================================================================
+   PLUS BUTTON & MENU
+   ================================================================= */
+
+.input-plus {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    background: var(--white);
+    border: 2px solid var(--red);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s var(--ease-out);
+    color: var(--red);
+    z-index: 10;
+}
+
+.input-plus:hover {
+    background: var(--red);
+    color: var(--white);
+}
+
+.input-plus:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.input-plus svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Adjust input padding to make room for the + button */
+.home-input-area .home-input,
+.chat-input-wrapper .chat-input {
+    padding-left: 52px;
+}
+
+/* Plus Menu */
+.plus-menu {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 0;
+    min-width: 160px;
+    background: var(--white);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,0,0,0.04);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px) scale(0.96);
+    transform-origin: bottom left;
+    transition: all 0.2s var(--ease-out);
+    overflow: hidden;
+    z-index: 200;
+}
+
+.plus-menu.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.plus-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--grey-800);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-bottom: 1px solid var(--grey-50);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.plus-menu-item:last-child {
+    border-bottom: none;
+}
+
+.plus-menu-item:hover {
+    background: var(--grey-50);
+}
+
+.plus-menu-item:active {
+    background: var(--grey-100);
+}
+
+.plus-menu-item .chevron-icon-right {
+    color: var(--red);
+    margin-right: 10px;
+    flex-shrink: 0;
+    transition: transform 0.2s var(--ease-out);
+}
+
+.plus-menu-item:hover .chevron-icon-right {
+    transform: translateX(3px);
+}
+
+/* =================================================================
+   COMING SOON MODAL
+   ================================================================= */
+
+.coming-soon-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.coming-soon-modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.coming-soon-modal {
+    background: var(--white);
+    border-radius: var(--radius-md);
+    padding: 32px 40px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(20px) scale(0.95);
+    transition: transform 0.25s var(--ease-out);
+    position: relative;
+    max-width: 280px;
+}
+
+.coming-soon-modal-overlay.visible .coming-soon-modal {
+    transform: translateY(0) scale(1);
+}
+
+.coming-soon-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--grey-400);
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+}
+
+.coming-soon-close:hover {
+    color: var(--red);
+    background: var(--grey-50);
+}
+
+.coming-soon-img {
+    width: 64px;
+    height: auto;
+    margin-bottom: 16px;
+}
+
+.coming-soon-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--grey-800);
+}
