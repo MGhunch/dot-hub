@@ -964,8 +964,6 @@ function renderWip() {
     
     const jobs = getWipFilteredJobs();
     const sections = state.wipMode === 'wip' ? groupByWip(jobs) : groupByTodo(jobs);
-    const content = $('wip-content');
-    if (!content) return;
     
     content.innerHTML = `
         <div class="wip-column">
