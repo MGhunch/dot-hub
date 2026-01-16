@@ -566,12 +566,12 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysAgo = getDaysSinceUpdate(job.lastUpdated);
     
-    // Build summary line: Stage ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Live Date Ã‚Â· With client
+    // Build summary line: Stage ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ Live Date Ãƒâ€šÃ‚Â· With client
     let summaryParts = [];
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' Ã‚Â· ') || '';
+    const summaryLine = summaryParts.join(' Ãƒâ€šÃ‚Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -590,7 +590,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> Ã‚Â· </span>
+                        <span class="dot"> Ãƒâ€šÃ‚Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
@@ -1735,7 +1735,7 @@ function showComingSoonModal(action) {
     if (!modal || !text) return;
     
     if (action === 'new-job') {
-        text.textContent = 'New job coming soon';
+        text.textContent = 'New jobs coming soon';
     } else if (action === 'upload') {
         text.textContent = 'Uploads coming soon';
     } else {
