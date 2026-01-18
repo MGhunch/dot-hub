@@ -984,38 +984,52 @@ body {
 
 .dot-heart {
     position: absolute;
-    top: 50%;
+    top: 53%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 12px;
     height: 12px;
-    animation: heartbeat 1.7s ease-in-out infinite;
-    opacity: 0;
-    transition: opacity 0.2s ease;
+    animation: heartbeat 1.2s ease-in-out infinite;
 }
 
-.dot-with-heart.loaded .dot-heart {
-    opacity: 1;
+.dot-heart::before,
+.dot-heart::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--red);
+    border-radius: 50%;
+    border: 1.5px solid var(--black);
 }
 
-.dot-heart svg {
-    width: 100%;
-    height: 100%;
-    display: block;
+.dot-heart::before {
+    top: -6px;
+    left: 0;
+}
+
+.dot-heart::after {
+    top: 0;
+    left: 6px;
+}
+
+.dot-heart {
+    background: var(--red);
+    transform: translate(-50%, -50%) rotate(-45deg);
+    border-bottom: 1.5px solid var(--black);
+    border-left: 1.5px solid var(--black);
 }
 
 @keyframes heartbeat {
     0%, 100% { 
-        transform: translate(-50%, -50%) scale(1); 
-    }
-    25% { 
-        transform: translate(-50%, -50%) scale(1.15); 
+        transform: translate(-50%, -50%) rotate(-45deg) scale(1); 
+        opacity: 0.7;
+        filter: drop-shadow(0 0 2px var(--red));
     }
     50% { 
-        transform: translate(-50%, -50%) scale(1); 
-    }
-    75% { 
-        transform: translate(-50%, -50%) scale(1.2); 
+        transform: translate(-50%, -50%) rotate(-45deg) scale(1.3); 
+        opacity: 1; 
+        filter: drop-shadow(0 0 8px var(--red)) drop-shadow(0 0 12px var(--red-glow));
     }
 }
 
