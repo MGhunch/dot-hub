@@ -49,6 +49,72 @@ document.addEventListener('DOMContentLoaded', init);
 function init() {
     checkSession();
     setupEventListeners();
+    handleDeepLink();
+}
+
+// ===== DEEP LINK HANDLING =====
+function handleDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');     // wip, tracker, home
+    const client = params.get('client'); // SKY, TOW, etc.
+    const job = params.get('job');       // TOW066
+    
+    // Store for after login/data load
+    if (view || client || job) {
+        state.deepLink = { view, client, job };
+    }
+}
+
+function applyDeepLink() {
+    if (!state.deepLink) return;
+    
+    const { view, client, job } = state.deepLink;
+    
+    // Navigate to view first
+    if (view && ['wip', 'tracker', 'home'].includes(view)) {
+        navigateTo(view);
+    }
+    
+    // Set client filter
+    if (client) {
+        if (view === 'wip' || (!view && state.currentView === 'wip')) {
+            state.wipClient = client;
+            // Update dropdown display
+            const trigger = $('wip-client-trigger');
+            const menu = $('wip-client-menu');
+            if (trigger && menu) {
+                const opt = menu.querySelector(`[data-value="${client}"]`);
+                if (opt) {
+                    menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
+                    trigger.querySelector('span').textContent = opt.textContent;
+                }
+            }
+            renderWip();
+        } else if (view === 'tracker') {
+            state.trackerClient = client;
+            // Update dropdown display
+            const trigger = $('tracker-client-trigger');
+            const menu = $('tracker-client-menu');
+            if (trigger && menu) {
+                const opt = menu.querySelector(`[data-value="${client}"]`);
+                if (opt) {
+                    menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
+                    trigger.querySelector('span').textContent = opt.textContent;
+                }
+            }
+            renderTracker();
+        }
+    }
+    
+    // Clear deep link after applying
+    state.deepLink = null;
+    
+    // Clear URL params without reload
+    if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 }
 
 function setupEventListeners() {
@@ -330,6 +396,9 @@ async function loadJobs() {
     if (state.currentView === 'wip') {
         renderWip();
     }
+    
+    // Apply deep link after data is ready
+    applyDeepLink();
 }
 
 // ===== CONVERSATION =====
@@ -593,7 +662,7 @@ function createUniversalCard(job, id) {
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' · ') || '';
+    const summaryLine = summaryParts.join(' Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -612,7 +681,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> · </span>
+                        <span class="dot"> Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
