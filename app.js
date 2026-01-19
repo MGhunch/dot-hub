@@ -89,8 +89,7 @@ function applyDeepLink() {
     if (view === 'tracker') {
         if (client) {
             state.trackerClient = client;
-            // Also set in localStorage so loadTrackerClients uses it as default
-            localStorage.setItem('trackerLastClient', client);
+            // Don't set localStorage - deep links shouldn't affect future visits
         }
         
         if (month) {
@@ -953,14 +952,32 @@ function setupWipDropdown() {
     const menu = $('wip-client-menu');
     if (!trigger || !menu) return;
     
-    menu.innerHTML = '<div class="custom-dropdown-option selected" data-value="all">All Clients</div>';
+    // Check if we have a pre-set client from deep link
+    const presetClient = state.wipClient || 'all';
+    
+    menu.innerHTML = '';
+    
+    // Add "All Clients" option
+    const allOpt = document.createElement('div');
+    allOpt.className = 'custom-dropdown-option' + (presetClient === 'all' ? ' selected' : '');
+    allOpt.dataset.value = 'all';
+    allOpt.textContent = 'All Clients';
+    menu.appendChild(allOpt);
+    
+    // Add client options
+    let selectedText = 'All Clients';
     state.allClients.forEach(c => {
         const opt = document.createElement('div');
-        opt.className = 'custom-dropdown-option';
+        const isSelected = (c.code === presetClient);
+        opt.className = 'custom-dropdown-option' + (isSelected ? ' selected' : '');
         opt.dataset.value = c.code;
         opt.textContent = getClientDisplayName(c);
         menu.appendChild(opt);
+        if (isSelected) selectedText = opt.textContent;
     });
+    
+    // Update trigger text to match selection
+    trigger.querySelector('span').textContent = selectedText;
     
     trigger.onclick = (e) => { e.stopPropagation(); trigger.classList.toggle('open'); menu.classList.toggle('open'); };
     menu.onclick = (e) => {
