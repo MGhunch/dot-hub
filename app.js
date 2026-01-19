@@ -55,20 +55,22 @@ function init() {
 // ===== DEEP LINK HANDLING =====
 function handleDeepLink() {
     const params = new URLSearchParams(window.location.search);
-    const view = params.get('view');     // wip, tracker, home
-    const client = params.get('client'); // SKY, TOW, etc.
-    const job = params.get('job');       // TOW066
+    const view = params.get('view');       // wip, tracker, home
+    const client = params.get('client');   // SKY, TOW, etc.
+    const job = params.get('job');         // TOW066
+    const month = params.get('month');     // January, February, etc. or 'current'
+    const quarter = params.get('quarter'); // 'true' for quarter view
     
     // Store for after login/data load
-    if (view || client || job) {
-        state.deepLink = { view, client, job };
+    if (view || client || job || month || quarter) {
+        state.deepLink = { view, client, job, month, quarter };
     }
 }
 
 function applyDeepLink() {
     if (!state.deepLink) return;
     
-    const { view, client, job } = state.deepLink;
+    const { view, client, job, month, quarter } = state.deepLink;
     
     // Clear deep link first to prevent re-application
     state.deepLink = null;
@@ -78,23 +80,23 @@ function applyDeepLink() {
         navigateTo(view);
         
         // Set client filter AFTER navigation (dropdowns now exist)
-        if (client) {
-            // Small delay to ensure DOM is ready
-            setTimeout(() => {
-                if (view === 'wip') {
-                    state.wipClient = client;
-                    const trigger = $('wip-client-trigger');
-                    const menu = $('wip-client-menu');
-                    if (trigger && menu) {
-                        const opt = menu.querySelector(`[data-value="${client}"]`);
-                        if (opt) {
-                            menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
-                            opt.classList.add('selected');
-                            trigger.querySelector('span').textContent = opt.textContent;
-                        }
+        setTimeout(async () => {
+            if (view === 'wip' && client) {
+                state.wipClient = client;
+                const trigger = $('wip-client-trigger');
+                const menu = $('wip-client-menu');
+                if (trigger && menu) {
+                    const opt = menu.querySelector(`[data-value="${client}"]`);
+                    if (opt) {
+                        menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
+                        opt.classList.add('selected');
+                        trigger.querySelector('span').textContent = opt.textContent;
                     }
-                    renderWip();
-                } else if (view === 'tracker') {
+                }
+                renderWip();
+            } else if (view === 'tracker') {
+                // Set client if provided
+                if (client) {
                     state.trackerClient = client;
                     const trigger = $('tracker-client-trigger');
                     const menu = $('tracker-client-menu');
@@ -106,10 +108,51 @@ function applyDeepLink() {
                             trigger.querySelector('span').textContent = opt.textContent;
                         }
                     }
-                    renderTracker();
                 }
-            }, 100);
-        }
+                
+                // Set month if provided
+                if (month) {
+                    let targetMonth = month;
+                    if (month === 'current') {
+                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                                          'July', 'August', 'September', 'October', 'November', 'December'];
+                        targetMonth = monthNames[new Date().getMonth()];
+                    }
+                    trackerCurrentMonth = targetMonth;
+                    
+                    // Update month dropdown display
+                    const monthTrigger = $('tracker-month-trigger');
+                    const monthMenu = $('tracker-month-menu');
+                    if (monthTrigger && monthMenu) {
+                        const opt = monthMenu.querySelector(`[data-value="${targetMonth}"]`);
+                        if (opt) {
+                            monthMenu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
+                            opt.classList.add('selected');
+                            monthTrigger.querySelector('span').textContent = opt.textContent;
+                        }
+                    }
+                }
+                
+                // Set quarter view if requested
+                if (quarter === 'true') {
+                    trackerIsQuarterView = true;
+                    const toggle = $('tracker-mode-switch');
+                    const labelMonth = $('tracker-mode-spend');
+                    const labelQuarter = $('tracker-mode-pipeline');
+                    if (toggle) toggle.checked = true;
+                    labelMonth?.classList.remove('active');
+                    labelQuarter?.classList.add('active');
+                }
+                
+                // Load data for client and render
+                if (state.trackerClient) {
+                    $('tracker-content').style.opacity = '0.5';
+                    await loadTrackerData(state.trackerClient);
+                    $('tracker-content').style.opacity = '1';
+                    renderTrackerContent();
+                }
+            }
+        }, 100);
     }
     
     // Clear URL params without reload
