@@ -70,46 +70,47 @@ function applyDeepLink() {
     
     const { view, client, job } = state.deepLink;
     
-    // Navigate to view first
+    // Clear deep link first to prevent re-application
+    state.deepLink = null;
+    
+    // Navigate to view first (this also sets up dropdowns)
     if (view && ['wip', 'tracker', 'home'].includes(view)) {
         navigateTo(view);
-    }
-    
-    // Set client filter
-    if (client) {
-        if (view === 'wip' || (!view && state.currentView === 'wip')) {
-            state.wipClient = client;
-            // Update dropdown display
-            const trigger = $('wip-client-trigger');
-            const menu = $('wip-client-menu');
-            if (trigger && menu) {
-                const opt = menu.querySelector(`[data-value="${client}"]`);
-                if (opt) {
-                    menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
-                    opt.classList.add('selected');
-                    trigger.querySelector('span').textContent = opt.textContent;
+        
+        // Set client filter AFTER navigation (dropdowns now exist)
+        if (client) {
+            // Small delay to ensure DOM is ready
+            setTimeout(() => {
+                if (view === 'wip') {
+                    state.wipClient = client;
+                    const trigger = $('wip-client-trigger');
+                    const menu = $('wip-client-menu');
+                    if (trigger && menu) {
+                        const opt = menu.querySelector(`[data-value="${client}"]`);
+                        if (opt) {
+                            menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
+                            opt.classList.add('selected');
+                            trigger.querySelector('span').textContent = opt.textContent;
+                        }
+                    }
+                    renderWip();
+                } else if (view === 'tracker') {
+                    state.trackerClient = client;
+                    const trigger = $('tracker-client-trigger');
+                    const menu = $('tracker-client-menu');
+                    if (trigger && menu) {
+                        const opt = menu.querySelector(`[data-value="${client}"]`);
+                        if (opt) {
+                            menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
+                            opt.classList.add('selected');
+                            trigger.querySelector('span').textContent = opt.textContent;
+                        }
+                    }
+                    renderTracker();
                 }
-            }
-            renderWip();
-        } else if (view === 'tracker') {
-            state.trackerClient = client;
-            // Update dropdown display
-            const trigger = $('tracker-client-trigger');
-            const menu = $('tracker-client-menu');
-            if (trigger && menu) {
-                const opt = menu.querySelector(`[data-value="${client}"]`);
-                if (opt) {
-                    menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
-                    opt.classList.add('selected');
-                    trigger.querySelector('span').textContent = opt.textContent;
-                }
-            }
-            renderTracker();
+            }, 100);
         }
     }
-    
-    // Clear deep link after applying
-    state.deepLink = null;
     
     // Clear URL params without reload
     if (window.history.replaceState) {
@@ -288,6 +289,9 @@ function unlockApp() {
     loadClients();
     loadJobs();
     resetInactivityTimer();
+    
+    // Apply deep link immediately after unlock
+    applyDeepLink();
 }
 
 function checkSession() {
@@ -396,9 +400,6 @@ async function loadJobs() {
     if (state.currentView === 'wip') {
         renderWip();
     }
-    
-    // Apply deep link after data is ready
-    applyDeepLink();
 }
 
 // ===== CONVERSATION =====
