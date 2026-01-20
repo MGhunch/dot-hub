@@ -435,13 +435,15 @@ function addUserMessage(text) {
 
 // Thinking helper messages
 const thinkingMessages = {
-    stage1: ["digging through the files...", "let me check on that...", "on the case...", "hunting that down..."],
-    stage2: ["making sense of things...", "piecing it together...", "joining the dots...", "checking it's tickety boo..."],
-    stage3: ["dotting my eyes...", "almost there...", "nearly done...", "lining it all up..."]
+    stage1: ["...digging through the files...", "...let me check on that...", "...on the case...", "...hunting that down..."],
+    stage2: ["...making sense of things...", "...piecing it together...", "...joining the dots...", "...checking it's tickety boo..."],
+    stage3: ["...dotting my eyes...", "...almost there...", "...nearly done...", "...lining it all up..."],
+    stage4: "...gimme a sec..."
 };
 
 let thinkingTimeout1 = null;
 let thinkingTimeout2 = null;
+let thinkingTimeout3 = null;
 
 function addThinkingDots() {
     const area = getActiveConversationArea();
@@ -453,6 +455,7 @@ function addThinkingDots() {
     const msg1 = thinkingMessages.stage1[Math.floor(Math.random() * thinkingMessages.stage1.length)];
     const msg2 = thinkingMessages.stage2[Math.floor(Math.random() * thinkingMessages.stage2.length)];
     const msg3 = thinkingMessages.stage3[Math.floor(Math.random() * thinkingMessages.stage3.length)];
+    const msg4 = thinkingMessages.stage4;
     
     dots.innerHTML = `
         <div class="dot-thinking">
@@ -465,15 +468,18 @@ function addThinkingDots() {
     area?.appendChild(dots);
     if (area) area.scrollTop = area.scrollHeight;
     
-    // Cycle through stages - stage 1 for 1s, then stage 2 for 700ms, then stage 3 stays
+    // Cycle through stages - 800ms each, stage 4 stays
     const helper = dots.querySelector('.thinking-helper');
     
     thinkingTimeout1 = setTimeout(() => {
         helper.textContent = msg2;
         thinkingTimeout2 = setTimeout(() => {
             helper.textContent = msg3;
-        }, 900);
-    }, 1200);
+            thinkingTimeout3 = setTimeout(() => {
+                helper.textContent = msg4;
+            }, 800);
+        }, 800);
+    }, 800);
 }
 
 function removeThinkingDots() {
@@ -484,6 +490,10 @@ function removeThinkingDots() {
     if (thinkingTimeout2) {
         clearTimeout(thinkingTimeout2);
         thinkingTimeout2 = null;
+    }
+    if (thinkingTimeout3) {
+        clearTimeout(thinkingTimeout3);
+        thinkingTimeout3 = null;
     }
     $('currentThinking')?.remove();
 }
@@ -778,7 +788,7 @@ function createUniversalCard(job, id) {
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ') || '';
+    const summaryLine = summaryParts.join(' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -797,7 +807,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· </span>
+                        <span class="dot"> ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
