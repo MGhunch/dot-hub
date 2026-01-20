@@ -481,10 +481,10 @@ function addThinkingDots() {
                 helper.textContent = msg3;
                 thinkingTimeout4 = setTimeout(() => {
                     helper.textContent = msg4;
-                }, 800);
-            }, 800);
-        }, 800);
-    }, 400);
+                }, 1000);
+            }, 1000);
+        }, 1000);
+    }, 1000);
 }
 
 function removeThinkingDots() {
