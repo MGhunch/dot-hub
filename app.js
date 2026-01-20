@@ -433,28 +433,54 @@ function addUserMessage(text) {
     if (area) area.scrollTop = area.scrollHeight;
 }
 
+// Thinking helper messages
+const thinkingMessages = {
+    stage1: ["Digging through the files...", "Let me check on that...", "On the case...", "Hunting that down..."],
+    stage2: ["Making sense of it...", "Piecing it together...", "Joining the dots...", "Checking it's tickety boo..."],
+    stage3: ["Here's what I reckon...", "Almost there...", "Nearly done...", "Pulling it together..."]
+};
+
+let thinkingInterval = null;
+
 function addThinkingDots() {
     const area = getActiveConversationArea();
     const dots = document.createElement('div');
     dots.className = 'thinking-dots';
     dots.id = 'currentThinking';
     
-    // ORIGINAL - uncomment to restore bouncing dots
-    // dots.innerHTML = '<div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div>';
+    // Pick random message from each stage
+    const msg1 = thinkingMessages.stage1[Math.floor(Math.random() * thinkingMessages.stage1.length)];
+    const msg2 = thinkingMessages.stage2[Math.floor(Math.random() * thinkingMessages.stage2.length)];
+    const msg3 = thinkingMessages.stage3[Math.floor(Math.random() * thinkingMessages.stage3.length)];
     
-    // Dot with pulsing heart - SVG version
     dots.innerHTML = `
         <div class="dot-thinking">
             <img src="images/Robot_01.svg" alt="Dot" class="dot-robot">
             <img src="images/Heart_01.svg" alt="" class="dot-heart-svg">
         </div>
+        <span class="thinking-helper">${msg1}</span>
     `;
     
     area?.appendChild(dots);
     if (area) area.scrollTop = area.scrollHeight;
+    
+    // Cycle through stages
+    const helper = dots.querySelector('.thinking-helper');
+    let stage = 1;
+    
+    thinkingInterval = setInterval(() => {
+        stage++;
+        if (stage === 2) helper.textContent = msg2;
+        else if (stage === 3) helper.textContent = msg3;
+        // Stay on stage 3 after that
+    }, 700);
 }
 
 function removeThinkingDots() {
+    if (thinkingInterval) {
+        clearInterval(thinkingInterval);
+        thinkingInterval = null;
+    }
     $('currentThinking')?.remove();
 }
 
@@ -472,8 +498,15 @@ async function processQuestion(question) {
     console.log('Dot response:', response);
     
     if (!response) {
+        const failMessages = [
+            "Hmm, I'm having trouble thinking right now. Try again?",
+            "Sorry, my brain just glitched. Give it another go?",
+            "Oops, something went sideways. Mind trying that again?",
+            "My wires got crossed for a sec. One more time?",
+            "That one got away from me. Try again?"
+        ];
         renderResponse({ 
-            message: "Hmm, I'm having trouble thinking right now. Try again?",
+            message: failMessages[Math.floor(Math.random() * failMessages.length)],
             nextPrompt: "What can Dot do?"
         });
         return;

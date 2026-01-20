@@ -33,6 +33,25 @@
     padding: 0; 
 }
 
+/* Custom scrollbar - thin and subtle */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--grey-200) transparent;
+}
+*::-webkit-scrollbar {
+    width: 6px;
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+    background: var(--grey-200);
+    border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--grey-400);
+}
+
 html, body {
     height: 100%;
 }
@@ -1344,8 +1363,14 @@ body {
 
 .thinking-dots {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 10px;
     padding: 20px 0;
+}
+.thinking-helper {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--grey-400);
 }
 .thinking-dot {
     width: 12px;
