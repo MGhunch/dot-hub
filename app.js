@@ -436,11 +436,12 @@ function addUserMessage(text) {
 // Thinking helper messages
 const thinkingMessages = {
     stage1: ["Digging through the files...", "Let me check on that...", "On the case...", "Hunting that down..."],
-    stage2: ["Making sense of it...", "Piecing it together...", "Joining the dots...", "Checking it's tickety boo..."],
-    stage3: ["Here's what I reckon...", "Almost there...", "Nearly done...", "Pulling it together..."]
+    stage2: ["Making sense of things...", "Piecing it together...", "Joining the dots...", "Checking it's tickety boo..."],
+    stage3: ["Dotting my eyes...", "Almost there...", "Nearly done...", "Lining it all up..."]
 };
 
-let thinkingInterval = null;
+let thinkingTimeout1 = null;
+let thinkingTimeout2 = null;
 
 function addThinkingDots() {
     const area = getActiveConversationArea();
@@ -464,22 +465,25 @@ function addThinkingDots() {
     area?.appendChild(dots);
     if (area) area.scrollTop = area.scrollHeight;
     
-    // Cycle through stages
+    // Cycle through stages - stage 1 for 1s, then stage 2 for 700ms, then stage 3 stays
     const helper = dots.querySelector('.thinking-helper');
-    let stage = 1;
     
-    thinkingInterval = setInterval(() => {
-        stage++;
-        if (stage === 2) helper.textContent = msg2;
-        else if (stage === 3) helper.textContent = msg3;
-        // Stay on stage 3 after that
-    }, 700);
+    thinkingTimeout1 = setTimeout(() => {
+        helper.textContent = msg2;
+        thinkingTimeout2 = setTimeout(() => {
+            helper.textContent = msg3;
+        }, 700);
+    }, 1000);
 }
 
 function removeThinkingDots() {
-    if (thinkingInterval) {
-        clearInterval(thinkingInterval);
-        thinkingInterval = null;
+    if (thinkingTimeout1) {
+        clearTimeout(thinkingTimeout1);
+        thinkingTimeout1 = null;
+    }
+    if (thinkingTimeout2) {
+        clearTimeout(thinkingTimeout2);
+        thinkingTimeout2 = null;
     }
     $('currentThinking')?.remove();
 }
