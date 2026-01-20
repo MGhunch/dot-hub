@@ -1,4 +1,4 @@
-/**
+/** 
  * Dot Hub - Unified Interface
  * Simplified: Claude responds naturally, frontend renders
  */
