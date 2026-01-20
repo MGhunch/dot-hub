@@ -444,6 +444,7 @@ const thinkingMessages = {
 let thinkingTimeout1 = null;
 let thinkingTimeout2 = null;
 let thinkingTimeout3 = null;
+let thinkingTimeout4 = null;
 
 function addThinkingDots() {
     const area = getActiveConversationArea();
@@ -457,29 +458,33 @@ function addThinkingDots() {
     const msg3 = thinkingMessages.stage3[Math.floor(Math.random() * thinkingMessages.stage3.length)];
     const msg4 = thinkingMessages.stage4;
     
+    // Start with just Dot, no text
     dots.innerHTML = `
         <div class="dot-thinking">
             <img src="images/Robot_01.svg" alt="Dot" class="dot-robot">
             <img src="images/Heart_01.svg" alt="" class="dot-heart-svg">
         </div>
-        <span class="thinking-helper">${msg1}</span>
+        <span class="thinking-helper"></span>
     `;
     
     area?.appendChild(dots);
     if (area) area.scrollTop = area.scrollHeight;
     
-    // Cycle through stages - 800ms each, stage 4 stays
+    // Cycle through stages - show first text after 400ms, then 800ms each
     const helper = dots.querySelector('.thinking-helper');
     
     thinkingTimeout1 = setTimeout(() => {
-        helper.textContent = msg2;
+        helper.textContent = msg1;
         thinkingTimeout2 = setTimeout(() => {
-            helper.textContent = msg3;
+            helper.textContent = msg2;
             thinkingTimeout3 = setTimeout(() => {
-                helper.textContent = msg4;
+                helper.textContent = msg3;
+                thinkingTimeout4 = setTimeout(() => {
+                    helper.textContent = msg4;
+                }, 800);
             }, 800);
         }, 800);
-    }, 800);
+    }, 400);
 }
 
 function removeThinkingDots() {
@@ -494,6 +499,10 @@ function removeThinkingDots() {
     if (thinkingTimeout3) {
         clearTimeout(thinkingTimeout3);
         thinkingTimeout3 = null;
+    }
+    if (thinkingTimeout4) {
+        clearTimeout(thinkingTimeout4);
+        thinkingTimeout4 = null;
     }
     $('currentThinking')?.remove();
 }
@@ -788,7 +797,7 @@ function createUniversalCard(job, id) {
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ') || '';
+    const summaryLine = summaryParts.join(' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -807,7 +816,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· </span>
+                        <span class="dot"> ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
