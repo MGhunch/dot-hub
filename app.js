@@ -6,7 +6,7 @@
 // ===== CONFIGURATION =====
 const API_BASE = 'https://dot-remote-api.up.railway.app';
 const PROXY_BASE = 'https://dot-proxy.up.railway.app';
-const TRAFFIC_BASE = 'https://dot-traffic.up.railway.app';
+const TRAFFIC_BASE = 'https://dot-traffic-2.up.railway.app';
 
 const KEY_CLIENTS = ['ONE', 'ONB', 'ONS', 'SKY', 'TOW'];
 
