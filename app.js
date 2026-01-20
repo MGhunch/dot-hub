@@ -1,4 +1,4 @@
-/** 
+/**
  * Dot Hub - Unified Interface
  * Simplified: Claude responds naturally, frontend renders
  */
@@ -6,7 +6,6 @@
 // ===== CONFIGURATION =====
 const API_BASE = 'https://dot-remote-api.up.railway.app';
 const PROXY_BASE = 'https://dot-proxy.up.railway.app';
-const TRAFFIC_BASE = 'https://dot-traffic-2.up.railway.app';
 
 const KEY_CLIENTS = ['ONE', 'ONB', 'ONS', 'SKY', 'TOW'];
 
@@ -50,68 +49,6 @@ document.addEventListener('DOMContentLoaded', init);
 function init() {
     checkSession();
     setupEventListeners();
-    handleDeepLink();
-}
-
-// ===== DEEP LINK HANDLING =====
-function handleDeepLink() {
-    const params = new URLSearchParams(window.location.search);
-    const view = params.get('view');       // wip, tracker, home
-    const client = params.get('client');   // SKY, TOW, etc.
-    const job = params.get('job');         // TOW066
-    const month = params.get('month');     // January, February, etc. or 'current'
-    const quarter = params.get('quarter'); // 'true' for quarter view
-    
-    // Store for after login/data load
-    if (view || client || job || month || quarter) {
-        state.deepLink = { view, client, job, month, quarter };
-    }
-}
-
-function applyDeepLink() {
-    if (!state.deepLink) return;
-    
-    const { view, client, job, month, quarter } = state.deepLink;
-    
-    // Clear deep link first to prevent re-application
-    state.deepLink = null;
-    
-    // Clear URL params without reload (do this early)
-    if (window.history.replaceState) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
-    // Set state BEFORE navigating so render functions use our values
-    
-    if (view === 'wip' && client) {
-        state.wipClient = client;
-    }
-    
-    if (view === 'tracker') {
-        if (client) {
-            state.trackerClient = client;
-            // Don't set localStorage - deep links shouldn't affect future visits
-        }
-        
-        if (month) {
-            let targetMonth = month;
-            if (month === 'current') {
-                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                                  'July', 'August', 'September', 'October', 'November', 'December'];
-                targetMonth = monthNames[new Date().getMonth()];
-            }
-            trackerCurrentMonth = targetMonth;
-        }
-        
-        if (quarter === 'true') {
-            trackerIsQuarterView = true;
-        }
-    }
-    
-    // Now navigate - render functions will use our pre-set values
-    if (view && ['wip', 'tracker', 'home'].includes(view)) {
-        navigateTo(view);
-    }
 }
 
 function setupEventListeners() {
@@ -285,9 +222,6 @@ function unlockApp() {
     loadClients();
     loadJobs();
     resetInactivityTimer();
-    
-    // Apply deep link immediately after unlock
-    applyDeepLink();
 }
 
 function checkSession() {
@@ -296,7 +230,6 @@ function checkSession() {
 }
 
 function signOut() {
-    clearDotSession();  // Clear conversation memory on Traffic
     sessionStorage.removeItem('dotUser');
     state.currentUser = null;
     state.enteredPin = '';
@@ -433,235 +366,80 @@ function addUserMessage(text) {
     if (area) area.scrollTop = area.scrollHeight;
 }
 
-// Thinking helper messages
-const thinkingMessages = {
-    stage1: ["...digging through the files...", "...let me check on that...", "...on the case...", "...hunting that down..."],
-    stage2: ["...making sense of things...", "...piecing it together...", "...joining the dots...", "...checking it's tickety boo..."],
-    stage3: ["...dotting my eyes...", "...almost there...", "...nearly done...", "...lining it all up..."],
-    stage4: "...gimme a sec..."
-};
-
-let thinkingTimeout1 = null;
-let thinkingTimeout2 = null;
-let thinkingTimeout3 = null;
-let thinkingTimeout4 = null;
-
 function addThinkingDots() {
     const area = getActiveConversationArea();
     const dots = document.createElement('div');
     dots.className = 'thinking-dots';
     dots.id = 'currentThinking';
-    
-    // Pick random message from each stage
-    const msg1 = thinkingMessages.stage1[Math.floor(Math.random() * thinkingMessages.stage1.length)];
-    const msg2 = thinkingMessages.stage2[Math.floor(Math.random() * thinkingMessages.stage2.length)];
-    const msg3 = thinkingMessages.stage3[Math.floor(Math.random() * thinkingMessages.stage3.length)];
-    const msg4 = thinkingMessages.stage4;
-    
-    // Start with just Dot, no text
-    dots.innerHTML = `
-        <div class="dot-thinking">
-            <img src="images/Robot_01.svg" alt="Dot" class="dot-robot">
-            <img src="images/Heart_01.svg" alt="" class="dot-heart-svg">
-        </div>
-        <span class="thinking-helper"></span>
-    `;
-    
+    dots.innerHTML = '<div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div>';
     area?.appendChild(dots);
     if (area) area.scrollTop = area.scrollHeight;
-    
-    // Cycle through stages - show first text after 400ms, then 800ms each
-    const helper = dots.querySelector('.thinking-helper');
-    
-    thinkingTimeout1 = setTimeout(() => {
-        helper.textContent = msg1;
-        thinkingTimeout2 = setTimeout(() => {
-            helper.textContent = msg2;
-            thinkingTimeout3 = setTimeout(() => {
-                helper.textContent = msg3;
-                thinkingTimeout4 = setTimeout(() => {
-                    helper.textContent = msg4;
-                }, 1000);
-            }, 1000);
-        }, 1000);
-    }, 1000);
 }
 
 function removeThinkingDots() {
-    if (thinkingTimeout1) {
-        clearTimeout(thinkingTimeout1);
-        thinkingTimeout1 = null;
-    }
-    if (thinkingTimeout2) {
-        clearTimeout(thinkingTimeout2);
-        thinkingTimeout2 = null;
-    }
-    if (thinkingTimeout3) {
-        clearTimeout(thinkingTimeout3);
-        thinkingTimeout3 = null;
-    }
-    if (thinkingTimeout4) {
-        clearTimeout(thinkingTimeout4);
-        thinkingTimeout4 = null;
-    }
     $('currentThinking')?.remove();
 }
 
-// ===== QUERY PROCESSING (Unified - routes through Traffic) =====
+// ===== QUERY PROCESSING (Simplified) =====
 async function processQuestion(question) {
     resetInactivityTimer();
     addThinkingDots();
     
     console.log('Query:', question);
     
-    const response = await askDot(question);
+    const response = await askClaude(question);
     
     removeThinkingDots();
     
-    console.log('Dot response:', response);
+    console.log('Claude response:', response);
     
     if (!response) {
-        const failMessages = [
-            "Hmm, I'm having trouble thinking right now. Try again?",
-            "Sorry, my brain just glitched. Give it another go?",
-            "Oops, something went sideways. Mind trying that again?",
-            "My wires got crossed for a sec. One more time?",
-            "That one got away from me. Try again?"
-        ];
         renderResponse({ 
-            message: failMessages[Math.floor(Math.random() * failMessages.length)],
+            message: "Hmm, I'm having trouble thinking right now. Try again?",
             nextPrompt: "What can Dot do?"
         });
         return;
     }
     
-    // Handle different response types
-    switch (response.type) {
-        case 'answer':
-            // Simple answer, maybe with job cards
-            renderResponse({
-                message: response.message,
-                jobs: response.jobs || [],
-                nextPrompt: response.nextPrompt
-            });
-            break;
-            
-        case 'action':
-            // Worker was called (or will be called)
-            renderResponse({
-                message: response.message,
-                jobs: [],
-                nextPrompt: response.nextPrompt
-            });
-            break;
-            
-        case 'confirm':
-            // Need user to pick a job
-            renderResponse({
-                message: response.message,
-                jobs: response.jobs || [],
-                nextPrompt: null
-            });
-            break;
-            
-        case 'clarify':
-            // Need more info from user
-            renderResponse({
-                message: response.message,
-                jobs: [],
-                nextPrompt: null
-            });
-            break;
-            
-        case 'redirect':
-            // Redirect to WIP or Tracker
-            renderResponse({
-                message: response.message,
-                jobs: [],
-                nextPrompt: null
-            });
-            // Navigate to the view
-            if (response.redirectTo) {
-                setTimeout(() => {
-                    navigateTo(response.redirectTo);
-                    // Apply filters if provided
-                    if (response.redirectParams?.client) {
-                        if (response.redirectTo === 'wip') {
-                            state.wipClient = response.redirectParams.client;
-                            renderWip();
-                        } else if (response.redirectTo === 'tracker') {
-                            state.trackerClient = response.redirectParams.client;
-                            renderTracker();
-                        }
-                    }
-                }, 1500);  // Short delay so user sees the message
-            }
-            break;
-            
-        case 'error':
-            // Something went wrong
-            renderResponse({
-                message: response.message || "Sorry, I got in a muddle over that one.",
-                jobs: [],
-                nextPrompt: "What can Dot do?"
-            });
-            break;
-            
-        default:
-            // Fallback - treat as answer
-            renderResponse({
-                message: response.message || "I'm not sure what happened there.",
-                jobs: response.jobs || [],
-                nextPrompt: response.nextPrompt
-            });
+    // Get jobs if requested
+    let jobs = [];
+    if (response.jobs?.show) {
+        jobs = getFilteredJobsFromResponse(response.jobs);
     }
+    
+    renderResponse({
+        message: response.message,
+        jobs: jobs,
+        nextPrompt: response.nextPrompt
+    });
 }
 
-// ===== DOT API (Unified Traffic) =====
-async function askDot(question) {
+// ===== CLAUDE API =====
+async function askClaude(question) {
     try {
         const sessionId = state.currentUser?.name || 'anonymous';
         
-        const response = await fetch(`${TRAFFIC_BASE}/traffic`, {
+        const response = await fetch(`${API_BASE}/claude/parse`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                source: 'hub',
-                content: question,
-                senderEmail: state.currentUser?.email || 'hub@hunch.co.nz',
-                senderName: state.currentUser?.name || 'Hub User',
-                sessionId: sessionId
+                question,
+                clients: state.allClients.map(c => ({ code: c.code, name: c.name })),
+                sessionId
             })
         });
         
-        if (!response.ok) {
-            console.log('Traffic API error:', response.status);
-            return null;
-        }
+        if (!response.ok) return null;
         
-        return await response.json();
+        const result = await response.json();
+        return result.parsed || null;
     } catch (e) {
-        console.log('Traffic API error:', e);
+        console.log('Claude API error:', e);
         return null;
     }
 }
 
-async function clearDotSession() {
-    try {
-        const sessionId = state.currentUser?.name || 'anonymous';
-        await fetch(`${TRAFFIC_BASE}/traffic/clear`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId })
-        });
-    } catch (e) {
-        console.log('Failed to clear session:', e);
-    }
-}
-
-// ===== JOB FILTERING (DEPRECATED - backend now returns jobs directly) =====
-// Keeping for reference in case we need local filtering again
-/*
+// ===== JOB FILTERING =====
 function getFilteredJobsFromResponse(jobFilter) {
     if (!jobFilter) return [];
     
@@ -737,7 +515,6 @@ function getFilteredJobsFromResponse(jobFilter) {
     
     return jobs;
 }
-*/
 
 // ===== RENDERING =====
 function renderResponse({ message, jobs = [], nextPrompt = null }) {
@@ -759,17 +536,21 @@ function renderResponse({ message, jobs = [], nextPrompt = null }) {
     }
     
     if (nextPrompt) {
-        html += `<p class="next-prompt" data-question="${nextPrompt}">${nextPrompt}</p>`;
+        html += `<div class="smart-prompts">
+            <button class="smart-prompt" data-question="${nextPrompt}">
+                <img src="images/dot-sitting.png" class="prompt-dot">${nextPrompt}
+            </button>
+        </div>`;
     }
     
     response.innerHTML = html;
     area?.appendChild(response);
     
     // Bind click handlers
-    response.querySelectorAll('.next-prompt').forEach(el => {
-        el.addEventListener('click', () => {
-            addUserMessage(el.dataset.question);
-            processQuestion(el.dataset.question);
+    response.querySelectorAll('.smart-prompt').forEach(btn => {
+        btn.addEventListener('click', () => {
+            addUserMessage(btn.dataset.question);
+            processQuestion(btn.dataset.question);
         });
     });
     
@@ -797,7 +578,7 @@ function createUniversalCard(job, id) {
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ') || '';
+    const summaryLine = summaryParts.join(' · ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -816,7 +597,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· </span>
+                        <span class="dot"> · </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
@@ -1091,32 +872,14 @@ function setupWipDropdown() {
     const menu = $('wip-client-menu');
     if (!trigger || !menu) return;
     
-    // Check if we have a pre-set client from deep link
-    const presetClient = state.wipClient || 'all';
-    
-    menu.innerHTML = '';
-    
-    // Add "All Clients" option
-    const allOpt = document.createElement('div');
-    allOpt.className = 'custom-dropdown-option' + (presetClient === 'all' ? ' selected' : '');
-    allOpt.dataset.value = 'all';
-    allOpt.textContent = 'All Clients';
-    menu.appendChild(allOpt);
-    
-    // Add client options
-    let selectedText = 'All Clients';
+    menu.innerHTML = '<div class="custom-dropdown-option selected" data-value="all">All Clients</div>';
     state.allClients.forEach(c => {
         const opt = document.createElement('div');
-        const isSelected = (c.code === presetClient);
-        opt.className = 'custom-dropdown-option' + (isSelected ? ' selected' : '');
+        opt.className = 'custom-dropdown-option';
         opt.dataset.value = c.code;
         opt.textContent = getClientDisplayName(c);
         menu.appendChild(opt);
-        if (isSelected) selectedText = opt.textContent;
     });
-    
-    // Update trigger text to match selection
-    trigger.querySelector('span').textContent = selectedText;
     
     trigger.onclick = (e) => { e.stopPropagation(); trigger.classList.toggle('open'); menu.classList.toggle('open'); };
     menu.onclick = (e) => {
@@ -1169,7 +932,7 @@ function groupByTodo(jobs) {
     });
     const s = (a, b) => getDaysUntilDue(a.updateDue) - getDaysUntilDue(b.updateDue);
     Object.values(g).forEach(arr => arr.sort(s));
-    return { leftTop: { title: 'DO IT NOW', jobs: g.doNow, compact: false }, leftBottom: { title: 'DO IT SOON', jobs: g.doSoon, compact: false }, rightTop: { title: 'COMING UP', jobs: g.comingUp, compact: true }, rightBottom: { title: 'WITH CLIENT', jobs: g.withClient, compact: true } };
+    return { leftTop: { title: 'DO IT NOW', jobs: g.doNow }, leftBottom: { title: 'DO IT SOON', jobs: g.doSoon }, rightTop: { title: 'COMING UP', jobs: g.comingUp }, rightBottom: { title: 'WITH CLIENT', jobs: g.withClient } };
 }
 
 function groupByWip(jobs) {
@@ -1183,7 +946,7 @@ function groupByWip(jobs) {
     });
     const s = (a, b) => getDaysUntilDue(a.updateDue) - getDaysUntilDue(b.updateDue);
     Object.values(g).forEach(arr => arr.sort(s));
-    return { leftTop: { title: 'JOBS WITH US', jobs: g.withUs, compact: false }, rightTop: { title: 'JOBS WITH YOU', jobs: g.withYou, compact: false }, leftBottom: { title: 'INCOMING', jobs: g.incoming, compact: true }, rightBottom: { title: 'ON HOLD', jobs: g.onHold, compact: true } };
+    return { leftTop: { title: 'JOBS WITH US', jobs: g.withUs }, rightTop: { title: 'JOBS WITH YOU', jobs: g.withYou }, leftBottom: { title: 'INCOMING', jobs: g.incoming }, rightBottom: { title: 'ON HOLD', jobs: g.onHold } };
 }
 
 function renderWip() {
@@ -1195,12 +958,8 @@ function renderWip() {
         content.innerHTML = `
             <div class="dot-loading">
                 <div class="dot-with-heart">
-                    <img src="images/Dot-blank-heart.png" alt="Dot" onload="this.parentElement.classList.add('loaded')">
-                    <div class="dot-heart">
-                        <svg viewBox="0 0 24 24" fill="#ED1C24" stroke="#1a1a1a" stroke-width="2">
-                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                        </svg>
-                    </div>
+                    <img src="images/Dot-blank-heart.png" alt="Dot">
+                    <div class="dot-heart"></div>
                 </div>
                 <p>Grabbing all your jobs...</p>
             </div>
@@ -1366,10 +1125,7 @@ function populateTrackerClients(data) {
     if (!menu || !trigger) return;
     
     menu.innerHTML = '';
-    
-    // Check if we already have a client set (from deep link)
-    const presetClient = state.trackerClient;
-    const lastClient = presetClient || localStorage.getItem('trackerLastClient');
+    const lastClient = localStorage.getItem('trackerLastClient');
     let defaultClient = null;
     let defaultName = '';
     
@@ -1425,28 +1181,9 @@ function setupTrackerDropdowns() {
         renderTrackerContent();
     });
     
-    // Sync month dropdown display with current value (for deep links)
-    const monthTrigger = $('tracker-month-trigger');
-    const monthMenu = $('tracker-month-menu');
-    if (monthTrigger && monthMenu && trackerCurrentMonth) {
-        const opt = monthMenu.querySelector(`[data-value="${trackerCurrentMonth}"]`);
-        if (opt) {
-            monthMenu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
-            opt.classList.add('selected');
-            monthTrigger.querySelector('span').textContent = opt.textContent;
-        }
-    }
-    
     const toggle = $('tracker-mode-switch');
     const labelMonth = $('tracker-mode-spend');
     const labelQuarter = $('tracker-mode-pipeline');
-    
-    // Sync quarter toggle with current value (for deep links)
-    if (toggle) {
-        toggle.checked = trackerIsQuarterView;
-        labelMonth?.classList.toggle('active', !trackerIsQuarterView);
-        labelQuarter?.classList.toggle('active', trackerIsQuarterView);
-    }
     
     if (toggle) {
         toggle.addEventListener('change', function() {
