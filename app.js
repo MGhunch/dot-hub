@@ -435,9 +435,9 @@ function addUserMessage(text) {
 
 // Thinking helper messages
 const thinkingMessages = {
-    stage1: ["Digging through the files...", "Let me check on that...", "On the case...", "Hunting that down..."],
-    stage2: ["Making sense of things...", "Piecing it together...", "Joining the dots...", "Checking it's tickety boo..."],
-    stage3: ["Dotting my eyes...", "Almost there...", "Nearly done...", "Lining it all up..."]
+    stage1: ["digging through the files...", "let me check on that...", "on the case...", "hunting that down..."],
+    stage2: ["making sense of things...", "piecing it together...", "joining the dots...", "checking it's tickety boo..."],
+    stage3: ["dotting my eyes...", "almost there...", "nearly done...", "lining it all up..."]
 };
 
 let thinkingTimeout1 = null;
@@ -472,8 +472,8 @@ function addThinkingDots() {
         helper.textContent = msg2;
         thinkingTimeout2 = setTimeout(() => {
             helper.textContent = msg3;
-        }, 700);
-    }, 1000);
+        }, 900);
+    }, 1200);
 }
 
 function removeThinkingDots() {
@@ -778,7 +778,7 @@ function createUniversalCard(job, id) {
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ') || '';
+    const summaryLine = summaryParts.join(' ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -797,7 +797,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· </span>
+                        <span class="dot"> ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>

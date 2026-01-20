@@ -1017,9 +1017,11 @@ body {
 @keyframes heartbeat-svg {
     0%, 100% { 
         opacity: 0.5;
+        transform: scale(1);
     }
     50% { 
         opacity: 1;
+        transform: scale(1.15);
     }
 }
 
@@ -1363,7 +1365,7 @@ body {
 .thinking-dots {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 20px;
     padding: 20px 0;
 }
 .thinking-helper {
