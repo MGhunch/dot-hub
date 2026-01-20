@@ -703,21 +703,17 @@ function renderResponse({ message, jobs = [], nextPrompt = null }) {
     }
     
     if (nextPrompt) {
-        html += `<div class="smart-prompts">
-            <button class="smart-prompt" data-question="${nextPrompt}">
-                <img src="images/dot-sitting.png" class="prompt-dot">${nextPrompt}
-            </button>
-        </div>`;
+        html += `<p class="next-prompt" data-question="${nextPrompt}">${nextPrompt}</p>`;
     }
     
     response.innerHTML = html;
     area?.appendChild(response);
     
     // Bind click handlers
-    response.querySelectorAll('.smart-prompt').forEach(btn => {
-        btn.addEventListener('click', () => {
-            addUserMessage(btn.dataset.question);
-            processQuestion(btn.dataset.question);
+    response.querySelectorAll('.next-prompt').forEach(el => {
+        el.addEventListener('click', () => {
+            addUserMessage(el.dataset.question);
+            processQuestion(el.dataset.question);
         });
     });
     

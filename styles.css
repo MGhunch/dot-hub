@@ -1393,24 +1393,14 @@ body {
 .client-card:hover .card-chevron { color: var(--red); transform: translateX(4px); }
 
 /* Smart Prompts */
-.smart-prompts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-.smart-prompt {
-    padding: 6px 0;
-    background: none;
-    border: none;
-    font-family: var(--font-body);
-    font-size: 14px;
+.next-prompt {
     font-style: italic;
-    font-weight: 400;
     color: var(--grey-400);
     cursor: pointer;
-    transition: all 0.2s var(--ease-out);
+    transition: color 0.2s var(--ease-out);
+    margin-top: 8px;
 }
-.smart-prompt:hover {
+.next-prompt:hover {
     color: var(--red);
 }
 
