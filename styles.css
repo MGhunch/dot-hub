@@ -974,9 +974,9 @@ body {
 /* Thinking Dot Animation - SVG Version */
 .dot-thinking {
     position: relative;
-    width: 60px;
-    height: 82px;
-    margin-bottom: 16px;
+    width: 20px;
+    height: 28px;
+    margin-bottom: 12px;
 }
 
 .dot-thinking .dot-robot {
@@ -993,17 +993,15 @@ body {
     width: 100%;
     height: 100%;
     z-index: 2;
-    animation: heartbeat-svg 1.2s ease-in-out infinite;
+    animation: heartbeat-svg 0.8s ease-in-out infinite;
 }
 
 @keyframes heartbeat-svg {
     0%, 100% { 
-        opacity: 0.7;
-        filter: drop-shadow(0 0 2px var(--red));
+        opacity: 0.5;
     }
     50% { 
         opacity: 1;
-        filter: drop-shadow(0 0 8px var(--red)) drop-shadow(0 0 12px rgba(237, 28, 36, 0.4));
     }
 }
 
