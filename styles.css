@@ -974,8 +974,8 @@ body {
 /* Thinking Dot Animation - SVG Version */
 .dot-thinking {
     position: relative;
-    width: 28px;
-    height: 38px;
+    width: 20px;
+    height: 28px;
     margin-bottom: 12px;
 }
 
@@ -1394,8 +1394,7 @@ body {
 
 /* Smart Prompts */
 .next-prompt {
-    font-style: italic;
-    color: var(--grey-400);
+    color: var(--grey-600);
     cursor: pointer;
     transition: color 0.2s var(--ease-out);
     margin-top: 8px;
