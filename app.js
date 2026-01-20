@@ -573,13 +573,6 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysAgo = getDaysSinceUpdate(job.lastUpdated);
     
-    // Build summary line: Stage - Live Date - With client
-    let summaryParts = [];
-    if (job.stage) summaryParts.push(job.stage);
-    if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
-    if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' · ') || '';
-    
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
     
@@ -603,8 +596,9 @@ function createUniversalCard(job, id) {
                 </div>
             </div>
             <div class="job-expanded">
-                ${summaryLine ? `<div class="job-summary-line">${summaryLine}</div>` : ''}
-                <div class="section-label">The Project</div>
+                <div class="section-label">Owner</div>
+                <div class="job-owner">${job.projectOwner || 'Not assigned'}</div>
+                <div class="section-label" style="margin-top:14px">Description</div>
                 <div class="job-description">${job.description || 'No description'}</div>
                 <div class="section-label" style="margin-top:14px">Recent Activity</div>
                 ${recentActivity}

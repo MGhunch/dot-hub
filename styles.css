@@ -2049,18 +2049,6 @@ body {
    UNIVERSAL JOB CARD
    ================================================================= */
 
-/* Summary line in expanded card */
-.job-summary-line {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--grey-600);
-    margin-bottom: 16px;
-    padding: 8px 12px;
-    background: var(--grey-50);
-    border-radius: var(--radius-sm);
-    display: inline-block;
-}
-
 /* Recent Activity */
 .recent-activity {
     margin-bottom: 16px;
