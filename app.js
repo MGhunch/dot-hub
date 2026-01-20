@@ -6,6 +6,7 @@
 // ===== CONFIGURATION =====
 const API_BASE = 'https://dot-remote-api.up.railway.app';
 const PROXY_BASE = 'https://dot-proxy.up.railway.app';
+const TRAFFIC_BASE = 'https://dot-traffic.up.railway.app';
 
 const KEY_CLIENTS = ['ONE', 'ONB', 'ONS', 'SKY', 'TOW'];
 
@@ -295,6 +296,7 @@ function checkSession() {
 }
 
 function signOut() {
+    clearDotSession();  // Clear conversation memory on Traffic
     sessionStorage.removeItem('dotUser');
     state.currentUser = null;
     state.enteredPin = '';
@@ -460,18 +462,18 @@ function removeThinkingDots() {
     $('currentThinking')?.remove();
 }
 
-// ===== QUERY PROCESSING (Simplified) =====
+// ===== QUERY PROCESSING (Unified - routes through Traffic) =====
 async function processQuestion(question) {
     resetInactivityTimer();
     addThinkingDots();
     
     console.log('Query:', question);
     
-    const response = await askClaude(question);
+    const response = await askDot(question);
     
     removeThinkingDots();
     
-    console.log('Claude response:', response);
+    console.log('Dot response:', response);
     
     if (!response) {
         renderResponse({ 
@@ -481,45 +483,133 @@ async function processQuestion(question) {
         return;
     }
     
-    // Get jobs if requested
-    let jobs = [];
-    if (response.jobs?.show) {
-        jobs = getFilteredJobsFromResponse(response.jobs);
+    // Handle different response types
+    switch (response.type) {
+        case 'answer':
+            // Simple answer, maybe with job cards
+            renderResponse({
+                message: response.message,
+                jobs: response.jobs || [],
+                nextPrompt: response.nextPrompt
+            });
+            break;
+            
+        case 'action':
+            // Worker was called (or will be called)
+            renderResponse({
+                message: response.message,
+                jobs: [],
+                nextPrompt: response.nextPrompt
+            });
+            break;
+            
+        case 'confirm':
+            // Need user to pick a job
+            renderResponse({
+                message: response.message,
+                jobs: response.jobs || [],
+                nextPrompt: null
+            });
+            break;
+            
+        case 'clarify':
+            // Need more info from user
+            renderResponse({
+                message: response.message,
+                jobs: [],
+                nextPrompt: null
+            });
+            break;
+            
+        case 'redirect':
+            // Redirect to WIP or Tracker
+            renderResponse({
+                message: response.message,
+                jobs: [],
+                nextPrompt: null
+            });
+            // Navigate to the view
+            if (response.redirectTo) {
+                setTimeout(() => {
+                    navigateTo(response.redirectTo);
+                    // Apply filters if provided
+                    if (response.redirectParams?.client) {
+                        if (response.redirectTo === 'wip') {
+                            state.wipClient = response.redirectParams.client;
+                            renderWip();
+                        } else if (response.redirectTo === 'tracker') {
+                            state.trackerClient = response.redirectParams.client;
+                            renderTracker();
+                        }
+                    }
+                }, 1500);  // Short delay so user sees the message
+            }
+            break;
+            
+        case 'error':
+            // Something went wrong
+            renderResponse({
+                message: response.message || "Sorry, I got in a muddle over that one.",
+                jobs: [],
+                nextPrompt: "What can Dot do?"
+            });
+            break;
+            
+        default:
+            // Fallback - treat as answer
+            renderResponse({
+                message: response.message || "I'm not sure what happened there.",
+                jobs: response.jobs || [],
+                nextPrompt: response.nextPrompt
+            });
     }
-    
-    renderResponse({
-        message: response.message,
-        jobs: jobs,
-        nextPrompt: response.nextPrompt
-    });
 }
 
-// ===== CLAUDE API =====
-async function askClaude(question) {
+// ===== DOT API (Unified Traffic) =====
+async function askDot(question) {
     try {
         const sessionId = state.currentUser?.name || 'anonymous';
         
-        const response = await fetch(`${API_BASE}/claude/parse`, {
+        const response = await fetch(`${TRAFFIC_BASE}/traffic`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                question,
-                clients: state.allClients.map(c => ({ code: c.code, name: c.name })),
-                sessionId
+                source: 'hub',
+                content: question,
+                senderEmail: state.currentUser?.email || 'hub@hunch.co.nz',
+                senderName: state.currentUser?.name || 'Hub User',
+                sessionId: sessionId
             })
         });
         
-        if (!response.ok) return null;
+        if (!response.ok) {
+            console.log('Traffic API error:', response.status);
+            return null;
+        }
         
-        const result = await response.json();
-        return result.parsed || null;
+        return await response.json();
     } catch (e) {
-        console.log('Claude API error:', e);
+        console.log('Traffic API error:', e);
         return null;
     }
 }
 
-// ===== JOB FILTERING =====
+async function clearDotSession() {
+    try {
+        const sessionId = state.currentUser?.name || 'anonymous';
+        await fetch(`${TRAFFIC_BASE}/traffic/clear`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId })
+        });
+    } catch (e) {
+        console.log('Failed to clear session:', e);
+    }
+}
+
+// ===== JOB FILTERING (DEPRECATED - backend now returns jobs directly) =====
+// Keeping for reference in case we need local filtering again
+/*
 function getFilteredJobsFromResponse(jobFilter) {
     if (!jobFilter) return [];
     
@@ -595,6 +685,7 @@ function getFilteredJobsFromResponse(jobFilter) {
     
     return jobs;
 }
+*/
 
 // ===== RENDERING =====
 function renderResponse({ message, jobs = [], nextPrompt = null }) {
@@ -658,7 +749,7 @@ function createUniversalCard(job, id) {
     if (job.stage) summaryParts.push(job.stage);
     if (job.liveDate) summaryParts.push(`Live ${formatDueDate(job.liveDate)}`);
     if (job.withClient) summaryParts.push('With client');
-    const summaryLine = summaryParts.join(' Â· ') || '';
+    const summaryLine = summaryParts.join(' Ã‚Â· ') || '';
     
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
@@ -677,7 +768,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> Â· </span>
+                        <span class="dot"> Ã‚Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
