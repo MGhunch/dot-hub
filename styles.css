@@ -974,8 +974,8 @@ body {
 /* Thinking Dot Animation - SVG Version */
 .dot-thinking {
     position: relative;
-    width: 20px;
-    height: 28px;
+    width: 28px;
+    height: 38px;
     margin-bottom: 12px;
 }
 
