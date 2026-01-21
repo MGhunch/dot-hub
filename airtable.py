@@ -284,6 +284,7 @@ def get_active_jobs(client_code):
                 'update': latest_update,
                 'lastUpdated': last_updated,
                 'updateHistory': update_history,
+                'liveDate': fields.get('Live Date', ''),
             })
         
         return jobs
@@ -356,6 +357,7 @@ def get_all_active_jobs():
                 'update': latest_update,
                 'lastUpdated': last_updated,
                 'updateHistory': update_history,
+                'liveDate': fields.get('Live Date', ''),
             })
         
         return jobs
@@ -431,6 +433,7 @@ def get_job_by_number(job_number):
             'update': latest_update,
             'lastUpdated': last_updated,
             'updateHistory': update_history,
+            'liveDate': fields.get('Live Date', ''),
         }
         
     except Exception as e:
