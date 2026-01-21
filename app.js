@@ -580,7 +580,7 @@ function createUniversalCard(job, id) {
         <div class="job-card" id="${id}" data-job="${job.jobNumber}">
             <div class="job-header" data-job-id="${id}">
                 <div class="job-logo">
-                    <img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'">
+                    <img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/Robot.png'">
                 </div>
                 <div class="job-main">
                     <div class="job-title-row">
@@ -644,6 +644,7 @@ async function openJobModal(jobNumber) {
     
     $('job-modal-title').textContent = `${jobNumber} – ${job.jobName || 'Untitled'}`;
     $('job-modal-logo').src = getLogoUrl(job.clientCode);
+    $('job-modal-logo').onerror = function() { this.src = 'images/logos/Unknown.png'; };
     $('job-modal-logo').alt = job.clientCode;
     $('job-edit-name').value = job.jobName || '';
     $('job-edit-description').value = job.description || "What's this job all about?";
@@ -686,23 +687,41 @@ async function openJobModal(jobNumber) {
         const response = await fetch(`${API_BASE}/people/${clientCode}`);
         if (response.ok) {
             const people = await response.json();
+            console.log(`Loaded ${people.length} people for ${clientCode}`);
+            
             ownerSelect.innerHTML = '<option value="">Select...</option>';
+            
+            // Check if current owner is in the list
+            const currentOwner = job.projectOwner || '';
+            let ownerFound = false;
+            
             people.forEach(person => {
                 const option = document.createElement('option');
                 option.value = person.name;
                 option.textContent = person.name;
-                if (person.name === job.projectOwner) {
+                if (person.name === currentOwner) {
                     option.selected = true;
+                    ownerFound = true;
                 }
                 ownerSelect.appendChild(option);
             });
+            
+            // If current owner not in list but exists, add them at top
+            if (currentOwner && !ownerFound) {
+                const option = document.createElement('option');
+                option.value = currentOwner;
+                option.textContent = currentOwner;
+                option.selected = true;
+                ownerSelect.insertBefore(option, ownerSelect.options[1]);
+            }
         } else {
-            // Fallback to text display if API fails
-            ownerSelect.innerHTML = `<option value="${job.projectOwner || ''}">${job.projectOwner || 'Unknown'}</option>`;
+            // Fallback to current owner only
+            console.log('People API failed:', response.status);
+            ownerSelect.innerHTML = `<option value="${job.projectOwner || ''}">${job.projectOwner || 'Select...'}</option>`;
         }
     } catch (e) {
         console.log('Failed to load people:', e);
-        ownerSelect.innerHTML = `<option value="${job.projectOwner || ''}">${job.projectOwner || 'Unknown'}</option>`;
+        ownerSelect.innerHTML = `<option value="${job.projectOwner || ''}">${job.projectOwner || 'Select...'}</option>`;
     }
 }
 

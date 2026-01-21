@@ -2230,8 +2230,9 @@ body {
 .job-modal-links {
     display: flex;
     justify-content: flex-end;
-    gap: 16px;
+    gap: 20px;
     margin-top: -4px;
+    padding-right: 12px;
 }
 
 .job-modal-link {
@@ -2245,6 +2246,11 @@ body {
 }
 
 .job-modal-link:hover {
+    color: var(--red);
+}
+
+.job-modal-link::after {
+    content: ' →';
     color: var(--red);
 }
 
