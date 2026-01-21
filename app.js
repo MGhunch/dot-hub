@@ -4,7 +4,7 @@
  */
 
 // ===== CONFIGURATION =====
-const API_BASE = 'https://dot-remote-api.up.railway.app';
+const API_BASE = '/api';
 const PROXY_BASE = 'https://dot-proxy.up.railway.app';
 const TRAFFIC_BASE = 'https://dot-traffic-2.up.railway.app';
 
@@ -231,7 +231,8 @@ function checkIfStale() {
 
 function clearSessionSilently() {
     if (state.currentUser) {
-        fetch(`${API_BASE}/claude/clear`, {
+        // Clear session via Traffic (the brain)
+        fetch(`${TRAFFIC_BASE}/traffic/clear`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId: state.currentUser.name })

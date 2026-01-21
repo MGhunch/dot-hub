@@ -1,8 +1,2 @@
-[phases.setup]
-nixPkgs = ["nodejs_18"]
-
-[phases.install]
-cmds = ["npm install"]
-
 [start]
-cmd = "npx serve -s . -l tcp://0.0.0.0:$PORT"
+cmd = "python app.py"
