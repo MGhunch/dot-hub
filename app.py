@@ -27,19 +27,6 @@ def get_airtable_url(table):
     return f'https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{table}'
 
 
-# ===== STATIC FILES =====
-@app.route('/')
-def serve_index():
-    return send_from_directory('.', 'index.html')
-
-@app.route('/<path:path>')
-def serve_static(path):
-    # Don't serve /api routes as static files
-    if path.startswith('api/'):
-        return jsonify({'error': 'Not found'}), 404
-    return send_from_directory('.', path)
-
-
 # ===== HEALTH CHECK =====
 @app.route('/api/health')
 def health():
@@ -49,6 +36,12 @@ def health():
         'version': '1.0',
         'features': ['static', 'api', 'universal-schema']
     })
+
+
+# ===== STATIC FILES (must be after API routes) =====
+@app.route('/')
+def serve_index():
+    return send_from_directory('.', 'index.html')
 
 
 # ===== DATE PARSING HELPERS =====
@@ -528,6 +521,12 @@ def update_tracker():
     except Exception as e:
         print(f'[Hub API] Error updating tracker: {e}')
         return jsonify({'error': str(e)}), 500
+
+
+# ===== STATIC FILES CATCH-ALL (must be last) =====
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory('.', path)
 
 
 # ===== RUN =====
