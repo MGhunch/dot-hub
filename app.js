@@ -680,24 +680,22 @@ async function openJobModal(jobNumber) {
         teamsLink.style.display = 'none';
     }
     
-    // Set Tracker link (switches to tracker view filtered to this client and job)
+    // Set Tracker link (opens tracker filtered to this client and month)
     const trackerLink = $('job-modal-tracker-link');
     trackerLink.onclick = (e) => {
         e.preventDefault();
         closeJobModal();
-        state.trackerClient = job.clientCode;
-        localStorage.setItem('trackerLastClient', job.clientCode);
-        trackerJobFilter = job.jobNumber;  // Filter to this specific job
         
-        // Set month based on job's update due or live date
+        // Build month from job's update due or live date
+        let month = 'January';  // default
         const jobDate = job.updateDue || job.liveDate;
         if (jobDate) {
             const date = new Date(jobDate);
-            const monthName = date.toLocaleString('en-US', { month: 'long' });
-            trackerCurrentMonth = monthName;
+            month = date.toLocaleString('en-US', { month: 'long' });
         }
         
-        navigateTo('tracker');
+        // Navigate using URL params
+        window.location.href = `?view=tracker&client=${job.clientCode}&month=${month}`;
     };
     
     // Populate client owner dropdown
