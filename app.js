@@ -1034,6 +1034,8 @@ async function saveJobUpdate() {
         }
         
         showToast('On it.', 'success');
+        btn.textContent = 'Update';
+        btn.disabled = false;
         closeJobModal();
         
         // Refresh WIP if visible
