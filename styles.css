@@ -1366,9 +1366,64 @@ body {
 
 .thinking-dots {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 12px;
     padding: 20px 0;
 }
+
+/* SVG Robot with beating heart - used in chat */
+.dot-thinking {
+    position: relative;
+    width: 28px;
+    height: 38px;
+    flex-shrink: 0;
+}
+
+.dot-thinking .dot-robot {
+    width: 100%;
+    height: 100%;
+}
+
+.dot-thinking .dot-heart-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    animation: heartbeat-svg 0.8s ease-in-out infinite;
+}
+
+@keyframes heartbeat-svg {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+.thinking-helper {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--grey-400);
+    font-style: italic;
+}
+
+/* Loading Card - unified loading state for WIP/Tracker */
+.loading-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--white);
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    margin: 24px;
+}
+
+.loading-card p {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--grey-400);
+    margin: 0;
+}
+
 .thinking-dot {
     width: 12px;
     height: 12px;
