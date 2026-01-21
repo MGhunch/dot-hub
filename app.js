@@ -222,6 +222,18 @@ function unlockApp() {
     loadClients();
     loadJobs();
     resetInactivityTimer();
+    
+    // Handle URL parameters for deep linking
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    const client = params.get('client');
+    const month = params.get('month');
+    
+    if (view === 'tracker' && client) {
+        state.trackerClient = client;
+        if (month) trackerCurrentMonth = month;
+        setTimeout(() => navigateTo('tracker'), 100);  // Small delay to let data load
+    }
 }
 
 function checkSession() {
