@@ -590,7 +590,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> Â· </span>
+                        <span class="dot"> Ã‚Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
@@ -642,7 +642,7 @@ async function openJobModal(jobNumber) {
     const modal = $('job-edit-modal');
     if (!modal) return;
     
-    $('job-modal-title').textContent = `${jobNumber} â€“ ${job.jobName || 'Untitled'}`;
+    $('job-modal-title').textContent = `${jobNumber} Ã¢â‚¬â€œ ${job.jobName || 'Untitled'}`;
     $('job-modal-logo').src = getLogoUrl(job.clientCode);
     $('job-modal-logo').onerror = function() { this.src = 'images/logos/Unknown.png'; };
     $('job-modal-logo').alt = job.clientCode;
@@ -766,7 +766,7 @@ async function saveJobUpdate() {
     btn.disabled = true;
     btn.textContent = 'Updating...';
     
-    const payload = { stage, status, withClient };
+    const payload = { jobNumber, stage, status, withClient };
     if (updateDue) payload.updateDue = updateDue;
     if (liveDate) payload.liveDate = liveDate;
     if (description !== currentEditJob.description) payload.description = description;
