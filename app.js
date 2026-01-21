@@ -652,7 +652,7 @@ async function openJobModal(jobNumber) {
     $('job-edit-status').value = job.status || 'Incoming';
     $('job-edit-update-due').value = formatDateForInput(job.updateDue);
     $('job-edit-live-date').value = formatDateForInput(job.liveDate);
-    $('job-edit-message').value = '';
+    $('job-edit-message').value = job.update || '';
     $('job-edit-with-client').checked = job.withClient || false;
     
     // Set Teams link
@@ -664,13 +664,14 @@ async function openJobModal(jobNumber) {
         teamsLink.style.display = 'none';
     }
     
-    // Set Tracker link (switches to tracker view filtered to this client and month)
+    // Set Tracker link (switches to tracker view filtered to this client and job)
     const trackerLink = $('job-modal-tracker-link');
     trackerLink.onclick = (e) => {
         e.preventDefault();
         closeJobModal();
         state.trackerClient = job.clientCode;
         localStorage.setItem('trackerLastClient', job.clientCode);
+        trackerJobFilter = job.jobNumber;  // Filter to this specific job
         
         // Set month based on job's update due or live date
         const jobDate = job.updateDue || job.liveDate;
@@ -1066,6 +1067,7 @@ let trackerData = [];
 let trackerCurrentMonth = 'January';
 let trackerIsQuarterView = false;
 let trackerCurrentEditData = null;
+let trackerJobFilter = null;  // Filter to show only a specific job
 
 const calendarQuarters = {
     'Q1-cal': { months: ['January', 'February', 'March'], label: 'Jan > Mar' },
@@ -1215,6 +1217,7 @@ function setupTrackerDropdowns() {
     setupTrackerDropdown('tracker-client-trigger', 'tracker-client-menu', async (value) => {
         state.trackerClient = value;
         localStorage.setItem('trackerLastClient', value);
+        trackerJobFilter = null;  // Clear job filter when changing client
         $('tracker-content').style.opacity = '0.5';
         await loadTrackerData(value);
         $('tracker-content').style.opacity = '1';
@@ -1223,6 +1226,7 @@ function setupTrackerDropdowns() {
     
     setupTrackerDropdown('tracker-month-trigger', 'tracker-month-menu', (value) => {
         trackerCurrentMonth = value;
+        trackerJobFilter = null;  // Clear job filter when changing month
         renderTrackerContent();
     });
     
@@ -1329,6 +1333,11 @@ function renderTrackerContent() {
         toDate = getTrackerMonthSpend(state.trackerClient, trackerCurrentMonth);
         projects = getTrackerProjectsForMonth(state.trackerClient, trackerCurrentMonth);
         monthsInQuarter = 1;
+    }
+    
+    // Apply job filter if set (from modal link)
+    if (trackerJobFilter) {
+        projects = projects.filter(p => p.jobNumber === trackerJobFilter);
     }
     
     const totalBudget = committed * monthsInQuarter;
