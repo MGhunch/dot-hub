@@ -642,7 +642,7 @@ async function openJobModal(jobNumber) {
     const modal = $('job-edit-modal');
     if (!modal) return;
     
-    $('job-modal-title').textContent = jobNumber;
+    $('job-modal-title').textContent = `${jobNumber} - ${job.jobName || 'Untitled'}`;
     $('job-edit-name').value = job.jobName || '';
     $('job-edit-description').value = job.description || "What's this job all about?";
     $('job-edit-stage').value = job.stage || 'Clarify';
@@ -656,10 +656,20 @@ async function openJobModal(jobNumber) {
     const teamsLink = $('job-modal-teams-link');
     if (job.channelUrl) {
         teamsLink.href = job.channelUrl;
-        teamsLink.style.display = 'inline-flex';
+        teamsLink.style.display = 'inline';
     } else {
         teamsLink.style.display = 'none';
     }
+    
+    // Set Tracker link (switches to tracker view filtered to this client)
+    const trackerLink = $('job-modal-tracker-link');
+    trackerLink.onclick = (e) => {
+        e.preventDefault();
+        closeJobModal();
+        state.trackerClient = job.clientCode;
+        localStorage.setItem('trackerLastClient', job.clientCode);
+        navigateTo('tracker');
+    };
     
     // Populate client owner dropdown
     const ownerSelect = $('job-edit-owner');
@@ -713,6 +723,15 @@ async function saveJobUpdate() {
     const withClient = $('job-edit-with-client').checked;
     const description = $('job-edit-description').value.trim();
     const projectOwner = $('job-edit-owner').value;
+    const projectName = $('job-edit-name').value.trim();
+    
+    // Validation: if posting an update, must set next update due date
+    const originalDue = formatDateForInput(currentEditJob.updateDue);
+    if (message && updateDue === originalDue) {
+        showToast("Hang on, when's that update due?", 'error');
+        $('job-edit-update-due').focus();
+        return;
+    }
     
     btn.disabled = true;
     btn.textContent = 'Updating...';
@@ -722,6 +741,7 @@ async function saveJobUpdate() {
     if (liveDate) payload.liveDate = liveDate;
     if (description !== currentEditJob.description) payload.description = description;
     if (projectOwner !== currentEditJob.projectOwner) payload.projectOwner = projectOwner;
+    if (projectName !== currentEditJob.jobName) payload.projectName = projectName;
     
     try {
         const promises = [
@@ -760,6 +780,7 @@ async function saveJobUpdate() {
             if (message) job.update = message;
             if (description) job.description = description;
             if (projectOwner) job.projectOwner = projectOwner;
+            if (projectName) job.jobName = projectName;
         }
         
         showToast('On it.', 'success');

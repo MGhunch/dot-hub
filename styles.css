@@ -2216,23 +2216,42 @@ body {
 
 .job-modal-footer {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 16px;
     margin-top: 24px;
     padding-top: 16px;
     border-top: 1px solid var(--grey-100);
 }
 
-.job-modal-footer-left {
+.job-modal-links {
     display: flex;
-    align-items: center;
     gap: 16px;
+}
+
+.job-modal-link {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--grey-400);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.job-modal-link:hover {
+    color: var(--red);
 }
 
 .job-modal-actions {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 12px;
+}
+
+.job-modal-divider {
+    height: 1px;
+    background: var(--grey-100);
+    margin: 8px 0 16px;
 }
 
 .job-btn {

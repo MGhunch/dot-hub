@@ -337,23 +337,28 @@
     <div class="job-modal-overlay" id="job-edit-modal">
         <div class="job-modal">
             <div class="job-modal-header">
-                <span class="job-modal-title" id="job-modal-title">Update Job</span>
+                <span class="job-modal-title" id="job-modal-title">LAB 055 - Election 26</span>
                 <button class="job-modal-close" onclick="closeJobModal()">&times;</button>
             </div>
             <div class="job-modal-body">
+                <div class="job-form-group">
+                    <label class="job-form-label">New Update</label>
+                    <input type="text" class="job-form-input" id="job-edit-message" placeholder="What's the latest?">
+                </div>
+                <div class="job-modal-divider"></div>
                 <div class="job-form-group">
                     <label class="job-form-label">Project Name</label>
                     <input type="text" class="job-form-input" id="job-edit-name">
                 </div>
                 <div class="job-form-group">
-                    <label class="job-form-label">Description</label>
-                    <textarea class="job-form-input job-form-textarea" id="job-edit-description" rows="2"></textarea>
-                </div>
-                <div class="job-form-group">
-                    <label class="job-form-label">Client Owner</label>
+                    <label class="job-form-label">Owner</label>
                     <select class="job-form-input" id="job-edit-owner">
                         <option value="">Select...</option>
                     </select>
+                </div>
+                <div class="job-form-group">
+                    <label class="job-form-label">Description</label>
+                    <input type="text" class="job-form-input" id="job-edit-description">
                 </div>
                 <div class="job-form-row">
                     <div class="job-form-group">
@@ -386,23 +391,22 @@
                         <input type="date" class="job-form-input" id="job-edit-live-date">
                     </div>
                 </div>
-                <div class="job-form-group">
-                    <label class="job-form-label">New Update</label>
-                    <input type="text" class="job-form-input" id="job-edit-message" placeholder="What's the latest?">
-                </div>
             </div>
             <div class="job-modal-footer">
-                <div class="job-modal-footer-left">
-                    <a href="#" class="teams-link" id="job-modal-teams-link" target="_blank" onclick="event.stopPropagation()">&rarr; TEAMS</a>
+                <div class="job-modal-links">
+                    <a href="#" class="job-modal-link" id="job-modal-teams-link" target="_blank">Teams &rarr;</a>
+                    <a href="#" class="job-modal-link" id="job-modal-tracker-link">Tracker &rarr;</a>
+                </div>
+                <div class="job-modal-actions">
                     <div class="with-client-toggle">
-                        <span class="with-client-label">With Client</span>
                         <label class="toggle">
                             <input type="checkbox" id="job-edit-with-client">
                             <span class="toggle-slider"></span>
                         </label>
+                        <span class="with-client-label">With Client</span>
                     </div>
+                    <button class="job-btn job-btn-primary" id="job-save-btn" onclick="saveJobUpdate()">Update</button>
                 </div>
-                <button class="job-btn job-btn-primary" id="job-save-btn" onclick="saveJobUpdate()">Update</button>
             </div>
         </div>
     </div>
