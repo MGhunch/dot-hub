@@ -224,6 +224,10 @@ function unlockApp() {
     resetInactivityTimer();
     
     // Handle URL parameters for deep linking
+    handleUrlParams();
+}
+
+function handleUrlParams() {
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
     const client = params.get('client');
@@ -232,7 +236,7 @@ function unlockApp() {
     if (view === 'tracker' && client) {
         state.trackerClient = client;
         if (month) trackerCurrentMonth = month;
-        setTimeout(() => navigateTo('tracker'), 100);  // Small delay to let data load
+        navigateTo('tracker');
     }
 }
 
@@ -1199,11 +1203,19 @@ function populateTrackerClients(data) {
     });
     
     if (defaultClient) {
-        state.trackerClient = defaultClient;
-        trigger.querySelector('span').textContent = defaultName;
+        // Only set default if not already set (e.g., from URL params)
+        if (!state.trackerClient) {
+            state.trackerClient = defaultClient;
+        }
+        // Update trigger to show current client name
+        const currentClient = trackerClients[state.trackerClient];
+        trigger.querySelector('span').textContent = currentClient ? currentClient.name : defaultName;
     } else if (data.length > 0) {
-        state.trackerClient = data[0].code;
-        trigger.querySelector('span').textContent = data[0].name;
+        if (!state.trackerClient) {
+            state.trackerClient = data[0].code;
+        }
+        const currentClient = trackerClients[state.trackerClient];
+        trigger.querySelector('span').textContent = currentClient ? currentClient.name : data[0].name;
     }
 }
 
