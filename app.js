@@ -775,7 +775,7 @@ async function saveJobUpdate() {
     
     try {
         const promises = [
-            fetch(`https://dot-traffic.up.railway.app/card-update`, {
+            fetch(`https://dot-traffic-2.up.railway.app/card-update`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
