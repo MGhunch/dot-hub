@@ -1374,8 +1374,8 @@ body {
 /* SVG Robot with beating heart - used in chat */
 .dot-thinking {
     position: relative;
-    width: 28px;
-    height: 38px;
+    width: 34px;
+    height: 46px;
     flex-shrink: 0;
 }
 
@@ -1402,7 +1402,19 @@ body {
     font-size: 14px;
     font-weight: 500;
     color: var(--grey-400);
-    font-style: italic;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.thinking-helper.visible {
+    opacity: 1;
+}
+
+.thinking-helper::before {
+    content: '>';
+    color: var(--red);
+    font-weight: 700;
+    margin-right: 8px;
 }
 
 /* Loading Card - unified loading state for WIP/Tracker */

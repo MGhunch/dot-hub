@@ -436,16 +436,14 @@ function addUserMessage(text) {
 
 // Thinking helper messages
 const thinkingMessages = {
-    stage1: ["...digging through the files...", "...let me check on that...", "...on the case...", "...hunting that down..."],
-    stage2: ["...making sense of things...", "...piecing it together...", "...joining the dots...", "...checking it's tickety boo..."],
-    stage3: ["...dotting my eyes...", "...almost there...", "...nearly done...", "...lining it all up..."],
-    stage4: "...gimme a sec..."
+    stage1: ["Let's have a look...", "Gimme a sec...", "Hunting that down..."],
+    stage2: ["Digging the data...", "Joining the dots...", "Piecing bits together..."],
+    stage3: ["Lining it all up...", "Checking for tickety boo...", "Quick lick of polish..."],
+    stage4: ["Dotting my eyes...", "One more thing...", "Nearly there..."],
+    countdown: ["five...", "four...", "three...", "two...", "one..."]
 };
 
-let thinkingTimeout1 = null;
-let thinkingTimeout2 = null;
-let thinkingTimeout3 = null;
-let thinkingTimeout4 = null;
+let thinkingTimeouts = [];
 
 function addThinkingDots() {
     const area = getActiveConversationArea();
@@ -457,7 +455,7 @@ function addThinkingDots() {
     const msg1 = thinkingMessages.stage1[Math.floor(Math.random() * thinkingMessages.stage1.length)];
     const msg2 = thinkingMessages.stage2[Math.floor(Math.random() * thinkingMessages.stage2.length)];
     const msg3 = thinkingMessages.stage3[Math.floor(Math.random() * thinkingMessages.stage3.length)];
-    const msg4 = thinkingMessages.stage4;
+    const msg4 = thinkingMessages.stage4[Math.floor(Math.random() * thinkingMessages.stage4.length)];
     
     // Start with just Dot, no text
     dots.innerHTML = `
@@ -471,41 +469,36 @@ function addThinkingDots() {
     area?.appendChild(dots);
     if (area) area.scrollTop = area.scrollHeight;
     
-    // Cycle through stages - show first text after 400ms, then 800ms each
     const helper = dots.querySelector('.thinking-helper');
     
-    // Cycle through stages - show first text after 600ms, then 1200ms each
-    thinkingTimeout1 = setTimeout(() => {
+    // Helper to fade in new text
+    const fadeToText = (text) => {
+        helper.classList.remove('visible');
+        setTimeout(() => {
+            helper.textContent = text;
+            helper.classList.add('visible');
+        }, 200); // Brief pause during fade out before new text
+    };
+    
+    // Stage timings: 800ms start, then 1600ms between stages
+    thinkingTimeouts.push(setTimeout(() => {
         helper.textContent = msg1;
-        thinkingTimeout2 = setTimeout(() => {
-            helper.textContent = msg2;
-            thinkingTimeout3 = setTimeout(() => {
-                helper.textContent = msg3;
-                thinkingTimeout4 = setTimeout(() => {
-                    helper.textContent = msg4;
-                }, 1200);
-            }, 1200);
-        }, 1200);
-    }, 600);
+        helper.classList.add('visible');
+    }, 800));
+    
+    thinkingTimeouts.push(setTimeout(() => fadeToText(msg2), 2400));
+    thinkingTimeouts.push(setTimeout(() => fadeToText(msg3), 4000));
+    thinkingTimeouts.push(setTimeout(() => fadeToText(msg4), 5600));
+    
+    // Countdown: 500ms apart starting at 7200ms
+    thinkingMessages.countdown.forEach((word, i) => {
+        thinkingTimeouts.push(setTimeout(() => fadeToText(word), 7200 + (i * 500)));
+    });
 }
 
 function removeThinkingDots() {
-    if (thinkingTimeout1) {
-        clearTimeout(thinkingTimeout1);
-        thinkingTimeout1 = null;
-    }
-    if (thinkingTimeout2) {
-        clearTimeout(thinkingTimeout2);
-        thinkingTimeout2 = null;
-    }
-    if (thinkingTimeout3) {
-        clearTimeout(thinkingTimeout3);
-        thinkingTimeout3 = null;
-    }
-    if (thinkingTimeout4) {
-        clearTimeout(thinkingTimeout4);
-        thinkingTimeout4 = null;
-    }
+    thinkingTimeouts.forEach(t => clearTimeout(t));
+    thinkingTimeouts = [];
     $('currentThinking')?.remove();
 }
 
