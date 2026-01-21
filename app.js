@@ -841,8 +841,8 @@ function formatRecentActivity(updateHistory) {
         return '<div class="no-activity">No recent activity</div>';
     }
     
-    // Take up to 5 most recent updates
-    const recent = updateHistory.slice(0, 5);
+    // Take up to 3 most recent updates (assumes data comes newest-first from Airtable)
+    const recent = updateHistory.slice(0, 3);
     
     let html = '<div class="recent-activity">';
     recent.forEach((update, i) => {
