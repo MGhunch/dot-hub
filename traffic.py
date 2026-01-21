@@ -3,8 +3,8 @@ Dot Traffic - Unified Brain
 Routes requests, answers questions, calls workers.
 
 UNIFIED: Handles both email and hub sources.
-- Email: PA Listener ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ /traffic ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ workers
-- Hub: Ask Dot ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ /traffic ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ response
+- Email: PA Listener -> /traffic -> workers
+- Hub: Ask Dot -> /traffic -> response
 
 One brain. Two inputs. Same Dot.
 """
