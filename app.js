@@ -680,19 +680,14 @@ async function openJobModal(jobNumber) {
         teamsLink.style.display = 'none';
     }
     
-    // Set Tracker link (opens tracker filtered to this client and month)
+    // Set Tracker link (opens tracker filtered to this client and current month)
     const trackerLink = $('job-modal-tracker-link');
     trackerLink.onclick = (e) => {
         e.preventDefault();
         closeJobModal();
         
-        // Build month from job's update due or live date
-        let month = 'January';  // default
-        const jobDate = job.updateDue || job.liveDate;
-        if (jobDate) {
-            const date = new Date(jobDate);
-            month = date.toLocaleString('en-US', { month: 'long' });
-        }
+        // Use current month
+        const month = new Date().toLocaleString('en-US', { month: 'long' });
         
         // Navigate using URL params
         window.location.href = `?view=tracker&client=${job.clientCode}&month=${month}`;
