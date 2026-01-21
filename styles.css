@@ -2249,9 +2249,8 @@ body {
     color: var(--red);
 }
 
-.job-modal-link::after {
-    content: ' →';
-    color: #ED1C24 !important;
+.job-modal-link .link-arrow {
+    color: var(--red);
 }
 
 .job-modal-divider {
