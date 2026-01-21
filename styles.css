@@ -2251,7 +2251,7 @@ body {
 
 .job-modal-link::after {
     content: ' →';
-    color: var(--red);
+    color: #ED1C24 !important;
 }
 
 .job-modal-divider {
