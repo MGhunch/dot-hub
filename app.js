@@ -590,7 +590,7 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> · </span>
+                        <span class="dot"> Â· </span>
                         ${ICON_REFRESH} <span class="${getDaysAgoClass(daysAgo)}">${daysAgo} days ago</span>
                     </div>
                 </div>
@@ -642,7 +642,7 @@ async function openJobModal(jobNumber) {
     const modal = $('job-edit-modal');
     if (!modal) return;
     
-    $('job-modal-title').textContent = `${jobNumber} – ${job.jobName || 'Untitled'}`;
+    $('job-modal-title').textContent = `${jobNumber} â€“ ${job.jobName || 'Untitled'}`;
     $('job-modal-logo').src = getLogoUrl(job.clientCode);
     $('job-modal-logo').onerror = function() { this.src = 'images/logos/Unknown.png'; };
     $('job-modal-logo').alt = job.clientCode;
@@ -775,7 +775,7 @@ async function saveJobUpdate() {
     
     try {
         const promises = [
-            fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}/update`, {
+            fetch(`https://dot-traffic.up.railway.app/card-update`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
