@@ -2208,7 +2208,12 @@ body {
     font-size: 14px;
     font-family: inherit;
     color: var(--grey-800);
+    background-color: var(--white);
     transition: border-color 0.15s ease;
+}
+
+.job-form-input::placeholder {
+    color: var(--grey-400);
 }
 
 select.job-form-input {
@@ -2218,6 +2223,16 @@ select.job-form-input {
     background-repeat: no-repeat;
     background-position: right 10px center;
     background-size: 14px;
+    cursor: pointer;
+}
+
+input[type="date"].job-form-input {
+    accent-color: var(--red);
+    color-scheme: light;
+}
+
+input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
+    filter: invert(23%) sepia(98%) saturate(7041%) hue-rotate(354deg) brightness(93%) contrast(98%);
     cursor: pointer;
 }
 

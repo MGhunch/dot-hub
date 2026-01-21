@@ -1189,17 +1189,19 @@ function populateTrackerClients(data) {
     
     menu.innerHTML = '';
     const lastClient = localStorage.getItem('trackerLastClient');
+    // Use state.trackerClient if set (from URL params), otherwise localStorage, otherwise first item
+    const targetClient = state.trackerClient || lastClient;
     let defaultClient = null;
     let defaultName = '';
     
     data.forEach((c, idx) => {
         const option = document.createElement('div');
-        const isDefault = lastClient ? (c.code === lastClient) : (idx === 0);
-        option.className = 'custom-dropdown-option' + (isDefault ? ' selected' : '');
+        const isSelected = targetClient ? (c.code === targetClient) : (idx === 0);
+        option.className = 'custom-dropdown-option' + (isSelected ? ' selected' : '');
         option.dataset.value = c.code;
         option.textContent = c.name;
         menu.appendChild(option);
-        if (isDefault) { defaultClient = c.code; defaultName = c.name; }
+        if (isSelected) { defaultClient = c.code; defaultName = c.name; }
     });
     
     if (defaultClient) {
