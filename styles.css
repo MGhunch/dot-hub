@@ -2117,7 +2117,7 @@ body {
 .job-modal {
     background: var(--white);
     border-radius: 12px;
-    padding: 24px;
+    padding: 20px;
     width: 100%;
     max-width: 520px;
     max-height: 90vh;
@@ -2135,9 +2135,22 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--grey-100);
+}
+
+.job-modal-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.job-modal-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .job-modal-title {
@@ -2171,7 +2184,7 @@ body {
 .job-modal-body {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
 }
 
 .job-form-group {
@@ -2214,18 +2227,11 @@ body {
     gap: 12px;
 }
 
-.job-modal-footer {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid var(--grey-100);
-}
-
 .job-modal-links {
     display: flex;
+    justify-content: flex-end;
     gap: 16px;
+    margin-top: -4px;
 }
 
 .job-modal-link {
@@ -2242,16 +2248,19 @@ body {
     color: var(--red);
 }
 
-.job-modal-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
 .job-modal-divider {
     height: 1px;
     background: var(--grey-100);
-    margin: 8px 0 16px;
+    margin: 4px 0;
+}
+
+.job-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--grey-100);
 }
 
 .job-btn {

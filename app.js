@@ -642,7 +642,9 @@ async function openJobModal(jobNumber) {
     const modal = $('job-edit-modal');
     if (!modal) return;
     
-    $('job-modal-title').textContent = `${jobNumber} - ${job.jobName || 'Untitled'}`;
+    $('job-modal-title').textContent = `${jobNumber} – ${job.jobName || 'Untitled'}`;
+    $('job-modal-logo').src = getLogoUrl(job.clientCode);
+    $('job-modal-logo').alt = job.clientCode;
     $('job-edit-name').value = job.jobName || '';
     $('job-edit-description').value = job.description || "What's this job all about?";
     $('job-edit-stage').value = job.stage || 'Clarify';
