@@ -45,8 +45,50 @@ def serve_index():
 
 
 # ===== DATE PARSING HELPERS =====
+def parse_airtable_date(date_str):
+    """
+    Parse Airtable date field (D/M/YYYY format like "2/3/2026") into ISO format.
+    Returns YYYY-MM-DD for JS Date compatibility.
+    """
+    if not date_str or str(date_str).upper() == 'TBC':
+        return None
+    
+    # Handle D/M/YYYY format (e.g., "2/3/2026" or "15/12/2025")
+    match = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', str(date_str))
+    if match:
+        day, month, year = int(match.group(1)), int(match.group(2)), int(match.group(3))
+        try:
+            return datetime(year, month, day).strftime('%Y-%m-%d')
+        except ValueError:
+            return None
+    
+    # Also try ISO format if Airtable sends it that way
+    if 'T' in str(date_str):
+        try:
+            return str(date_str).split('T')[0]
+        except:
+            pass
+    
+    return None
+
+
+def format_date_friendly(iso_date):
+    """
+    Format ISO date (YYYY-MM-DD) as friendly "DD Mon" format.
+    e.g., "2026-03-02" -> "02 Mar"
+    """
+    if not iso_date:
+        return None
+    
+    try:
+        date = datetime.strptime(iso_date, '%Y-%m-%d')
+        return date.strftime('%d %b')  # "02 Mar"
+    except ValueError:
+        return iso_date  # Return as-is if parsing fails
+
+
 def parse_friendly_date(friendly_str):
-    """Parse friendly date formats into ISO format (YYYY-MM-DD)"""
+    """Parse friendly date formats into ISO format (YYYY-MM-DD) - LEGACY"""
     if not friendly_str or friendly_str.upper() == 'TBC':
         return None
     
@@ -126,13 +168,15 @@ def transform_project(record):
         parts = update_summary.split('|')
         latest_update = parts[-1].strip() if parts else update_summary
     
-    # Parse dates
-    update_due = parse_friendly_date(fields.get('Update due friendly', ''))
-    live_date = parse_friendly_date(fields.get('Live Date', ''))
+    # Parse dates - NEW: 'Update Due' is now D/M/YYYY format
+    update_due = parse_airtable_date(fields.get('Update Due', ''))
     last_updated = parse_status_changed(fields.get('Last update made', ''))
     
-    # Parse update history
-    update_history_raw = fields.get('Update history', [])
+    # Live In is now a dropdown (month name or "Tbc") - pass through as-is
+    live_in = fields.get('Live', '')
+    
+    # Parse update history - field name is now 'Update History' (capital H)
+    update_history_raw = fields.get('Update History', []) or fields.get('Update history', [])
     if isinstance(update_history_raw, str):
         update_history = [u.strip() for u in update_history_raw.split('\n') if u.strip()]
     elif isinstance(update_history_raw, list):
@@ -154,7 +198,7 @@ def transform_project(record):
         
         # Dates
         'updateDue': update_due,
-        'liveDate': live_date,
+        'liveDate': live_in,  # Now contains month name like "Jan", "Feb", "Tbc"
         'lastUpdated': last_updated,
         
         # Content
@@ -330,7 +374,7 @@ def update_job(job_number):
             'stage': 'Stage',
             'status': 'Status',
             'updateDue': 'Update Due',
-            'liveDate': 'Live Date',
+            'liveDate': 'Live',  # Month dropdown: "Jan", "Feb", "Tbc"
             'withClient': 'With Client?',
             'description': 'Description',
             'projectOwner': 'Project Owner',
