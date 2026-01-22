@@ -292,15 +292,38 @@ def get_people_for_client(client_code):
 # ===== JOBS =====
 @app.route('/api/jobs/all')
 def get_all_jobs():
-    """Get all active jobs in universal schema format"""
+    """
+    Get jobs in universal schema format.
+    
+    Query params:
+        status: 'active' (default), 'completed', 'all'
+        client: filter by client code (e.g., 'SKY', 'TOW')
+    """
     try:
         url = get_airtable_url('Projects')
         
-        active_statuses = ['Incoming', 'In Progress', 'On Hold']
-        formula_parts = [f"{{Status}} = '{s}'" for s in active_statuses]
-        params = {
-            'filterByFormula': f"OR({', '.join(formula_parts)})"
-        }
+        # Parse query params
+        status_filter = request.args.get('status', 'active')
+        client_filter = request.args.get('client')
+        
+        # Build status filter
+        if status_filter == 'active':
+            statuses = ['Incoming', 'In Progress', 'On Hold']
+        elif status_filter == 'completed':
+            statuses = ['Completed']
+        elif status_filter == 'all':
+            statuses = ['Incoming', 'In Progress', 'On Hold', 'Completed', 'Archived']
+        else:
+            statuses = ['Incoming', 'In Progress', 'On Hold']
+        
+        formula_parts = [f"{{Status}} = '{s}'" for s in statuses]
+        filter_formula = f"OR({', '.join(formula_parts)})"
+        
+        # Add client filter if provided
+        if client_filter:
+            filter_formula = f"AND({filter_formula}, FIND('{client_filter}', {{Job Number}})=1)"
+        
+        params = {'filterByFormula': filter_formula}
         
         all_jobs = []
         offset = None
