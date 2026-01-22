@@ -22,6 +22,34 @@ UPDATES_TABLE = 'Updates'
 TIMEOUT = 10.0
 
 
+def _parse_date_to_iso(date_str):
+    """
+    Parse Airtable date field (D/M/YYYY format) into ISO format (YYYY-MM-DD).
+    Handles formats like "2/3/2026" or "15/12/2025".
+    """
+    if not date_str or str(date_str).upper() == 'TBC':
+        return None
+    
+    import re
+    # Handle D/M/YYYY format
+    match = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', str(date_str))
+    if match:
+        day, month, year = int(match.group(1)), int(match.group(2)), int(match.group(3))
+        try:
+            return datetime(year, month, day).strftime('%Y-%m-%d')
+        except ValueError:
+            return None
+    
+    # Also handle ISO format if Airtable sends it that way
+    if 'T' in str(date_str):
+        try:
+            return str(date_str).split('T')[0]
+        except:
+            pass
+    
+    return None
+
+
 def _headers():
     """Standard Airtable headers"""
     return {
@@ -254,23 +282,30 @@ def get_active_jobs(client_code):
             fields = record.get('fields', {})
             job_number = fields.get('Job Number', '')
             
-            # Parse update summary to get latest update text and date
-            update_summary = fields.get('Update history', [])
-            latest_update = ''
-            last_updated = None
-            update_history = []
+            # Get update from the Update field directly
+            latest_update = fields.get('Update', '')
             
-            if update_summary and isinstance(update_summary, list):
-                update_history = update_summary[:5]  # Keep last 5 for history
-                if update_summary:
-                    # Format is "14 Jun | Update text here"
-                    first_update = update_summary[0]
+            # Parse update history (field name is 'Update History')
+            update_history_raw = fields.get('Update History', []) or fields.get('Update history', [])
+            update_history = []
+            last_updated = None
+            
+            if update_history_raw:
+                if isinstance(update_history_raw, list):
+                    update_history = update_history_raw[:5]  # Keep last 5 for history
+                elif isinstance(update_history_raw, str):
+                    update_history = [u.strip() for u in update_history_raw.split('\n') if u.strip()][:5]
+                
+                # Extract date from first history entry if present
+                if update_history:
+                    first_update = update_history[0]
                     if ' | ' in first_update:
-                        date_part, text_part = first_update.split(' | ', 1)
-                        latest_update = text_part
+                        date_part, _ = first_update.split(' | ', 1)
                         last_updated = date_part
-                    else:
-                        latest_update = first_update
+            
+            # Parse Update Due - now D/M/YYYY format, convert to ISO for JS
+            update_due_raw = fields.get('Update Due', '')
+            update_due = _parse_date_to_iso(update_due_raw)
             
             jobs.append({
                 'jobNumber': job_number,
@@ -278,13 +313,14 @@ def get_active_jobs(client_code):
                 'description': fields.get('Description', ''),
                 'stage': fields.get('Stage', ''),
                 'status': fields.get('Status', ''),
-                'updateDue': fields.get('Update due friendly', ''),
+                'updateDue': update_due,
+                'liveDate': fields.get('Live', ''),  # Month dropdown: "Jan", "Feb", "Tbc"
                 'withClient': fields.get('With Client?', False),
                 'clientCode': job_number.split()[0] if job_number else '',
                 'update': latest_update,
                 'lastUpdated': last_updated,
                 'updateHistory': update_history,
-                'liveDate': fields.get('Live Date', ''),
+                'channelUrl': fields.get('Channel Url', ''),
             })
         
         return jobs
@@ -327,23 +363,30 @@ def get_all_active_jobs():
             fields = record.get('fields', {})
             job_number = fields.get('Job Number', '')
             
-            # Parse update summary to get latest update text and date
-            update_summary = fields.get('Update history', [])
-            latest_update = ''
-            last_updated = None
-            update_history = []
+            # Get update from the Update field directly
+            latest_update = fields.get('Update', '')
             
-            if update_summary and isinstance(update_summary, list):
-                update_history = update_summary[:5]  # Keep last 5 for history
-                if update_summary:
-                    # Format is "14 Jun | Update text here"
-                    first_update = update_summary[0]
+            # Parse update history (field name is 'Update History')
+            update_history_raw = fields.get('Update History', []) or fields.get('Update history', [])
+            update_history = []
+            last_updated = None
+            
+            if update_history_raw:
+                if isinstance(update_history_raw, list):
+                    update_history = update_history_raw[:5]  # Keep last 5 for history
+                elif isinstance(update_history_raw, str):
+                    update_history = [u.strip() for u in update_history_raw.split('\n') if u.strip()][:5]
+                
+                # Extract date from first history entry if present
+                if update_history:
+                    first_update = update_history[0]
                     if ' | ' in first_update:
-                        date_part, text_part = first_update.split(' | ', 1)
-                        latest_update = text_part
+                        date_part, _ = first_update.split(' | ', 1)
                         last_updated = date_part
-                    else:
-                        latest_update = first_update
+            
+            # Parse Update Due - now D/M/YYYY format, convert to ISO for JS
+            update_due_raw = fields.get('Update Due', '')
+            update_due = _parse_date_to_iso(update_due_raw)
             
             jobs.append({
                 'jobNumber': job_number,
@@ -351,13 +394,14 @@ def get_all_active_jobs():
                 'description': fields.get('Description', ''),
                 'stage': fields.get('Stage', ''),
                 'status': fields.get('Status', ''),
-                'updateDue': fields.get('Update due friendly', ''),
+                'updateDue': update_due,
+                'liveDate': fields.get('Live', ''),  # Month dropdown: "Jan", "Feb", "Tbc"
                 'withClient': fields.get('With Client?', False),
                 'clientCode': job_number.split()[0] if job_number else '',
                 'update': latest_update,
                 'lastUpdated': last_updated,
                 'updateHistory': update_history,
-                'liveDate': fields.get('Live Date', ''),
+                'channelUrl': fields.get('Channel Url', ''),
             })
         
         return jobs
@@ -403,23 +447,30 @@ def get_job_by_number(job_number):
         
         fields = records[0].get('fields', {})
         
-        # Parse update summary to get latest update text and date
-        update_summary = fields.get('Update history', [])
-        latest_update = ''
-        last_updated = None
-        update_history = []
+        # Get update from the Update field directly
+        latest_update = fields.get('Update', '')
         
-        if update_summary and isinstance(update_summary, list):
-            update_history = update_summary[:5]  # Keep last 5 for history
-            if update_summary:
-                # Format is "14 Jun | Update text here"
-                first_update = update_summary[0]
+        # Parse update history (field name is 'Update History')
+        update_history_raw = fields.get('Update History', []) or fields.get('Update history', [])
+        update_history = []
+        last_updated = None
+        
+        if update_history_raw:
+            if isinstance(update_history_raw, list):
+                update_history = update_history_raw[:5]  # Keep last 5 for history
+            elif isinstance(update_history_raw, str):
+                update_history = [u.strip() for u in update_history_raw.split('\n') if u.strip()][:5]
+            
+            # Extract date from first history entry if present
+            if update_history:
+                first_update = update_history[0]
                 if ' | ' in first_update:
-                    date_part, text_part = first_update.split(' | ', 1)
-                    latest_update = text_part
+                    date_part, _ = first_update.split(' | ', 1)
                     last_updated = date_part
-                else:
-                    latest_update = first_update
+        
+        # Parse Update Due - now D/M/YYYY format, convert to ISO for JS
+        update_due_raw = fields.get('Update Due', '')
+        update_due = _parse_date_to_iso(update_due_raw)
         
         return {
             'jobNumber': fields.get('Job Number', ''),
@@ -427,13 +478,14 @@ def get_job_by_number(job_number):
             'description': fields.get('Description', ''),
             'stage': fields.get('Stage', ''),
             'status': fields.get('Status', ''),
-            'updateDue': fields.get('Update due friendly', ''),
+            'updateDue': update_due,
+            'liveDate': fields.get('Live', ''),  # Month dropdown: "Jan", "Feb", "Tbc"
             'withClient': fields.get('With Client?', False),
             'clientCode': job_number.split()[0] if job_number else '',
             'update': latest_update,
             'lastUpdated': last_updated,
             'updateHistory': update_history,
-            'liveDate': fields.get('Live Date', ''),
+            'channelUrl': fields.get('Channel Url', ''),
         }
         
     except Exception as e:
@@ -454,7 +506,7 @@ def update_project_record(job_number, updates):
                 'Status': 'In Progress',
                 'With Client?': True,
                 'Update Due': '2026-01-25',
-                'Live Date': '2026-02-15',
+                'Live': 'Feb',
                 'Description': 'Updated description',
                 'Project Owner': 'Sarah',
                 'Project Name': 'New name'
