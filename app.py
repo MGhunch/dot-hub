@@ -47,27 +47,30 @@ def serve_index():
 # ===== DATE PARSING HELPERS =====
 def parse_airtable_date(date_str):
     """
-    Parse Airtable date field (D/M/YYYY format like "2/3/2026") into ISO format.
-    Returns YYYY-MM-DD for JS Date compatibility.
+    Parse Airtable date field into ISO format (YYYY-MM-DD) for JS Date compatibility.
+    
+    Handles multiple formats:
+    - ISO format from API: "2026-01-31" or "2026-01-31T00:00:00.000Z"
+    - Local D/M/YYYY format: "31/1/2026" or "2/3/2026"
     """
     if not date_str or str(date_str).upper() == 'TBC':
         return None
     
+    date_str = str(date_str).strip()
+    
+    # Handle ISO format (YYYY-MM-DD) - this is what Airtable API typically sends
+    iso_match = re.search(r'^(\d{4})-(\d{2})-(\d{2})', date_str)
+    if iso_match:
+        return f"{iso_match.group(1)}-{iso_match.group(2)}-{iso_match.group(3)}"
+    
     # Handle D/M/YYYY format (e.g., "2/3/2026" or "15/12/2025")
-    match = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', str(date_str))
-    if match:
-        day, month, year = int(match.group(1)), int(match.group(2)), int(match.group(3))
+    dmy_match = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', date_str)
+    if dmy_match:
+        day, month, year = int(dmy_match.group(1)), int(dmy_match.group(2)), int(dmy_match.group(3))
         try:
             return datetime(year, month, day).strftime('%Y-%m-%d')
         except ValueError:
             return None
-    
-    # Also try ISO format if Airtable sends it that way
-    if 'T' in str(date_str):
-        try:
-            return str(date_str).split('T')[0]
-        except:
-            pass
     
     return None
 
