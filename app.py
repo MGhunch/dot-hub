@@ -38,6 +38,32 @@ def health():
     })
 
 
+# ===== DEBUG: Raw Airtable response =====
+@app.route('/api/debug/raw/<job_number>')
+def debug_raw(job_number):
+    """Temporary debug endpoint to see raw Airtable data"""
+    try:
+        url = get_airtable_url('Projects')
+        params = {
+            'filterByFormula': f"{{Job Number}} = '{job_number}'",
+            'maxRecords': 1
+        }
+        response = requests.get(url, headers=HEADERS, params=params)
+        response.raise_for_status()
+        
+        records = response.json().get('records', [])
+        if not records:
+            return jsonify({'error': 'Not found'}), 404
+        
+        # Return RAW fields from Airtable
+        return jsonify({
+            'raw_fields': records[0].get('fields', {}),
+            'all_field_names': list(records[0].get('fields', {}).keys())
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ===== STATIC FILES (must be after API routes) =====
 @app.route('/')
 def serve_index():
