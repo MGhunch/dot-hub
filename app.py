@@ -350,7 +350,14 @@ def get_job(job_number):
 
 @app.route('/api/job/<job_number>/update', methods=['POST'])
 def update_job(job_number):
-    """Update a job's fields"""
+    """
+    Update a job's fields and optionally create an Updates record.
+    
+    This is the unified update endpoint - replaces Traffic's /card-update.
+    
+    1. Updates Projects table (stage, status, dates, etc.)
+    2. Creates Updates record (if message provided)
+    """
     try:
         data = request.get_json()
         
@@ -367,7 +374,12 @@ def update_job(job_number):
         if not records:
             return jsonify({'error': 'Job not found'}), 404
         
-        record_id = records[0].get('id')
+        record = records[0]
+        record_id = record.get('id')
+        
+        # Extract message for Updates table (separate from Projects fields)
+        message = data.get('message', '').strip()
+        update_due = data.get('updateDue')
         
         # Map frontend field names to Airtable field names
         field_mapping = {
@@ -392,17 +404,46 @@ def update_job(job_number):
                 else:
                     airtable_fields[airtable_key] = value
         
-        if not airtable_fields:
-            return jsonify({'error': 'No valid fields to update'}), 400
+        results = {
+            'project_update': None,
+            'update_record': None
+        }
         
-        update_response = requests.patch(
-            f"{url}/{record_id}",
-            headers=HEADERS,
-            json={'fields': airtable_fields}
-        )
-        update_response.raise_for_status()
+        # 1. Update Projects table
+        if airtable_fields:
+            update_response = requests.patch(
+                f"{url}/{record_id}",
+                headers=HEADERS,
+                json={'fields': airtable_fields}
+            )
+            update_response.raise_for_status()
+            results['project_update'] = {'success': True, 'updated': list(airtable_fields.keys())}
+            print(f'[Hub API] Updated project {job_number}: {list(airtable_fields.keys())}')
         
-        return jsonify({'success': True, 'updated': list(airtable_fields.keys())})
+        # 2. Create Updates record (if message provided)
+        if message:
+            updates_url = get_airtable_url('Updates')
+            
+            update_fields = {
+                'Update': message,
+                'Project Link': [record_id]  # Linked record field
+            }
+            
+            if update_due:
+                update_fields['Update due'] = update_due
+            
+            updates_response = requests.post(
+                updates_url,
+                headers=HEADERS,
+                json={'fields': update_fields}
+            )
+            updates_response.raise_for_status()
+            
+            new_record = updates_response.json()
+            results['update_record'] = {'success': True, 'record_id': new_record.get('id')}
+            print(f'[Hub API] Created update record for {job_number}: {new_record.get("id")}')
+        
+        return jsonify({'success': True, 'results': results})
     
     except Exception as e:
         print(f'[Hub API] Error updating job: {e}')

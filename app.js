@@ -1007,38 +1007,36 @@ async function saveJobUpdate() {
     btn.disabled = true;
     btn.textContent = 'Updating...';
     
-    const payload = { jobNumber, status, withClient };
+    // Build payload for Hub's unified update endpoint
+    const payload = { status, withClient };
     if (updateDue) payload.updateDue = updateDue;
     if (liveDate) payload.liveDate = liveDate;
-    if (message) payload.message = message;
+    if (message && message !== currentEditJob.update) payload.message = message;
     if (description !== currentEditJob.description) payload.description = description;
     if (projectOwner !== currentEditJob.projectOwner) payload.projectOwner = projectOwner;
     
     try {
-        const promises = [
-            fetch(`https://dot-traffic-2.up.railway.app/card-update`, {
+        // Single call to Hub - handles both Projects update and Updates record creation
+        const response = await fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) throw new Error('Update failed');
+        
+        // Also post to Teams if there's a new message
+        if (message && message !== currentEditJob.update) {
+            fetch(`${PROXY_BASE}/proxy/update`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-        ];
-        
-        if (message && message !== currentEditJob.update) {
-            promises.push(
-                fetch(`${PROXY_BASE}/proxy/update`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        clientCode: jobNumber.split(' ')[0],
-                        jobNumber,
-                        message
-                    })
+                body: JSON.stringify({
+                    clientCode: jobNumber.split(' ')[0],
+                    jobNumber,
+                    message
                 })
-            );
+            }).catch(e => console.log('Teams post failed:', e));
         }
-        
-        const responses = await Promise.all(promises);
-        if (!responses.every(r => r.ok)) throw new Error('Update failed');
         
         // Update local state
         const job = state.allJobs.find(j => j.jobNumber === jobNumber);
