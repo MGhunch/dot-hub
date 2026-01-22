@@ -18,6 +18,7 @@ const CLIENT_DISPLAY_NAMES = {
 
 const PINS = {
     '9871': { name: 'Michael', fullName: 'Michael Goldthorpe', client: 'ALL', clientName: 'Hunch', mode: 'hunch' },
+    '9262': { name: 'Emma', fullName: 'Emma Moore', client: 'ALL', clientName: 'Hunch', mode: 'hunch' },
     '1919': { name: 'Team', fullName: 'Hunch Team', client: 'ALL', clientName: 'Hunch', mode: 'hunch' }
 };
 
