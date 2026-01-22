@@ -18,7 +18,6 @@ const CLIENT_DISPLAY_NAMES = {
 
 const PINS = {
     '9871': { name: 'Michael', fullName: 'Michael Goldthorpe', client: 'ALL', clientName: 'Hunch', mode: 'hunch' },
-    '9262': { name: 'Emma', fullName: 'Emma Moore', client: 'ALL', clientName: 'Hunch', mode: 'hunch' },
     '1919': { name: 'Team', fullName: 'Hunch Team', client: 'ALL', clientName: 'Hunch', mode: 'hunch' }
 };
 
@@ -210,6 +209,15 @@ function setupEventListeners() {
             // Show coming soon modal
             showComingSoonModal(action);
         });
+    });
+
+    // Job modal textarea auto-resize
+    $('job-edit-message')?.addEventListener('input', (e) => autoResizeTextarea(e.target));
+    $('job-edit-description')?.addEventListener('input', (e) => autoResizeTextarea(e.target));
+    
+    // Job name modal close on overlay click
+    $('job-name-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'job-name-modal') closeJobNameModal();
     });
 }
 
@@ -867,20 +875,26 @@ async function openJobModal(jobNumber) {
     $('job-modal-logo').src = getLogoUrl(job.clientCode);
     $('job-modal-logo').onerror = function() { this.src = 'images/logos/Unknown.png'; };
     $('job-modal-logo').alt = job.clientCode;
-    $('job-edit-name').value = job.jobName || '';
-    $('job-edit-description').value = job.description || "What's this job all about?";
-    $('job-edit-stage').value = job.stage || 'Clarify';
-    $('job-edit-status').value = job.status || 'Incoming';
-    $('job-edit-update-due').value = formatDateForInput(job.updateDue);
-    $('job-edit-live-date').value = formatDateForInput(job.liveDate);
+    
+    // Hero section
     $('job-edit-message').value = job.update || '';
+    $('job-edit-update-due').value = formatDateForInput(job.updateDue);
+    
+    // Details section
+    $('job-edit-description').value = job.description || '';
+    $('job-edit-status').value = job.status || 'Incoming';
+    $('job-edit-live').value = job.liveDate || 'Tbc';  // Now a dropdown with month values
     $('job-edit-with-client').checked = job.withClient || false;
+    
+    // Auto-resize textareas
+    autoResizeTextarea($('job-edit-message'));
+    autoResizeTextarea($('job-edit-description'));
     
     // Set Teams link
     const teamsLink = $('job-modal-teams-link');
     if (job.channelUrl) {
         teamsLink.href = job.channelUrl;
-        teamsLink.style.display = 'inline';
+        teamsLink.style.display = 'inline-flex';
     } else {
         teamsLink.style.display = 'none';
     }
@@ -890,13 +904,21 @@ async function openJobModal(jobNumber) {
     trackerLink.onclick = (e) => {
         e.preventDefault();
         closeJobModal();
-        
-        // Use current month
         const month = new Date().toLocaleString('en-US', { month: 'long' });
-        
-        // Navigate using URL params
         window.location.href = `?view=tracker&client=${job.clientCode}&month=${month}`;
     };
+    
+    // Set WIP link (opens WIP filtered to this client)
+    const wipLink = $('job-modal-wip-link');
+    wipLink.onclick = (e) => {
+        e.preventDefault();
+        closeJobModal();
+        state.wipClient = job.clientCode;
+        navigateTo('wip');
+    };
+    
+    // Set edit pencil handler
+    $('job-modal-edit-btn').onclick = () => openJobNameModal();
     
     // Populate client owner dropdown
     const ownerSelect = $('job-edit-owner');
@@ -949,6 +971,12 @@ async function openJobModal(jobNumber) {
     }
 }
 
+function autoResizeTextarea(textarea) {
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+}
+
 function closeJobModal() {
     $('job-edit-modal')?.classList.remove('visible');
     currentEditJob = null;
@@ -960,20 +988,18 @@ async function saveJobUpdate() {
     const jobNumber = currentEditJob.jobNumber;
     const btn = $('job-save-btn');
     
-    const stage = $('job-edit-stage').value;
     const status = $('job-edit-status').value;
     const updateDue = $('job-edit-update-due').value;
-    const liveDate = $('job-edit-live-date').value;
+    const liveDate = $('job-edit-live').value;  // Now a month string from dropdown
     const message = $('job-edit-message').value.trim();
     const withClient = $('job-edit-with-client').checked;
     const description = $('job-edit-description').value.trim();
     const projectOwner = $('job-edit-owner').value;
-    const projectName = $('job-edit-name').value.trim();
     
     // Validation: if posting an update, must set next update due date
     const originalDue = formatDateForInput(currentEditJob.updateDue);
-    if (message && updateDue === originalDue) {
-        showToast("Hang on, when's that update due?", 'error');
+    if (message && message !== currentEditJob.update && (!updateDue || updateDue === originalDue)) {
+        showToast("When's the update due?", 'error');
         $('job-edit-update-due').focus();
         return;
     }
@@ -981,12 +1007,12 @@ async function saveJobUpdate() {
     btn.disabled = true;
     btn.textContent = 'Updating...';
     
-    const payload = { jobNumber, stage, status, withClient, message };
+    const payload = { jobNumber, status, withClient };
     if (updateDue) payload.updateDue = updateDue;
     if (liveDate) payload.liveDate = liveDate;
+    if (message) payload.message = message;
     if (description !== currentEditJob.description) payload.description = description;
     if (projectOwner !== currentEditJob.projectOwner) payload.projectOwner = projectOwner;
-    if (projectName !== currentEditJob.jobName) payload.projectName = projectName;
     
     try {
         const promises = [
@@ -997,7 +1023,7 @@ async function saveJobUpdate() {
             })
         ];
         
-        if (message) {
+        if (message && message !== currentEditJob.update) {
             promises.push(
                 fetch(`${PROXY_BASE}/proxy/update`, {
                     method: 'POST',
@@ -1017,7 +1043,6 @@ async function saveJobUpdate() {
         // Update local state
         const job = state.allJobs.find(j => j.jobNumber === jobNumber);
         if (job) {
-            job.stage = stage;
             job.status = status;
             job.withClient = withClient;
             if (updateDue) job.updateDue = updateDue;
@@ -1025,11 +1050,10 @@ async function saveJobUpdate() {
             if (message) job.update = message;
             if (description) job.description = description;
             if (projectOwner) job.projectOwner = projectOwner;
-            if (projectName) job.jobName = projectName;
         }
         
-        showToast('On it.', 'success');
-        btn.textContent = 'Update';
+        showToast('Job updated.', 'success');
+        btn.textContent = 'UPDATE';
         btn.disabled = false;
         closeJobModal();
         
@@ -1040,8 +1064,8 @@ async function saveJobUpdate() {
         
     } catch (e) {
         console.error('Save failed:', e);
-        showToast("Doh, that didn't work.", 'error');
-        btn.textContent = 'Update';
+        showToast("Hmm, that didn't work.", 'error');
+        btn.textContent = 'UPDATE';
         btn.disabled = false;
     }
 }
@@ -1050,6 +1074,80 @@ async function saveJobUpdate() {
 window.openJobModal = openJobModal;
 window.closeJobModal = closeJobModal;
 window.saveJobUpdate = saveJobUpdate;
+window.openJobNameModal = openJobNameModal;
+window.closeJobNameModal = closeJobNameModal;
+window.saveJobName = saveJobName;
+
+// ===== JOB NAME EDIT MODAL =====
+function openJobNameModal() {
+    if (!currentEditJob) return;
+    
+    $('job-edit-number').value = currentEditJob.jobNumber;
+    $('job-edit-job-name').value = currentEditJob.jobName || '';
+    $('job-name-modal').classList.add('visible');
+}
+
+function closeJobNameModal() {
+    $('job-name-modal')?.classList.remove('visible');
+}
+
+async function saveJobName() {
+    if (!currentEditJob) return;
+    
+    const newJobNumber = $('job-edit-number').value.trim();
+    const newJobName = $('job-edit-job-name').value.trim();
+    
+    if (!newJobNumber || !newJobName) {
+        showToast("Hmm, that didn't work.", 'error');
+        return;
+    }
+    
+    try {
+        const payload = {
+            jobNumber: currentEditJob.jobNumber,
+            projectName: newJobName
+        };
+        
+        // Only include job number change if it's different
+        if (newJobNumber !== currentEditJob.jobNumber) {
+            payload.newJobNumber = newJobNumber;
+        }
+        
+        const response = await fetch(`https://dot-traffic-2.up.railway.app/card-update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) throw new Error('Update failed');
+        
+        // Update local state
+        const job = state.allJobs.find(j => j.jobNumber === currentEditJob.jobNumber);
+        if (job) {
+            job.jobName = newJobName;
+            if (newJobNumber !== currentEditJob.jobNumber) {
+                job.jobNumber = newJobNumber;
+            }
+        }
+        
+        // Update the main modal title
+        $('job-modal-title').textContent = `${newJobNumber} | ${newJobName}`;
+        currentEditJob.jobNumber = newJobNumber;
+        currentEditJob.jobName = newJobName;
+        
+        closeJobNameModal();
+        showToast('Job updated.', 'success');
+        
+        // Refresh WIP if visible
+        if (state.currentView === 'wip') {
+            renderWip();
+        }
+        
+    } catch (e) {
+        console.error('Save job name failed:', e);
+        showToast("Hmm, that didn't work.", 'error');
+    }
+}
 
 // ===== SVG ICONS =====
 const ICON_CLOCK = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
