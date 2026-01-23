@@ -458,7 +458,7 @@ def update_job(job_number):
             }
             
             if update_due:
-                update_fields['Update due'] = update_due
+                update_fields['Update Due'] = update_due
             
             updates_response = requests.post(
                 updates_url,
