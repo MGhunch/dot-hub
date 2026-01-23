@@ -171,9 +171,11 @@ def transform_project(record):
         parts = update_summary.split('|')
         latest_update = parts[-1].strip() if parts else update_summary
     
-    # Parse dates - NEW: 'Update Due' is now D/M/YYYY format
+    # Parse dates - 'Update Due' is D/M/YYYY format from Airtable
     update_due = parse_airtable_date(fields.get('Update Due', ''))
-    last_updated = parse_status_changed(fields.get('Last update made', ''))
+    
+    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago 💤", "Today", "-")
+    days_since_update = fields.get('Days Since Update', '-')
     
     # Live In is now a dropdown (month name or "Tbc") - pass through as-is
     live_in = fields.get('Live', '')
@@ -201,8 +203,8 @@ def transform_project(record):
         
         # Dates
         'updateDue': update_due,
-        'liveDate': live_in,  # Now contains month name like "Jan", "Feb", "Tbc"
-        'lastUpdated': last_updated,
+        'liveDate': live_in,  # Month name like "Jan", "Feb", "Tbc"
+        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago 💤", "Today", "-"
         
         # Content
         'description': fields.get('Description', ''),
