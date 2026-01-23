@@ -483,28 +483,6 @@ def update_job(job_number):
 def get_tracker_clients():
     """Get clients with tracker/budget info"""
     try:
-        # First, fetch all active rollovers from Rollover table
-        rollover_url = get_airtable_url('Rollover')
-        rollover_params = {'filterByFormula': "{Status} = 'Available'"}
-        rollover_response = requests.get(rollover_url, headers=HEADERS, params=rollover_params)
-        rollover_response.raise_for_status()
-        
-        # Build rollover lookup by client code
-        rollovers_by_client = {}
-        for record in rollover_response.json().get('records', []):
-            fields = record.get('fields', {})
-            client_code = fields.get('Client Code', '')
-            if client_code:
-                amount = fields.get('Amount', 0) or fields.get('Active Rollover', 0)
-                if isinstance(amount, (int, float)) and amount > 0:
-                    rollovers_by_client[client_code] = {
-                        'amount': amount,
-                        'useIn': fields.get('Use in Quarter', '')
-                    }
-        
-        print(f'[Hub API] Loaded rollovers: {rollovers_by_client}')
-        
-        # Now fetch clients
         url = get_airtable_url('Clients')
         response = requests.get(url, headers=HEADERS)
         response.raise_for_status()
@@ -522,19 +500,19 @@ def get_tracker_clients():
             
             monthly = parse_currency(fields.get('Monthly Committed', 0))
             if monthly > 0:
-                client_code = fields.get('Client code', '')
-                
-                # Get rollover from our direct lookup
-                rollover_data = rollovers_by_client.get(client_code, {})
-                rollover = rollover_data.get('amount', 0)
-                rollover_use_in = rollover_data.get('useIn', '')
+                # Rollover is now a formula field in Clients - number or 0
+                rollover = fields.get('Rollover', 0)
+                if isinstance(rollover, (int, float)):
+                    rollover = max(0, rollover)  # Ensure non-negative
+                else:
+                    rollover = 0
                 
                 clients.append({
-                    'code': client_code,
+                    'code': fields.get('Client code', ''),
                     'name': fields.get('Clients', ''),
                     'committed': monthly,
                     'rollover': rollover,
-                    'rolloverUseIn': rollover_use_in,
+                    'rolloverUseIn': 'JAN-MAR' if rollover > 0 else '',  # Current quarter
                     'yearEnd': fields.get('Year end', ''),
                     'currentQuarter': fields.get('Current Quarter', '')
                 })
