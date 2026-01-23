@@ -1126,7 +1126,7 @@ body {
     color: var(--grey-400);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 12px;
     margin-top: 10px;
     flex-wrap: wrap;
 }
