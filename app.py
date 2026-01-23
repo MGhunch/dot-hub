@@ -174,7 +174,7 @@ def transform_project(record):
     # Parse dates - 'Update Due' is D/M/YYYY format from Airtable
     update_due = parse_airtable_date(fields.get('Update Due', ''))
     
-    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago 💤", "Today", "-")
+    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago ðŸ’¤", "Today", "-")
     days_since_update = fields.get('Days Since Update', '-')
     
     # Live In is now a dropdown (month name or "Tbc") - pass through as-is
@@ -204,7 +204,7 @@ def transform_project(record):
         # Dates
         'updateDue': update_due,
         'liveDate': live_in,  # Month name like "Jan", "Feb", "Tbc"
-        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago 💤", "Today", "-"
+        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago ðŸ’¤", "Today", "-"
         
         # Content
         'description': fields.get('Description', ''),
@@ -483,6 +483,28 @@ def update_job(job_number):
 def get_tracker_clients():
     """Get clients with tracker/budget info"""
     try:
+        # First, fetch all active rollovers from Rollover table
+        rollover_url = get_airtable_url('Rollover')
+        rollover_params = {'filterByFormula': "{Status} = 'Available'"}
+        rollover_response = requests.get(rollover_url, headers=HEADERS, params=rollover_params)
+        rollover_response.raise_for_status()
+        
+        # Build rollover lookup by client code
+        rollovers_by_client = {}
+        for record in rollover_response.json().get('records', []):
+            fields = record.get('fields', {})
+            client_code = fields.get('Client Code', '')
+            if client_code:
+                amount = fields.get('Amount', 0) or fields.get('Active Rollover', 0)
+                if isinstance(amount, (int, float)) and amount > 0:
+                    rollovers_by_client[client_code] = {
+                        'amount': amount,
+                        'useIn': fields.get('Use in Quarter', '')
+                    }
+        
+        print(f'[Hub API] Loaded rollovers: {rollovers_by_client}')
+        
+        # Now fetch clients
         url = get_airtable_url('Clients')
         response = requests.get(url, headers=HEADERS)
         response.raise_for_status()
@@ -500,17 +522,19 @@ def get_tracker_clients():
             
             monthly = parse_currency(fields.get('Monthly Committed', 0))
             if monthly > 0:
-                rollover = fields.get('Rollover Credit', 0)
-                if isinstance(rollover, list):
-                    rollover = rollover[0] if rollover else 0
-                rollover = parse_currency(rollover)
+                client_code = fields.get('Client code', '')
+                
+                # Get rollover from our direct lookup
+                rollover_data = rollovers_by_client.get(client_code, {})
+                rollover = rollover_data.get('amount', 0)
+                rollover_use_in = rollover_data.get('useIn', '')
                 
                 clients.append({
-                    'code': fields.get('Client code', ''),
+                    'code': client_code,
                     'name': fields.get('Clients', ''),
                     'committed': monthly,
                     'rollover': rollover,
-                    'rolloverUseIn': fields.get('Rollover use', ''),
+                    'rolloverUseIn': rollover_use_in,
                     'yearEnd': fields.get('Year end', ''),
                     'currentQuarter': fields.get('Current Quarter', '')
                 })
