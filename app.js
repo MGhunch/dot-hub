@@ -797,8 +797,8 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysSinceUpdate = job.daysSinceUpdate || '-';
     
-    // Check if stale (contains 💤)
-    const isStale = daysSinceUpdate.includes('💤');
+    // Check if stale (contains ðŸ’¤)
+    const isStale = daysSinceUpdate.includes('ðŸ’¤');
     
     // Build summary line: Stage - Live Date - With client
     let summaryParts = [];
@@ -824,7 +824,6 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        <span class="dot"> - </span>
                         ${ICON_REFRESH} <span class="${isStale ? 'days-ago stale' : 'days-ago'}">${daysSinceUpdate}</span>
                     </div>
                 </div>
