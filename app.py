@@ -174,7 +174,7 @@ def transform_project(record):
     # Parse dates - 'Update Due' is D/M/YYYY format from Airtable
     update_due = parse_airtable_date(fields.get('Update Due', ''))
     
-    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago Ã°Å¸â€™Â¤", "Today", "-")
+    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¤", "Today", "-")
     days_since_update = fields.get('Days Since Update', '-')
     
     # Live In is now a dropdown (month name or "Tbc") - pass through as-is
@@ -204,7 +204,7 @@ def transform_project(record):
         # Dates
         'updateDue': update_due,
         'liveDate': live_in,  # Month name like "Jan", "Feb", "Tbc"
-        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago Ã°Å¸â€™Â¤", "Today", "-"
+        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¤", "Today", "-"
         
         # Content
         'description': fields.get('Description', ''),
@@ -321,15 +321,15 @@ def preview_job_number(client_code):
         except ValueError:
             return jsonify({'error': f'Invalid job number format: {next_num_str}'}), 400
         
-        preview_job_number = f"{client_code} {next_num:03d}"
+        preview_job_num = f"{client_code} {next_num:03d}"
         
-        print(f'[Hub API] Preview job number: {preview_job_number}')
+        print(f'[Hub API] Preview job number: {preview_job_num}')
         
         return jsonify({
             'success': True,
             'clientCode': client_code,
             'clientName': client_name,
-            'previewJobNumber': preview_job_number
+            'previewJobNumber': preview_job_num
         })
     
     except Exception as e:
@@ -339,7 +339,7 @@ def preview_job_number(client_code):
 
 @app.route('/api/new-job', methods=['POST'])
 def create_new_job():
-    """Create a new job in Airtable - reserves job number atomically"""
+    """Create a new job in Airtable - reserves job number atomically, creates Tracker record"""
     try:
         data = request.json
         
@@ -349,7 +349,9 @@ def create_new_job():
         owner = data.get('owner', '')
         update_due = data.get('updateDue', '')
         live = data.get('live', 'Tbc')
-        status = data.get('status', 'soon')  # 'soon' or 'now'
+        status = data.get('status', 'Incoming')  # Incoming, In Progress, On Hold
+        ballpark = data.get('ballpark', 5000)  # Default $5000
+        setup_teams = data.get('setupTeams', False)
         
         if not client_code or not job_name:
             return jsonify({'error': 'Missing required fields'}), 400
@@ -395,12 +397,10 @@ def create_new_job():
         print(f'[Hub API] Reserved job number: {job_number}')
         
         # Step 3: Create the project record
-        airtable_status = 'Incoming' if status == 'soon' else 'In Progress'
-        
         fields = {
             'Job Number': job_number,
             'Project Name': job_name,
-            'Status': airtable_status,
+            'Status': status,
             'Stage': 'Triage',
             'With Client?': False,
             'Client': [client_record_id]
@@ -425,13 +425,36 @@ def create_new_job():
         response.raise_for_status()
         
         created_record = response.json()
+        project_record_id = created_record.get('id')
         print(f'[Hub API] Created new job: {job_number} - {job_name}')
+        
+        # Step 4: Create Tracker record with ballpark
+        from datetime import datetime
+        current_month = datetime.now().strftime('%B')  # e.g. "January"
+        
+        tracker_url = get_airtable_url('Tracker')
+        tracker_fields = {
+            'Link': [project_record_id],  # Link to the Project record
+            'Spend': ballpark,
+            'Ballpark': True,
+            'Month': current_month,
+            'Spend type': 'Project budget'
+        }
+        
+        tracker_response = requests.post(
+            tracker_url,
+            headers=HEADERS,
+            json={'fields': tracker_fields}
+        )
+        tracker_response.raise_for_status()
+        print(f'[Hub API] Created Tracker record for {job_number} with ballpark ${ballpark}')
         
         return jsonify({
             'success': True,
             'jobNumber': job_number,
-            'recordId': created_record.get('id'),
-            'status': airtable_status
+            'recordId': project_record_id,
+            'status': status,
+            'setupTeams': setup_teams
         })
     
     except Exception as e:
