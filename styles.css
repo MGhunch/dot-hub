@@ -2736,6 +2736,60 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     color: var(--red);
 }
 
+/* Title chevron */
+.title-chevron {
+    vertical-align: middle;
+    margin: 0 4px;
+}
+
+/* Select wrapper with red chevron */
+.select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.select-wrapper select {
+    padding-right: 36px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.select-wrapper .select-chevron {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%) rotate(90deg);
+    pointer-events: none;
+}
+
+/* Date wrapper with red calendar */
+.date-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.date-wrapper input {
+    padding-right: 36px;
+}
+
+.date-wrapper input::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    width: 36px;
+    height: 100%;
+    cursor: pointer;
+}
+
+.date-wrapper .calendar-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
 /* Input error state */
 .input-error {
     border-color: var(--red) !important;
@@ -2746,48 +2800,6 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-4px); }
     75% { transform: translateX(4px); }
-}
-
-/* NOW/SOON Toggle */
-.now-soon-toggle {
-    display: flex;
-    gap: 0;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid var(--grey-300);
-}
-
-.now-soon-btn {
-    flex: 1;
-    padding: 10px 20px;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    border: none;
-    background: var(--grey-100);
-    color: var(--grey-500);
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.now-soon-btn:first-child {
-    border-right: 1px solid var(--grey-300);
-}
-
-.now-soon-btn.active {
-    background: var(--grey-800);
-    color: white;
-}
-
-.now-soon-btn:hover:not(.active) {
-    background: var(--grey-200);
-}
-
-.now-soon-hint {
-    font-size: 12px;
-    color: var(--grey-500);
-    margin-top: 8px;
-    font-style: italic;
 }
 
 /* Confirmation Screen */

@@ -801,8 +801,8 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysSinceUpdate = job.daysSinceUpdate || '-';
     
-    // Check if stale (contains Ã°Å¸â€™Â¤)
-    const isStale = daysSinceUpdate.includes('Ã°Å¸â€™Â¤');
+    // Check if stale (contains ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¤)
+    const isStale = daysSinceUpdate.includes('ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¤');
     
     // Build summary line: Stage - Live Date - With client
     let summaryParts = [];
@@ -2209,22 +2209,24 @@ async function selectNewJobClient(code, name) {
     newJobState.clientCode = code;
     newJobState.clientName = name;
     
-    // Update header
-    $('new-job-logo').src = `images/logos/${code}.png`;
-    $('new-job-logo').onerror = function() { this.src = 'images/logos/Unknown.png'; };
-    $('new-job-title').textContent = `NEW ${code} JOB`;
-    
-    // Show step 2
+    // Show step 2 with loading state
     $('new-job-step-1').style.display = 'none';
     $('new-job-step-2').style.display = 'block';
     
+    // Update header with logo
+    const logo = $('new-job-logo');
+    logo.src = getLogoUrl(code);
+    logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
+    $('new-job-number').textContent = '...';
+    
     // Reset form
-    $('new-job-number').value = 'Reserving...';
     $('new-job-name').value = '';
     $('new-job-description').value = '';
     $('new-job-owner').innerHTML = '<option value="">Loading...</option>';
+    $('new-job-status').value = 'Incoming';
+    $('new-job-ballpark').value = '5000';
     $('new-job-live').value = 'Tbc';
-    setNewJobStatus('soon');
+    $('new-job-setup-teams').checked = false;
     
     // Set default update due (+5 working days)
     const updateDue = getWorkingDaysFromNow(5);
@@ -2236,16 +2238,15 @@ async function selectNewJobClient(code, name) {
         const data = await response.json();
         
         if (data.error) {
-            $('new-job-number').value = 'Error';
+            $('new-job-number').textContent = 'Error';
             console.error('Preview error:', data.error);
-            return;
+        } else {
+            newJobState.jobNumber = data.previewJobNumber;
+            $('new-job-number').textContent = data.previewJobNumber;
         }
-        
-        newJobState.jobNumber = data.previewJobNumber;
-        $('new-job-number').value = data.previewJobNumber + ' (preview)';
     } catch (err) {
         console.error('Error previewing job number:', err);
-        $('new-job-number').value = 'Error';
+        $('new-job-number').textContent = 'Error';
     }
     
     // Load owners for this client
@@ -2262,29 +2263,6 @@ async function selectNewJobClient(code, name) {
     }
 }
 
-function backToClientPicker() {
-    $('new-job-step-1').style.display = 'block';
-    $('new-job-step-2').style.display = 'none';
-}
-
-function setNewJobStatus(status) {
-    newJobState.status = status;
-    
-    const soonBtn = $('soon-btn');
-    const nowBtn = $('now-btn');
-    const hint = $('now-soon-hint');
-    
-    if (status === 'soon') {
-        soonBtn.classList.add('active');
-        nowBtn.classList.remove('active');
-        hint.textContent = 'Job appears in Forecast';
-    } else {
-        soonBtn.classList.remove('active');
-        nowBtn.classList.add('active');
-        hint.textContent = 'Teams & Files will be set up';
-    }
-}
-
 async function submitNewJob() {
     const jobName = $('new-job-name').value.trim();
     
@@ -2297,7 +2275,12 @@ async function submitNewJob() {
     
     const createBtn = $('new-job-create-btn');
     createBtn.disabled = true;
-    createBtn.textContent = 'Creating...';
+    createBtn.textContent = 'CREATING...';
+    
+    // Get form values
+    const setupTeams = $('new-job-setup-teams').checked;
+    const status = $('new-job-status').value;
+    const ballpark = parseInt($('new-job-ballpark').value, 10);
     
     const payload = {
         clientCode: newJobState.clientCode,
@@ -2306,7 +2289,9 @@ async function submitNewJob() {
         owner: $('new-job-owner').value,
         updateDue: $('new-job-update-due').value,
         live: $('new-job-live').value,
-        status: newJobState.status // 'soon' or 'now'
+        status: status,
+        ballpark: ballpark,
+        setupTeams: setupTeams
     };
     
     try {
@@ -2321,7 +2306,7 @@ async function submitNewJob() {
         if (data.error) {
             alert('Error creating job: ' + data.error);
             createBtn.disabled = false;
-            createBtn.textContent = 'CREATE';
+            createBtn.textContent = 'CREATE JOB';
             return;
         }
         
@@ -2329,11 +2314,13 @@ async function submitNewJob() {
         const createdJobNumber = data.jobNumber;
         
         // Show confirmation
-        $('new-job-confirm-logo').src = `images/logos/${newJobState.clientCode}.png`;
-        $('new-job-confirm-title').textContent = 'JOB CREATED';
-        $('new-job-confirm-text').textContent = `${createdJobNumber} logged`;
+        const confirmLogo = $('new-job-confirm-logo');
+        confirmLogo.src = getLogoUrl(newJobState.clientCode);
+        confirmLogo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
+        $('new-job-confirm-title').textContent = createdJobNumber;
+        $('new-job-confirm-text').textContent = 'Job created';
         
-        if (newJobState.status === 'soon') {
+        if (!setupTeams) {
             $('new-job-confirm-subtext').textContent = 'Teams & Files not set up';
             $('new-job-confirm-subtext').style.display = 'block';
         } else {
@@ -2352,7 +2339,7 @@ async function submitNewJob() {
         console.error('Error creating job:', err);
         alert('Failed to create job. Please try again.');
         createBtn.disabled = false;
-        createBtn.textContent = 'CREATE';
+        createBtn.textContent = 'CREATE JOB';
     }
 }
 
@@ -2384,8 +2371,6 @@ document.addEventListener('click', (e) => {
 // Make new job functions globally available
 window.openNewJobModal = openNewJobModal;
 window.selectNewJobClient = selectNewJobClient;
-window.backToClientPicker = backToClientPicker;
-window.setNewJobStatus = setNewJobStatus;
 window.submitNewJob = submitNewJob;
 window.closeNewJobModal = closeNewJobModal;
 
