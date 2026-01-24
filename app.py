@@ -174,7 +174,7 @@ def transform_project(record):
     # Parse dates - 'Update Due' is D/M/YYYY format from Airtable
     update_due = parse_airtable_date(fields.get('Update Due', ''))
     
-    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago ðŸ’¤", "Today", "-")
+    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago Ã°Å¸â€™Â¤", "Today", "-")
     days_since_update = fields.get('Days Since Update', '-')
     
     # Live In is now a dropdown (month name or "Tbc") - pass through as-is
@@ -204,7 +204,7 @@ def transform_project(record):
         # Dates
         'updateDue': update_due,
         'liveDate': live_in,  # Month name like "Jan", "Feb", "Tbc"
-        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago ðŸ’¤", "Today", "-"
+        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago Ã°Å¸â€™Â¤", "Today", "-"
         
         # Content
         'description': fields.get('Description', ''),
@@ -288,6 +288,154 @@ def get_people_for_client(client_code):
     
     except Exception as e:
         print(f'[Hub API] Error fetching people: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+# ===== NEW JOB =====
+@app.route('/api/preview-job-number/<client_code>')
+def preview_job_number(client_code):
+    """Preview the next job number for a client (does NOT reserve it)"""
+    try:
+        url = get_airtable_url('Clients')
+        params = {
+            'filterByFormula': f"{{Client code}} = '{client_code}'",
+            'maxRecords': 1
+        }
+        response = requests.get(url, headers=HEADERS, params=params)
+        response.raise_for_status()
+        
+        records = response.json().get('records', [])
+        if not records:
+            return jsonify({'error': f'Client {client_code} not found'}), 404
+        
+        record = records[0]
+        fields = record.get('fields', {})
+        client_name = fields.get('Clients', client_code)
+        
+        next_num_str = fields.get('Next Job #', '')
+        if not next_num_str:
+            return jsonify({'error': f'No job number sequence configured for {client_code}'}), 400
+        
+        try:
+            next_num = int(next_num_str)
+        except ValueError:
+            return jsonify({'error': f'Invalid job number format: {next_num_str}'}), 400
+        
+        preview_job_number = f"{client_code} {next_num:03d}"
+        
+        print(f'[Hub API] Preview job number: {preview_job_number}')
+        
+        return jsonify({
+            'success': True,
+            'clientCode': client_code,
+            'clientName': client_name,
+            'previewJobNumber': preview_job_number
+        })
+    
+    except Exception as e:
+        print(f'[Hub API] Error previewing job number: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/new-job', methods=['POST'])
+def create_new_job():
+    """Create a new job in Airtable - reserves job number atomically"""
+    try:
+        data = request.json
+        
+        client_code = data.get('clientCode')
+        job_name = data.get('jobName')
+        description = data.get('description', '')
+        owner = data.get('owner', '')
+        update_due = data.get('updateDue', '')
+        live = data.get('live', 'Tbc')
+        status = data.get('status', 'soon')  # 'soon' or 'now'
+        
+        if not client_code or not job_name:
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        # Step 1: Get client record and reserve job number atomically
+        client_url = get_airtable_url('Clients')
+        client_response = requests.get(
+            client_url,
+            headers=HEADERS,
+            params={'filterByFormula': f"{{Client code}} = '{client_code}'", 'maxRecords': 1}
+        )
+        client_response.raise_for_status()
+        client_records = client_response.json().get('records', [])
+        
+        if not client_records:
+            return jsonify({'error': f'Client {client_code} not found'}), 404
+        
+        client_record = client_records[0]
+        client_record_id = client_record.get('id')
+        client_fields = client_record.get('fields', {})
+        
+        next_num_str = client_fields.get('Next Job #', '')
+        if not next_num_str:
+            return jsonify({'error': f'No job number sequence configured for {client_code}'}), 400
+        
+        try:
+            next_num = int(next_num_str)
+        except ValueError:
+            return jsonify({'error': f'Invalid job number format: {next_num_str}'}), 400
+        
+        # Reserve the job number
+        job_number = f"{client_code} {next_num:03d}"
+        new_next_num = f"{next_num + 1:03d}"
+        
+        # Step 2: Increment the client's Next Job # 
+        update_response = requests.patch(
+            f"{client_url}/{client_record_id}",
+            headers=HEADERS,
+            json={'fields': {'Next Job #': new_next_num}}
+        )
+        update_response.raise_for_status()
+        
+        print(f'[Hub API] Reserved job number: {job_number}')
+        
+        # Step 3: Create the project record
+        airtable_status = 'Incoming' if status == 'soon' else 'In Progress'
+        
+        fields = {
+            'Job Number': job_number,
+            'Project Name': job_name,
+            'Status': airtable_status,
+            'Stage': 'Triage',
+            'With Client?': False,
+            'Client': [client_record_id]
+        }
+        
+        # Add optional fields if provided
+        if description:
+            fields['Description'] = description
+        if owner:
+            fields['Project Owner'] = owner
+        if update_due:
+            fields['Update Due'] = update_due
+        if live and live != 'Tbc':
+            fields['Live'] = live
+        
+        url = get_airtable_url('Projects')
+        response = requests.post(
+            url,
+            headers=HEADERS,
+            json={'fields': fields}
+        )
+        response.raise_for_status()
+        
+        created_record = response.json()
+        print(f'[Hub API] Created new job: {job_number} - {job_name}')
+        
+        return jsonify({
+            'success': True,
+            'jobNumber': job_number,
+            'recordId': created_record.get('id'),
+            'status': airtable_status
+        })
+    
+    except Exception as e:
+        print(f'[Hub API] Error creating job: {e}')
         return jsonify({'error': str(e)}), 500
 
 
