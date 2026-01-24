@@ -801,8 +801,8 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysSinceUpdate = job.daysSinceUpdate || '-';
     
-    // Check if stale (contains ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¤)
-    const isStale = daysSinceUpdate.includes('ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¤');
+    // Check if stale (contains ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¤)
+    const isStale = daysSinceUpdate.includes('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¤');
     
     // Build summary line: Stage - Live Date - With client
     let summaryParts = [];
@@ -2167,8 +2167,7 @@ function getTrackerPDF() {
 let newJobState = {
     clientCode: null,
     clientName: null,
-    jobNumber: null,
-    status: 'soon' // 'soon' or 'now'
+    jobNumber: null
 };
 
 async function openNewJobModal() {
@@ -2176,63 +2175,72 @@ async function openNewJobModal() {
     if (!modal) return;
     
     // Reset state
-    newJobState = { clientCode: null, clientName: null, jobNumber: null, status: 'soon' };
-    
-    // Show step 1, hide others
-    $('new-job-step-1').style.display = 'block';
-    $('new-job-step-2').style.display = 'none';
-    $('new-job-step-3').style.display = 'none';
-    
-    // Populate client picker
-    const picker = $('client-picker');
-    picker.innerHTML = '<p class="loading-text">Loading clients...</p>';
-    
-    modal.classList.add('visible');
-    
-    try {
-        const response = await fetch('/api/clients');
-        const clients = await response.json();
-        
-        picker.innerHTML = clients.map(c => `
-            <button class="client-picker-btn" onclick="selectNewJobClient('${c.code}', '${c.name.replace(/'/g, "\\'")}')">
-                <img src="images/logos/${c.code}.png" alt="${c.code}" onerror="this.src='images/logos/Unknown.png'">
-                <span>${c.name}</span>
-            </button>
-        `).join('');
-    } catch (err) {
-        console.error('Error loading clients:', err);
-        picker.innerHTML = '<p class="error-text">Failed to load clients</p>';
-    }
-}
-
-async function selectNewJobClient(code, name) {
-    newJobState.clientCode = code;
-    newJobState.clientName = name;
-    
-    // Show step 2 with loading state
-    $('new-job-step-1').style.display = 'none';
-    $('new-job-step-2').style.display = 'block';
-    
-    // Update header with logo
-    const logo = $('new-job-logo');
-    logo.src = getLogoUrl(code);
-    logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
-    $('new-job-number').textContent = '...';
+    newJobState = { clientCode: null, clientName: null, jobNumber: null };
     
     // Reset form
+    $('new-job-client').value = '';
+    $('new-job-client').innerHTML = '<option value="">Loading...</option>';
     $('new-job-name').value = '';
     $('new-job-description').value = '';
-    $('new-job-owner').innerHTML = '<option value="">Loading...</option>';
+    $('new-job-owner').innerHTML = '<option value="">Select client first...</option>';
     $('new-job-status').value = 'Incoming';
     $('new-job-ballpark').value = '5000';
     $('new-job-live').value = 'Tbc';
     $('new-job-setup-teams').checked = false;
+    $('new-job-logo').src = 'images/logos/Unknown.png';
+    $('new-job-number-wrapper').style.display = 'none';
     
     // Set default update due (+5 working days)
     const updateDue = getWorkingDaysFromNow(5);
     $('new-job-update-due').value = updateDue;
     
-    // Preview job number (not reserved yet)
+    // Show form and confirmation hidden
+    $('new-job-form').style.display = 'block';
+    $('new-job-step-3').style.display = 'none';
+    
+    modal.classList.add('visible');
+    
+    // Load clients into dropdown
+    try {
+        const response = await fetch('/api/clients');
+        const clients = await response.json();
+        
+        const clientSelect = $('new-job-client');
+        clientSelect.innerHTML = '<option value="">Select client...</option>' + 
+            clients.map(c => `<option value="${c.code}">${c.name}</option>`).join('');
+    } catch (err) {
+        console.error('Error loading clients:', err);
+        $('new-job-client').innerHTML = '<option value="">Failed to load</option>';
+    }
+}
+
+async function onClientSelected() {
+    const code = $('new-job-client').value;
+    
+    if (!code) {
+        // Reset if no client selected
+        newJobState.clientCode = null;
+        newJobState.clientName = null;
+        newJobState.jobNumber = null;
+        $('new-job-logo').src = 'images/logos/Unknown.png';
+        $('new-job-number-wrapper').style.display = 'none';
+        $('new-job-owner').innerHTML = '<option value="">Select client first...</option>';
+        return;
+    }
+    
+    newJobState.clientCode = code;
+    newJobState.clientName = $('new-job-client').options[$('new-job-client').selectedIndex].text;
+    
+    // Update logo
+    const logo = $('new-job-logo');
+    logo.src = getLogoUrl(code);
+    logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
+    
+    // Show number wrapper with loading state
+    $('new-job-number').textContent = '...';
+    $('new-job-number-wrapper').style.display = 'inline';
+    
+    // Preview job number
     try {
         const response = await fetch(`/api/preview-job-number/${code}`);
         const data = await response.json();
@@ -2250,6 +2258,7 @@ async function selectNewJobClient(code, name) {
     }
     
     // Load owners for this client
+    $('new-job-owner').innerHTML = '<option value="">Loading...</option>';
     try {
         const response = await fetch(`/api/people/${code}`);
         const people = await response.json();
@@ -2264,8 +2273,16 @@ async function selectNewJobClient(code, name) {
 }
 
 async function submitNewJob() {
-    const jobName = $('new-job-name').value.trim();
+    // Validate client selected
+    if (!newJobState.clientCode) {
+        $('new-job-client').focus();
+        $('new-job-client').classList.add('input-error');
+        setTimeout(() => $('new-job-client').classList.remove('input-error'), 2000);
+        return;
+    }
     
+    // Validate job name
+    const jobName = $('new-job-name').value.trim();
     if (!jobName) {
         $('new-job-name').focus();
         $('new-job-name').classList.add('input-error');
@@ -2329,7 +2346,7 @@ async function submitNewJob() {
             // Phase 2: Would trigger worker here
         }
         
-        $('new-job-step-2').style.display = 'none';
+        $('new-job-form').style.display = 'none';
         $('new-job-step-3').style.display = 'block';
         
         // Refresh jobs list
@@ -2370,7 +2387,7 @@ document.addEventListener('click', (e) => {
 
 // Make new job functions globally available
 window.openNewJobModal = openNewJobModal;
-window.selectNewJobClient = selectNewJobClient;
+window.onClientSelected = onClientSelected;
 window.submitNewJob = submitNewJob;
 window.closeNewJobModal = closeNewJobModal;
 
