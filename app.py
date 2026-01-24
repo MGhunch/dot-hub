@@ -174,7 +174,7 @@ def transform_project(record):
     # Parse dates - 'Update Due' is D/M/YYYY format from Airtable
     update_due = parse_airtable_date(fields.get('Update Due', ''))
     
-    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¤", "Today", "-")
+    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¤", "Today", "-")
     days_since_update = fields.get('Days Since Update', '-')
     
     # Live In is now a dropdown (month name or "Tbc") - pass through as-is
@@ -204,7 +204,7 @@ def transform_project(record):
         # Dates
         'updateDue': update_due,
         'liveDate': live_in,  # Month name like "Jan", "Feb", "Tbc"
-        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¤", "Today", "-"
+        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¤", "Today", "-"
         
         # Content
         'description': fields.get('Description', ''),
@@ -312,16 +312,10 @@ def preview_job_number(client_code):
         fields = record.get('fields', {})
         client_name = fields.get('Clients', client_code)
         
-        next_num_str = fields.get('Next Job #', '')
-        if not next_num_str:
+        # Next Job # is the formatted job number (e.g. "HUN 059")
+        preview_job_num = fields.get('Next Job #', '')
+        if not preview_job_num:
             return jsonify({'error': f'No job number sequence configured for {client_code}'}), 400
-        
-        try:
-            next_num = int(next_num_str)
-        except ValueError:
-            return jsonify({'error': f'Invalid job number format: {next_num_str}'}), 400
-        
-        preview_job_num = f"{client_code} {next_num:03d}"
         
         print(f'[Hub API] Preview job number: {preview_job_num}')
         
@@ -373,24 +367,23 @@ def create_new_job():
         client_record_id = client_record.get('id')
         client_fields = client_record.get('fields', {})
         
-        next_num_str = client_fields.get('Next Job #', '')
-        if not next_num_str:
+        # Read the formatted job number directly
+        job_number = client_fields.get('Next Job #', '')
+        if not job_number:
             return jsonify({'error': f'No job number sequence configured for {client_code}'}), 400
         
+        # Get raw number to increment
+        next_num = client_fields.get('Next #', 0)
         try:
-            next_num = int(next_num_str)
-        except ValueError:
-            return jsonify({'error': f'Invalid job number format: {next_num_str}'}), 400
+            next_num = int(next_num)
+        except (ValueError, TypeError):
+            return jsonify({'error': f'Invalid Next # value for {client_code}'}), 400
         
-        # Reserve the job number
-        job_number = f"{client_code} {next_num:03d}"
-        new_next_num = f"{next_num + 1:03d}"
-        
-        # Step 2: Increment the client's Next Job # 
+        # Step 2: Increment the client's Next # 
         update_response = requests.patch(
             f"{client_url}/{client_record_id}",
             headers=HEADERS,
-            json={'fields': {'Next Job #': new_next_num}}
+            json={'fields': {'Next #': next_num + 1}}
         )
         update_response.raise_for_status()
         
