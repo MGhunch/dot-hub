@@ -442,6 +442,126 @@
         </div>
     </div>
 
+    <!-- New Job Modal -->
+    <div class="job-modal-overlay" id="new-job-modal">
+        <div class="job-modal new-job-modal">
+            <!-- Step 1: Client Picker -->
+            <div id="new-job-step-1" class="new-job-step">
+                <div class="job-modal-header">
+                    <div class="job-modal-header-left">
+                        <h2 class="job-modal-title">New Job</h2>
+                    </div>
+                    <button class="job-modal-close" onclick="closeNewJobModal()">&times;</button>
+                </div>
+                <div class="job-modal-body">
+                    <p class="new-job-prompt">Select client</p>
+                    <div class="client-picker" id="client-picker">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 2: Job Form -->
+            <div id="new-job-step-2" class="new-job-step" style="display: none;">
+                <div class="job-modal-header">
+                    <div class="job-modal-header-left">
+                        <img class="job-modal-logo" id="new-job-logo" src="" alt="">
+                        <h2 class="job-modal-title" id="new-job-title">NEW JOB</h2>
+                    </div>
+                    <button class="job-modal-close" onclick="closeNewJobModal()">&times;</button>
+                </div>
+                <div class="job-modal-body">
+                    <!-- Job Number (read-only) -->
+                    <div class="job-form-group">
+                        <label class="job-form-label">Job Number</label>
+                        <input type="text" class="job-form-input" id="new-job-number" readonly>
+                    </div>
+                    
+                    <!-- Job Name (required) -->
+                    <div class="job-form-group">
+                        <label class="job-form-label">Job Name <span class="required">*</span></label>
+                        <input type="text" class="job-form-input" id="new-job-name" placeholder="e.g. Summer Campaign">
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="job-form-group">
+                        <label class="job-form-label">Description</label>
+                        <textarea class="job-form-input job-form-textarea" id="new-job-description" placeholder="Optional details..." rows="2"></textarea>
+                    </div>
+                    
+                    <div class="job-modal-divider"></div>
+                    
+                    <!-- Owner -->
+                    <div class="job-form-group">
+                        <label class="job-form-label">Owner</label>
+                        <select class="job-form-input" id="new-job-owner">
+                            <option value="">Select...</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Update Due + Live row -->
+                    <div class="job-form-row">
+                        <div class="job-form-group">
+                            <label class="job-form-label">Update Due</label>
+                            <input type="date" class="job-form-input" id="new-job-update-due">
+                        </div>
+                        <div class="job-form-group">
+                            <label class="job-form-label">Live</label>
+                            <select class="job-form-input" id="new-job-live">
+                                <option value="Tbc">Tbc</option>
+                                <option value="Jan">Jan</option>
+                                <option value="Feb">Feb</option>
+                                <option value="Mar">Mar</option>
+                                <option value="Apr">Apr</option>
+                                <option value="May">May</option>
+                                <option value="Jun">Jun</option>
+                                <option value="Jul">Jul</option>
+                                <option value="Aug">Aug</option>
+                                <option value="Sep">Sep</option>
+                                <option value="Oct">Oct</option>
+                                <option value="Nov">Nov</option>
+                                <option value="Dec">Dec</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- NOW/SOON Toggle -->
+                    <div class="job-form-group">
+                        <label class="job-form-label">Status</label>
+                        <div class="now-soon-toggle">
+                            <button type="button" class="now-soon-btn" id="soon-btn" onclick="setNewJobStatus('soon')">SOON</button>
+                            <button type="button" class="now-soon-btn" id="now-btn" onclick="setNewJobStatus('now')">NOW</button>
+                        </div>
+                        <p class="now-soon-hint" id="now-soon-hint">Job appears in Forecast</p>
+                    </div>
+                </div>
+                <div class="job-modal-footer">
+                    <button class="job-btn job-btn-secondary" onclick="backToClientPicker()">Back</button>
+                    <button class="job-btn job-btn-primary" id="new-job-create-btn" onclick="submitNewJob()">CREATE</button>
+                </div>
+            </div>
+            
+            <!-- Step 3: Confirmation -->
+            <div id="new-job-step-3" class="new-job-step" style="display: none;">
+                <div class="job-modal-header">
+                    <div class="job-modal-header-left">
+                        <img class="job-modal-logo" id="new-job-confirm-logo" src="" alt="">
+                        <h2 class="job-modal-title" id="new-job-confirm-title">JOB CREATED</h2>
+                    </div>
+                    <button class="job-modal-close" onclick="closeNewJobModal()">&times;</button>
+                </div>
+                <div class="job-modal-body new-job-confirmation">
+                    <div class="new-job-success-icon">✓</div>
+                    <p class="new-job-confirm-text" id="new-job-confirm-text">SKY 019 logged</p>
+                    <p class="new-job-confirm-subtext" id="new-job-confirm-subtext">Teams & Files not set up</p>
+                </div>
+                <div class="job-modal-footer">
+                    <button class="job-btn job-btn-primary" onclick="closeNewJobModal()">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Coming Soon Modal -->
     <div class="coming-soon-modal-overlay" id="coming-soon-modal">
         <div class="coming-soon-modal">

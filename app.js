@@ -207,8 +207,12 @@ function setupEventListeners() {
             const action = item.dataset.action;
             // Close the menu
             item.closest('.plus-menu')?.classList.remove('open');
-            // Show coming soon modal
-            showComingSoonModal(action);
+            // Route to appropriate handler
+            if (action === 'new-job') {
+                openNewJobModal();
+            } else {
+                showComingSoonModal(action);
+            }
         });
     });
 
@@ -797,8 +801,8 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysSinceUpdate = job.daysSinceUpdate || '-';
     
-    // Check if stale (contains ðŸ’¤)
-    const isStale = daysSinceUpdate.includes('ðŸ’¤');
+    // Check if stale (contains Ã°Å¸â€™Â¤)
+    const isStale = daysSinceUpdate.includes('Ã°Å¸â€™Â¤');
     
     // Build summary line: Stage - Live Date - With client
     let summaryParts = [];
@@ -2159,15 +2163,239 @@ function getTrackerPDF() {
     window.open(url, '_blank');
 }
 
+// ===== NEW JOB MODAL =====
+let newJobState = {
+    clientCode: null,
+    clientName: null,
+    jobNumber: null,
+    status: 'soon' // 'soon' or 'now'
+};
+
+async function openNewJobModal() {
+    const modal = $('new-job-modal');
+    if (!modal) return;
+    
+    // Reset state
+    newJobState = { clientCode: null, clientName: null, jobNumber: null, status: 'soon' };
+    
+    // Show step 1, hide others
+    $('new-job-step-1').style.display = 'block';
+    $('new-job-step-2').style.display = 'none';
+    $('new-job-step-3').style.display = 'none';
+    
+    // Populate client picker
+    const picker = $('client-picker');
+    picker.innerHTML = '<p class="loading-text">Loading clients...</p>';
+    
+    modal.classList.add('visible');
+    
+    try {
+        const response = await fetch('/api/clients');
+        const clients = await response.json();
+        
+        picker.innerHTML = clients.map(c => `
+            <button class="client-picker-btn" onclick="selectNewJobClient('${c.code}', '${c.name.replace(/'/g, "\\'")}')">
+                <img src="images/logos/${c.code}.png" alt="${c.code}" onerror="this.src='images/logos/Unknown.png'">
+                <span>${c.name}</span>
+            </button>
+        `).join('');
+    } catch (err) {
+        console.error('Error loading clients:', err);
+        picker.innerHTML = '<p class="error-text">Failed to load clients</p>';
+    }
+}
+
+async function selectNewJobClient(code, name) {
+    newJobState.clientCode = code;
+    newJobState.clientName = name;
+    
+    // Update header
+    $('new-job-logo').src = `images/logos/${code}.png`;
+    $('new-job-logo').onerror = function() { this.src = 'images/logos/Unknown.png'; };
+    $('new-job-title').textContent = `NEW ${code} JOB`;
+    
+    // Show step 2
+    $('new-job-step-1').style.display = 'none';
+    $('new-job-step-2').style.display = 'block';
+    
+    // Reset form
+    $('new-job-number').value = 'Reserving...';
+    $('new-job-name').value = '';
+    $('new-job-description').value = '';
+    $('new-job-owner').innerHTML = '<option value="">Loading...</option>';
+    $('new-job-live').value = 'Tbc';
+    setNewJobStatus('soon');
+    
+    // Set default update due (+5 working days)
+    const updateDue = getWorkingDaysFromNow(5);
+    $('new-job-update-due').value = updateDue;
+    
+    // Preview job number (not reserved yet)
+    try {
+        const response = await fetch(`/api/preview-job-number/${code}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            $('new-job-number').value = 'Error';
+            console.error('Preview error:', data.error);
+            return;
+        }
+        
+        newJobState.jobNumber = data.previewJobNumber;
+        $('new-job-number').value = data.previewJobNumber + ' (preview)';
+    } catch (err) {
+        console.error('Error previewing job number:', err);
+        $('new-job-number').value = 'Error';
+    }
+    
+    // Load owners for this client
+    try {
+        const response = await fetch(`/api/people/${code}`);
+        const people = await response.json();
+        
+        const ownerSelect = $('new-job-owner');
+        ownerSelect.innerHTML = '<option value="">Select...</option>' + 
+            people.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+    } catch (err) {
+        console.error('Error loading owners:', err);
+        $('new-job-owner').innerHTML = '<option value="">Failed to load</option>';
+    }
+}
+
+function backToClientPicker() {
+    $('new-job-step-1').style.display = 'block';
+    $('new-job-step-2').style.display = 'none';
+}
+
+function setNewJobStatus(status) {
+    newJobState.status = status;
+    
+    const soonBtn = $('soon-btn');
+    const nowBtn = $('now-btn');
+    const hint = $('now-soon-hint');
+    
+    if (status === 'soon') {
+        soonBtn.classList.add('active');
+        nowBtn.classList.remove('active');
+        hint.textContent = 'Job appears in Forecast';
+    } else {
+        soonBtn.classList.remove('active');
+        nowBtn.classList.add('active');
+        hint.textContent = 'Teams & Files will be set up';
+    }
+}
+
+async function submitNewJob() {
+    const jobName = $('new-job-name').value.trim();
+    
+    if (!jobName) {
+        $('new-job-name').focus();
+        $('new-job-name').classList.add('input-error');
+        setTimeout(() => $('new-job-name').classList.remove('input-error'), 2000);
+        return;
+    }
+    
+    const createBtn = $('new-job-create-btn');
+    createBtn.disabled = true;
+    createBtn.textContent = 'Creating...';
+    
+    const payload = {
+        clientCode: newJobState.clientCode,
+        jobName: jobName,
+        description: $('new-job-description').value.trim(),
+        owner: $('new-job-owner').value,
+        updateDue: $('new-job-update-due').value,
+        live: $('new-job-live').value,
+        status: newJobState.status // 'soon' or 'now'
+    };
+    
+    try {
+        const response = await fetch('/api/new-job', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            alert('Error creating job: ' + data.error);
+            createBtn.disabled = false;
+            createBtn.textContent = 'CREATE';
+            return;
+        }
+        
+        // Use the actual job number from the response
+        const createdJobNumber = data.jobNumber;
+        
+        // Show confirmation
+        $('new-job-confirm-logo').src = `images/logos/${newJobState.clientCode}.png`;
+        $('new-job-confirm-title').textContent = 'JOB CREATED';
+        $('new-job-confirm-text').textContent = `${createdJobNumber} logged`;
+        
+        if (newJobState.status === 'soon') {
+            $('new-job-confirm-subtext').textContent = 'Teams & Files not set up';
+            $('new-job-confirm-subtext').style.display = 'block';
+        } else {
+            $('new-job-confirm-subtext').textContent = 'Setting up Teams & Files...';
+            $('new-job-confirm-subtext').style.display = 'block';
+            // Phase 2: Would trigger worker here
+        }
+        
+        $('new-job-step-2').style.display = 'none';
+        $('new-job-step-3').style.display = 'block';
+        
+        // Refresh jobs list
+        await loadAllJobs();
+        
+    } catch (err) {
+        console.error('Error creating job:', err);
+        alert('Failed to create job. Please try again.');
+        createBtn.disabled = false;
+        createBtn.textContent = 'CREATE';
+    }
+}
+
+function closeNewJobModal() {
+    $('new-job-modal')?.classList.remove('visible');
+    newJobState = { clientCode: null, clientName: null, jobNumber: null, status: 'soon' };
+}
+
+function getWorkingDaysFromNow(days) {
+    const date = new Date();
+    let added = 0;
+    while (added < days) {
+        date.setDate(date.getDate() + 1);
+        const dayOfWeek = date.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+            added++;
+        }
+    }
+    return date.toISOString().split('T')[0];
+}
+
+// Close new job modal on overlay click
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'new-job-modal') {
+        closeNewJobModal();
+    }
+});
+
+// Make new job functions globally available
+window.openNewJobModal = openNewJobModal;
+window.selectNewJobClient = selectNewJobClient;
+window.backToClientPicker = backToClientPicker;
+window.setNewJobStatus = setNewJobStatus;
+window.submitNewJob = submitNewJob;
+window.closeNewJobModal = closeNewJobModal;
+
 // ===== COMING SOON MODAL =====
 function showComingSoonModal(action) {
     const modal = $('coming-soon-modal');
     const text = $('coming-soon-text');
     if (!modal || !text) return;
     
-    if (action === 'new-job') {
-        text.textContent = 'New jobs coming soon';
-    } else if (action === 'upload') {
+    if (action === 'upload') {
         text.textContent = 'Uploads coming soon';
     } else {
         text.textContent = 'Coming soon';
