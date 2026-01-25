@@ -626,18 +626,16 @@ async function processQuestion(question) {
     }
 }
 
-// ===== DOT API (Unified Traffic) =====
+// ===== DOT API (Simple Claude - Fast) =====
 async function askDot(question) {
     try {
         const sessionId = state.currentUser?.name || 'anonymous';
         
-        const response = await fetch(`${TRAFFIC_BASE}/traffic`, {
+        const response = await fetch(`${TRAFFIC_BASE}/hub`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                source: 'hub',
                 content: question,
-                senderEmail: state.currentUser?.email || 'hub@hunch.co.nz',
                 senderName: state.currentUser?.name || 'Hub User',
                 sessionId: sessionId,
                 jobs: state.allJobs
@@ -645,13 +643,13 @@ async function askDot(question) {
         });
         
         if (!response.ok) {
-            console.log('Traffic API error:', response.status);
+            console.log('Hub API error:', response.status);
             return null;
         }
         
         return await response.json();
     } catch (e) {
-        console.log('Traffic API error:', e);
+        console.log('Hub API error:', e);
         return null;
     }
 }
