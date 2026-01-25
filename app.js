@@ -37,7 +37,8 @@ const state = {
     trackerClient: null,
     trackerQuarter: 'Q4',
     trackerMode: 'spend',
-    lastActivity: Date.now()
+    lastActivity: Date.now(),
+    conversationHistory: []  // Tracks conversation for context
 };
 
 let inactivityTimer = null;
@@ -315,6 +316,7 @@ function signOut() {
     sessionStorage.removeItem('dotUser');
     state.currentUser = null;
     state.enteredPin = '';
+    state.conversationHistory = [];  // Clear conversation history
     updatePinDots();
     $('pin-screen')?.classList.remove('hidden');
     goHome();
@@ -369,6 +371,9 @@ function navigateTo(view) {
 }
 
 function goHome() {
+    // Clear conversation history for fresh start
+    state.conversationHistory = [];
+    
     $('phone-home')?.classList.remove('hidden');
     $('phone-conversation')?.classList.remove('visible');
     if ($('phone-home-input')) $('phone-home-input').value = '';
@@ -644,6 +649,12 @@ async function askDot(question) {
     try {
         const sessionId = state.currentUser?.name || 'anonymous';
         
+        // Add user message to history before sending
+        state.conversationHistory.push({
+            role: 'user',
+            content: question
+        });
+        
         const response = await fetch(`${TRAFFIC_BASE}/hub`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -651,18 +662,40 @@ async function askDot(question) {
                 content: question,
                 senderName: state.currentUser?.name || 'Hub User',
                 sessionId: sessionId,
-                jobs: state.allJobs
+                jobs: state.allJobs,
+                history: state.conversationHistory.slice(0, -1)  // Send history WITHOUT current message
             })
         });
         
         if (!response.ok) {
             console.log('Hub API error:', response.status);
+            // Remove the user message we just added since request failed
+            state.conversationHistory.pop();
             return null;
         }
         
-        return await response.json();
+        const result = await response.json();
+        
+        // Add assistant response to history
+        if (result && result.message) {
+            state.conversationHistory.push({
+                role: 'assistant',
+                content: result.message
+            });
+        }
+        
+        // Keep history manageable (last 20 messages = 10 exchanges)
+        if (state.conversationHistory.length > 20) {
+            state.conversationHistory = state.conversationHistory.slice(-20);
+        }
+        
+        return result;
     } catch (e) {
         console.log('Hub API error:', e);
+        // Remove the user message we just added since request failed
+        if (state.conversationHistory.length > 0) {
+            state.conversationHistory.pop();
+        }
         return null;
     }
 }
