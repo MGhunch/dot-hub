@@ -32,12 +32,13 @@ const state = {
     allClients: [],
     allJobs: [],
     jobsLoaded: false,
-    wipMode: 'cards',
+    wipMode: 'todo',
     wipClient: 'all',
     trackerClient: null,
     trackerQuarter: 'Q4',
     trackerMode: 'spend',
-    lastActivity: Date.now()
+    lastActivity: Date.now(),
+    conversationHistory: []  // Tracks conversation for context
 };
 
 let inactivityTimer = null;
@@ -315,6 +316,7 @@ function signOut() {
     sessionStorage.removeItem('dotUser');
     state.currentUser = null;
     state.enteredPin = '';
+    state.conversationHistory = [];  // Clear conversation history
     updatePinDots();
     $('pin-screen')?.classList.remove('hidden');
     goHome();
@@ -369,6 +371,9 @@ function navigateTo(view) {
 }
 
 function goHome() {
+    // Clear conversation history for fresh start
+    state.conversationHistory = [];
+    
     $('phone-home')?.classList.remove('hidden');
     $('phone-conversation')?.classList.remove('visible');
     if ($('phone-home-input')) $('phone-home-input').value = '';
@@ -644,6 +649,12 @@ async function askDot(question) {
     try {
         const sessionId = state.currentUser?.name || 'anonymous';
         
+        // Add user message to history before sending
+        state.conversationHistory.push({
+            role: 'user',
+            content: question
+        });
+        
         const response = await fetch(`${TRAFFIC_BASE}/hub`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -651,18 +662,40 @@ async function askDot(question) {
                 content: question,
                 senderName: state.currentUser?.name || 'Hub User',
                 sessionId: sessionId,
-                jobs: state.allJobs
+                jobs: state.allJobs,
+                history: state.conversationHistory.slice(0, -1)  // Send history WITHOUT current message
             })
         });
         
         if (!response.ok) {
             console.log('Hub API error:', response.status);
+            // Remove the user message we just added since request failed
+            state.conversationHistory.pop();
             return null;
         }
         
-        return await response.json();
+        const result = await response.json();
+        
+        // Add assistant response to history
+        if (result && result.message) {
+            state.conversationHistory.push({
+                role: 'assistant',
+                content: result.message
+            });
+        }
+        
+        // Keep history manageable (last 20 messages = 10 exchanges)
+        if (state.conversationHistory.length > 20) {
+            state.conversationHistory = state.conversationHistory.slice(-20);
+        }
+        
+        return result;
     } catch (e) {
         console.log('Hub API error:', e);
+        // Remove the user message we just added since request failed
+        if (state.conversationHistory.length > 0) {
+            state.conversationHistory.pop();
+        }
         return null;
     }
 }
@@ -830,10 +863,7 @@ function createJobCard(job, index) {
 // ===== UNIVERSAL JOB CARD =====
 function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
-    const daysSinceUpdate = job.daysSinceUpdate || '-';
-    
-    // Check if stale (contains ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤)
-    const isStale = daysSinceUpdate.includes('ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤');
+    const isOverdue = dueDate === 'Overdue';
     
     // Build summary line: Stage - Live Date - With client
     let summaryParts = [];
@@ -845,6 +875,11 @@ function createUniversalCard(job, id) {
     // Build recent activity HTML
     const recentActivity = formatRecentActivity(job.updateHistory);
     
+    // Truncate job name for cleaner display
+    const jobName = job.jobName && job.jobName.length > 28 
+        ? job.jobName.substring(0, 28) + '...' 
+        : (job.jobName || 'Untitled');
+    
     return `
         <div class="job-card" id="${id}" data-job="${job.jobNumber}">
             <div class="job-header" data-job-id="${id}">
@@ -853,13 +888,10 @@ function createUniversalCard(job, id) {
                 </div>
                 <div class="job-main">
                     <div class="job-title-row">
-                        <span class="job-title">${job.jobNumber} | ${job.jobName}</span>
-                        <span class="expand-icon">${ICON_CHEVRON}</span>
+                        <span class="job-title">${job.jobNumber}  ${jobName}</span>
                     </div>
-                    <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
-                        ${ICON_CLOCK} ${dueDate}
-                        ${ICON_REFRESH} <span class="${isStale ? 'days-ago stale' : 'days-ago'}">${daysSinceUpdate}</span>
+                        ${ICON_CLOCK} <span class="${isOverdue ? 'due-date overdue' : 'due-date'}">${dueDate}</span>
                     </div>
                 </div>
             </div>
@@ -867,6 +899,10 @@ function createUniversalCard(job, id) {
                 ${summaryLine ? `<div class="job-summary-line">${summaryLine}</div>` : ''}
                 <div class="section-label">The Project</div>
                 <div class="job-description">${job.description || 'No description'}</div>
+                <div class="job-update-section">
+                    <div class="section-label">Latest Update</div>
+                    <div class="job-update-text">${job.update || 'No updates yet'}</div>
+                </div>
                 <div class="section-label" style="margin-top:14px">Recent Activity</div>
                 ${recentActivity}
                 <div class="job-expanded-footer">
@@ -1310,20 +1346,20 @@ function setupWipDropdown() {
 
 function setWipMode(mode) {
     state.wipMode = mode;
-    $('wip-mode-switch').checked = (mode === 'list');
+    $('wip-mode-switch').checked = (mode === 'wip');
     updateWipModeLabels();
     renderWip();
 }
 
 function toggleWipMode() {
-    state.wipMode = $('wip-mode-switch').checked ? 'list' : 'cards';
+    state.wipMode = $('wip-mode-switch').checked ? 'wip' : 'todo';
     updateWipModeLabels();
     renderWip();
 }
 
 function updateWipModeLabels() {
-    $('mode-cards')?.classList.toggle('active', state.wipMode === 'cards');
-    $('mode-list')?.classList.toggle('active', state.wipMode === 'list');
+    $('mode-todo')?.classList.toggle('active', state.wipMode === 'todo');
+    $('mode-wip')?.classList.toggle('active', state.wipMode === 'wip');
 }
 
 function getWipFilteredJobs() {
@@ -1331,17 +1367,22 @@ function getWipFilteredJobs() {
     return jobs.filter(j => { const num = j.jobNumber.split(' ')[1]; return num !== '000' && num !== '999'; });
 }
 
-function getWipSectionLabels() {
-    // Dynamic labels based on selected client
-    if (state.wipClient === 'all') {
-        return { withUs: 'WITH US', withClient: 'WITH CLIENT' };
-    }
-    
-    // Find client name for the filtered client
-    const client = state.allClients.find(c => c.code === state.wipClient);
-    const clientName = client ? client.name.toUpperCase() : state.wipClient;
-    
-    return { withUs: 'WITH HUNCH', withClient: `WITH ${clientName}` };
+function groupByTodo(jobs) {
+    const g = { doNow: [], doSoon: [], comingUp: [], withClient: [] };
+    jobs.forEach(j => {
+        if (j.status === 'On Hold' || j.status === 'Completed' || j.status === 'Archived') return;
+        if (j.withClient) g.withClient.push(j);
+        else if (j.status === 'Incoming') g.comingUp.push(j);
+        else {
+            const d = getDaysUntilDue(j.updateDue);
+            if (d <= 1) g.doNow.push(j);
+            else if (d <= 5) g.doSoon.push(j);
+            else g.comingUp.push(j);
+        }
+    });
+    const s = (a, b) => getDaysUntilDue(a.updateDue) - getDaysUntilDue(b.updateDue);
+    Object.values(g).forEach(arr => arr.sort(s));
+    return { leftTop: { title: 'DO IT NOW', jobs: g.doNow, compact: false }, leftBottom: { title: 'DO IT SOON', jobs: g.doSoon, compact: false }, rightTop: { title: 'COMING UP', jobs: g.comingUp, compact: true }, rightBottom: { title: 'WITH CLIENT', jobs: g.withClient, compact: true } };
 }
 
 function groupByWip(jobs) {
@@ -1355,14 +1396,7 @@ function groupByWip(jobs) {
     });
     const s = (a, b) => getDaysUntilDue(a.updateDue) - getDaysUntilDue(b.updateDue);
     Object.values(g).forEach(arr => arr.sort(s));
-    
-    const labels = getWipSectionLabels();
-    return { 
-        leftTop: { title: labels.withUs, jobs: g.withUs }, 
-        rightTop: { title: labels.withClient, jobs: g.withYou }, 
-        leftBottom: { title: 'INCOMING', jobs: g.incoming }, 
-        rightBottom: { title: 'ON HOLD', jobs: g.onHold } 
-    };
+    return { leftTop: { title: 'JOBS WITH US', jobs: g.withUs, compact: false }, rightTop: { title: 'JOBS WITH YOU', jobs: g.withYou, compact: false }, leftBottom: { title: 'INCOMING', jobs: g.incoming, compact: true }, rightBottom: { title: 'ON HOLD', jobs: g.onHold, compact: true } };
 }
 
 function renderWip() {
@@ -1384,81 +1418,34 @@ function renderWip() {
     }
     
     const jobs = getWipFilteredJobs();
-    const sections = groupByWip(jobs);
-    const isListMode = state.wipMode === 'list';
+    const sections = state.wipMode === 'wip' ? groupByWip(jobs) : groupByTodo(jobs);
     
     content.innerHTML = `
         <div class="wip-column">
-            ${renderWipSection(sections.leftTop, isListMode)}
-            ${renderWipSection(sections.leftBottom, isListMode)}
+            ${renderWipSection(sections.leftTop)}
+            ${renderWipSection(sections.leftBottom)}
         </div>
         <div class="wip-column">
-            ${renderWipSection(sections.rightTop, isListMode)}
-            ${renderWipSection(sections.rightBottom, isListMode)}
+            ${renderWipSection(sections.rightTop)}
+            ${renderWipSection(sections.rightBottom)}
         </div>
     `;
     
-    // Add click handlers
-    if (isListMode) {
-        content.querySelectorAll('.list-row').forEach(row => {
-            row.addEventListener('click', () => {
-                const jobNumber = row.dataset.jobNumber;
-                if (jobNumber) openJobModal(jobNumber);
-            });
-        });
-    } else {
-        content.querySelectorAll('.job-card').forEach(card => {
-            card.addEventListener('click', () => card.classList.toggle('expanded'));
-        });
-    }
+    content.querySelectorAll('.job-card').forEach(card => {
+        card.addEventListener('click', () => card.classList.toggle('expanded'));
+    });
 }
 
-function renderWipSection(section, isListMode = false) {
+function renderWipSection(section) {
     let html = `<div class="section"><div class="section-title">${section.title}</div>`;
     if (section.jobs.length === 0) {
         html += `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Nothing to see here</span></div>`;
-    } else if (isListMode) {
-        html += '<div class="list-view">';
-        section.jobs.forEach(job => {
-            html += createListRow(job);
-        });
-        html += '</div>';
     } else {
         section.jobs.forEach((job, i) => {
             html += createUniversalCard(job, `wip-${section.title.replace(/\s+/g, '-')}-${i}`);
         });
     }
     return html + '</div>';
-}
-
-function createListRow(job) {
-    const dueDate = formatDueDate(job.updateDue);
-    const daysSinceUpdate = job.daysSinceUpdate || '-';
-    const isOverdue = dueDate === 'Overdue' || dueDate === 'Today';
-    const isStale = daysSinceUpdate.includes('🔥') || (parseInt(daysSinceUpdate) > 7);
-    
-    return `
-        <div class="list-row" data-job-number="${job.jobNumber}">
-            <div class="list-logo">
-                <img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.parentElement.textContent='${job.clientCode.charAt(0)}'">
-            </div>
-            <div class="list-main">
-                <span class="list-job-num">${job.jobNumber}</span>
-                <span class="list-job-name">${job.jobName}</span>
-            </div>
-            <div class="list-meta">
-                <span class="list-due ${isOverdue ? 'overdue' : ''}">
-                    ${ICON_CLOCK}
-                    ${dueDate}
-                </span>
-                <span class="list-ago ${isStale ? 'stale' : ''}">
-                    ${ICON_REFRESH}
-                    ${daysSinceUpdate}
-                </span>
-            </div>
-            <svg class="list-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ED1C24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-        </div>
-    `;
 }
 
 // Old submitWipUpdate - redirects to modal
