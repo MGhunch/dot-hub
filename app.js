@@ -2281,6 +2281,13 @@ async function openNewJobModal() {
     $('new-job-logo').src = 'images/logos/Unknown.png';
     $('new-job-number-wrapper').style.display = 'none';
     
+    // Reset create button (in case previous attempt was interrupted)
+    const createBtn = $('new-job-create-btn');
+    if (createBtn) {
+        createBtn.disabled = false;
+        createBtn.textContent = 'CREATE JOB';
+    }
+    
     // Reset dropdowns
     $('new-job-client-trigger').querySelector('span').textContent = 'Select client...';
     $('new-job-client-menu').innerHTML = '<div class="custom-dropdown-option" style="color: var(--grey-400)">Loading...</div>';
