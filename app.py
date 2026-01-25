@@ -174,7 +174,7 @@ def transform_project(record):
     # Parse dates - 'Update Due' is D/M/YYYY format from Airtable
     update_due = parse_airtable_date(fields.get('Update Due', ''))
     
-    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¤", "Today", "-")
+    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤", "Today", "-")
     days_since_update = fields.get('Days Since Update', '-')
     
     # Live In is now a dropdown (month name or "Tbc") - pass through as-is
@@ -204,7 +204,7 @@ def transform_project(record):
         # Dates
         'updateDue': update_due,
         'liveDate': live_in,  # Month name like "Jan", "Feb", "Tbc"
-        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¤", "Today", "-"
+        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤", "Today", "-"
         
         # Content
         'description': fields.get('Description', ''),
@@ -395,8 +395,7 @@ def create_new_job():
             'Project Name': job_name,
             'Status': status,
             'Stage': 'Triage',
-            'With Client?': False,
-            'Client': [client_record_id]
+            'With Client?': False
         }
         
         # Add optional fields if provided
@@ -410,11 +409,15 @@ def create_new_job():
             fields['Live'] = live
         
         url = get_airtable_url('Projects')
+        print(f'[Hub API] Creating project with fields: {fields}')
         response = requests.post(
             url,
             headers=HEADERS,
             json={'fields': fields}
         )
+        
+        print(f'[Hub API] Airtable response: {response.status_code} - {response.text}')
+        
         response.raise_for_status()
         
         created_record = response.json()
