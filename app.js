@@ -801,8 +801,8 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysSinceUpdate = job.daysSinceUpdate || '-';
     
-    // Check if stale (contains ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¤)
-    const isStale = daysSinceUpdate.includes('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¤');
+    // Check if stale (contains ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤)
+    const isStale = daysSinceUpdate.includes('ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤');
     
     // Build summary line: Stage - Live Date - With client
     let summaryParts = [];
@@ -2273,6 +2273,10 @@ async function onClientSelected() {
 }
 
 async function submitNewJob() {
+    // Prevent double submit
+    const createBtn = $('new-job-create-btn');
+    if (createBtn.disabled) return;
+    
     // Validate client selected
     if (!newJobState.clientCode) {
         $('new-job-client').focus();
@@ -2290,7 +2294,6 @@ async function submitNewJob() {
         return;
     }
     
-    const createBtn = $('new-job-create-btn');
     createBtn.disabled = true;
     createBtn.textContent = 'CREATING...';
     
@@ -2349,8 +2352,12 @@ async function submitNewJob() {
         $('new-job-form').style.display = 'none';
         $('new-job-step-3').style.display = 'block';
         
-        // Refresh jobs list
-        await loadAllJobs();
+        // Refresh jobs list (don't let this fail the whole thing)
+        try {
+            await loadAllJobs();
+        } catch (refreshErr) {
+            console.error('Error refreshing jobs list:', refreshErr);
+        }
         
     } catch (err) {
         console.error('Error creating job:', err);
