@@ -869,6 +869,44 @@ body {
 .custom-dropdown-option:hover { background: var(--grey-100); color: var(--grey-800); }
 .custom-dropdown-option.selected { color: var(--red); font-weight: 600; }
 
+/* Form Dropdown variant (for modal forms) */
+.form-dropdown {
+    display: block;
+    width: 100%;
+}
+.form-dropdown-trigger {
+    width: 100%;
+    padding: 10px 12px;
+    padding-right: 32px;
+    background: var(--white);
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--grey-800);
+    justify-content: space-between;
+}
+.form-dropdown-trigger:hover {
+    border-color: var(--grey-300);
+    color: var(--grey-800);
+}
+.form-dropdown-trigger.open {
+    border-color: var(--red);
+    color: var(--grey-800);
+}
+.form-dropdown-trigger span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.form-dropdown .custom-dropdown-menu {
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
 /* Mode Toggle */
 .mode-toggle {
     display: flex;
@@ -2692,7 +2730,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 
 /* ===== NEW JOB MODAL ===== */
 .new-job-modal {
-    max-width: 420px;
+    max-width: 520px;
     width: 90%;
 }
 
