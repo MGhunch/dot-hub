@@ -639,7 +639,8 @@ async function askDot(question) {
                 content: question,
                 senderEmail: state.currentUser?.email || 'hub@hunch.co.nz',
                 senderName: state.currentUser?.name || 'Hub User',
-                sessionId: sessionId
+                sessionId: sessionId,
+                jobs: state.allJobs
             })
         });
         
