@@ -1319,19 +1319,19 @@ async function setupWipDropdown() {
 
 function setWipMode(mode) {
     state.wipMode = mode;
-    $('wip-mode-switch').checked = (mode === 'mobile');
+    $('wip-mode-switch').checked = (mode === 'desktop');
     updateWipModeLabels();
     renderWip();
 }
 
 function toggleWipMode() {
-    state.wipMode = $('wip-mode-switch').checked ? 'mobile' : 'desktop';
+    state.wipMode = $('wip-mode-switch').checked ? 'desktop' : 'mobile';
     updateWipModeLabels();
     renderWip();
 }
 
 function updateWipModeLabels() {
-    $('mode-mobile')?.classList.toggle('active', state.wipMode === 'mobile');
+    $('mode-desktop')?.classList.toggle('active', state.wipMode === 'desktop');
 }
 
 function getWipFilteredJobs() {
@@ -1524,21 +1524,28 @@ function renderWipSection(section, isListMode = false) {
         return '';
     }
     
-    let html = `<div class="section"><div class="section-title">${section.title}</div>`;
-    if (section.jobs.length === 0) {
-        html += `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Nothing to see here</span></div>`;
-    } else if (isListMode) {
-        html += '<div class="list-view">';
+    if (isListMode) {
+        // List mode: title outside the white box
+        let html = `<div class="section">`;
+        html += `<div class="section-title">${section.title}</div>`;
+        html += '<div class="section-card"><div class="list-view">';
         section.jobs.forEach(job => {
             html += createListRow(job);
         });
-        html += '</div>';
+        html += '</div></div></div>';
+        return html;
     } else {
-        section.jobs.forEach((job, i) => {
-            html += createUniversalCard(job, `wip-${section.title.replace(/\s+/g, '-')}-${i}`);
-        });
+        // Cards mode: title inside the section
+        let html = `<div class="section"><div class="section-title">${section.title}</div>`;
+        if (section.jobs.length === 0) {
+            html += `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Nothing to see here</span></div>`;
+        } else {
+            section.jobs.forEach((job, i) => {
+                html += createUniversalCard(job, `wip-${section.title.replace(/\s+/g, '-')}-${i}`);
+            });
+        }
+        return html + '</div>';
     }
-    return html + '</div>';
 }
 
 function createListRow(job) {

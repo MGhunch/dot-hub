@@ -3070,9 +3070,20 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 .wip-list-single .section {
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+}
+
+.wip-list-single .section-title {
+    margin-bottom: 8px;
+    padding-left: 4px;
+}
+
+.wip-list-single .section-card {
     background: var(--white);
     border-radius: var(--radius-md);
-    padding: 20px;
+    padding: 8px 12px;
     box-shadow: var(--shadow-sm);
 }
 
