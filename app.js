@@ -1419,6 +1419,11 @@ function renderWip() {
 }
 
 function renderWipSection(section, isListMode = false) {
+    // In list mode, hide empty sections entirely
+    if (isListMode && section.jobs.length === 0) {
+        return '';
+    }
+    
     let html = `<div class="section"><div class="section-title">${section.title}</div>`;
     if (section.jobs.length === 0) {
         html += `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Nothing to see here</span></div>`;
@@ -1438,27 +1443,24 @@ function renderWipSection(section, isListMode = false) {
 
 function createListRow(job) {
     const dueDate = formatDueDate(job.updateDue);
-    const daysSinceUpdate = job.daysSinceUpdate || '-';
     const isOverdue = dueDate === 'Overdue' || dueDate === 'Today';
-    const isStale = daysSinceUpdate.includes('🔥') || (parseInt(daysSinceUpdate) > 7);
+    
+    // Truncate job name to 25 characters
+    const jobName = job.jobName.length > 25 ? job.jobName.substring(0, 25) + '...' : job.jobName;
     
     return `
         <div class="list-row" data-job-number="${job.jobNumber}">
             <div class="list-logo">
-                <img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.parentElement.textContent='${job.clientCode.charAt(0)}'">
+                <img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'">
             </div>
             <div class="list-main">
                 <span class="list-job-num">${job.jobNumber}</span>
-                <span class="list-job-name">${job.jobName}</span>
+                <span class="list-job-name">${jobName}</span>
             </div>
             <div class="list-meta">
                 <span class="list-due ${isOverdue ? 'overdue' : ''}">
                     ${ICON_CLOCK}
                     ${dueDate}
-                </span>
-                <span class="list-ago ${isStale ? 'stale' : ''}">
-                    ${ICON_REFRESH}
-                    ${daysSinceUpdate}
                 </span>
             </div>
             <svg class="list-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ED1C24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
