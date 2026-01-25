@@ -32,7 +32,7 @@ const state = {
     allClients: [],
     allJobs: [],
     jobsLoaded: false,
-    wipMode: 'cards',
+    wipMode: 'list',
     wipClient: 'all',
     trackerClient: null,
     trackerQuarter: 'Q4',
@@ -1263,10 +1263,15 @@ function showToast(message, type) {
 }
 
 // ===== WIP VIEW =====
-function setupWipDropdown() {
+async function setupWipDropdown() {
     const trigger = $('wip-client-trigger');
     const menu = $('wip-client-menu');
     if (!trigger || !menu) return;
+    
+    // Wait for clients to load if not already
+    if (state.allClients.length === 0) {
+        await loadClients();
+    }
     
     // Check if we have a pre-set client from deep link
     const presetClient = state.wipClient || 'all';
@@ -1310,20 +1315,20 @@ function setupWipDropdown() {
 
 function setWipMode(mode) {
     state.wipMode = mode;
-    $('wip-mode-switch').checked = (mode === 'list');
+    $('wip-mode-switch').checked = (mode === 'cards');
     updateWipModeLabels();
     renderWip();
 }
 
 function toggleWipMode() {
-    state.wipMode = $('wip-mode-switch').checked ? 'list' : 'cards';
+    state.wipMode = $('wip-mode-switch').checked ? 'cards' : 'list';
     updateWipModeLabels();
     renderWip();
 }
 
 function updateWipModeLabels() {
-    $('mode-cards')?.classList.toggle('active', state.wipMode === 'cards');
     $('mode-list')?.classList.toggle('active', state.wipMode === 'list');
+    $('mode-cards')?.classList.toggle('active', state.wipMode === 'cards');
 }
 
 function getWipFilteredJobs() {

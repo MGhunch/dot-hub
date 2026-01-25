@@ -264,12 +264,12 @@
                         </div>
                     </div>
                     <div class="mode-toggle">
-                        <span class="mode-label active" id="mode-todo" onclick="setWipMode('todo')">LIST</span>
+                        <span class="mode-label active" id="mode-list" onclick="setWipMode('list')">List</span>
                         <label class="mode-switch">
                             <input type="checkbox" id="wip-mode-switch" onchange="toggleWipMode()">
                             <span class="mode-switch-slider"></span>
                         </label>
-                        <span class="mode-label" id="mode-wip" onclick="setWipMode('wip')">CARDS</span>
+                        <span class="mode-label" id="mode-cards" onclick="setWipMode('cards')">Cards</span>
                     </div>
                 </div>
                 <div class="wip-content" id="wip-content">
@@ -574,7 +574,7 @@
                     </div>
                     <label class="teams-checkbox">
                         <input type="checkbox" id="new-job-setup-teams" checked>
-                        <span class="teams-checkmark">✓</span>
+                        <span class="teams-checkmark">âœ“</span>
                         <span class="teams-label">Teams</span>
                     </label>
                     <button class="job-btn job-btn-primary" id="new-job-create-btn" onclick="submitNewJob()">CREATE JOB</button>
