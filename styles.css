@@ -3055,11 +3055,41 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 @media (max-width: 1000px) {
-    .list-ago {
-        display: none;
-    }
-    
     .list-job-name {
         max-width: 120px;
     }
+}
+
+/* Single column list layout */
+.wip-list-single {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.wip-list-single .section {
+    background: var(--white);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.wip-list-single .list-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.list-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.list-description {
+    font-size: 13px;
+    color: var(--grey-400);
+    line-height: 1.4;
 }

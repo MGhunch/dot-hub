@@ -1392,16 +1392,29 @@ function renderWip() {
     const sections = groupByWip(jobs);
     const isListMode = state.wipMode === 'list';
     
-    content.innerHTML = `
-        <div class="wip-column">
-            ${renderWipSection(sections.leftTop, isListMode)}
-            ${renderWipSection(sections.leftBottom, isListMode)}
-        </div>
-        <div class="wip-column">
-            ${renderWipSection(sections.rightTop, isListMode)}
-            ${renderWipSection(sections.rightBottom, isListMode)}
-        </div>
-    `;
+    if (isListMode) {
+        // Single column list view - all sections stacked
+        content.innerHTML = `
+            <div class="wip-list-single">
+                ${renderWipSection(sections.leftTop, true)}
+                ${renderWipSection(sections.rightTop, true)}
+                ${renderWipSection(sections.leftBottom, true)}
+                ${renderWipSection(sections.rightBottom, true)}
+            </div>
+        `;
+    } else {
+        // Two column cards view
+        content.innerHTML = `
+            <div class="wip-column">
+                ${renderWipSection(sections.leftTop, false)}
+                ${renderWipSection(sections.leftBottom, false)}
+            </div>
+            <div class="wip-column">
+                ${renderWipSection(sections.rightTop, false)}
+                ${renderWipSection(sections.rightBottom, false)}
+            </div>
+        `;
+    }
     
     // Add click handlers
     if (isListMode) {
@@ -1448,14 +1461,22 @@ function createListRow(job) {
     // Truncate job name to 25 characters
     const jobName = job.jobName.length > 25 ? job.jobName.substring(0, 25) + '...' : job.jobName;
     
+    // Truncate description to 50 characters
+    const description = job.description 
+        ? (job.description.length > 50 ? job.description.substring(0, 50) + '...' : job.description)
+        : '';
+    
     return `
         <div class="list-row" data-job-number="${job.jobNumber}">
             <div class="list-logo">
                 <img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'">
             </div>
             <div class="list-main">
-                <span class="list-job-num">${job.jobNumber}</span>
-                <span class="list-job-name">${jobName}</span>
+                <div class="list-title-row">
+                    <span class="list-job-num">${job.jobNumber}</span>
+                    <span class="list-job-name">${jobName}</span>
+                </div>
+                ${description ? `<div class="list-description">${description}</div>` : ''}
             </div>
             <div class="list-meta">
                 <span class="list-due ${isOverdue ? 'overdue' : ''}">
