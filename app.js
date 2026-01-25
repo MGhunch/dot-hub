@@ -863,12 +863,10 @@ function createUniversalCard(job, id) {
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
-                        ${ICON_REFRESH} <span class="${isStale ? 'days-ago stale' : 'days-ago'}">${daysSinceUpdate}</span>
                     </div>
                 </div>
             </div>
             <div class="job-expanded">
-                ${summaryLine ? `<div class="job-summary-line">${summaryLine}</div>` : ''}
                 <div class="section-label">The Project</div>
                 <div class="job-description">${job.description || 'No description'}</div>
                 <div class="section-label" style="margin-top:14px">Recent Activity</div>
