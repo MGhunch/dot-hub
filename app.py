@@ -345,7 +345,7 @@ def create_new_job():
         live = data.get('live', 'Tbc')
         status = data.get('status', 'Incoming')  # Incoming, In Progress, On Hold
         ballpark = data.get('ballpark', 5000)  # Default $5000
-        with_client = data.get('withClient', False)
+        setup_teams = data.get('setupTeams', False)
         
         if not client_code or not job_name:
             return jsonify({'error': 'Missing required fields'}), 400
@@ -366,6 +366,9 @@ def create_new_job():
         client_record = client_records[0]
         client_record_id = client_record.get('id')
         client_fields = client_record.get('fields', {})
+        
+        # Get Team ID for setup worker
+        team_id = client_fields.get('Teams ID', '')
         
         # Read the formatted job number directly
         job_number = client_fields.get('Next Job #', '')
@@ -395,7 +398,7 @@ def create_new_job():
             'Project Name': job_name,
             'Status': status,
             'Stage': 'Triage',
-            'With Client?': with_client
+            'With Client?': False
         }
         
         # Add optional fields if provided
@@ -448,9 +451,11 @@ def create_new_job():
         return jsonify({
             'success': True,
             'jobNumber': job_number,
+            'jobName': job_name,
             'recordId': project_record_id,
             'status': status,
-            'withClient': with_client
+            'setupTeams': setup_teams,
+            'teamId': team_id
         })
     
     except Exception as e:
