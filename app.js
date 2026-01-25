@@ -32,7 +32,7 @@ const state = {
     allClients: [],
     allJobs: [],
     jobsLoaded: false,
-    wipMode: 'list',
+    wipMode: 'desktop',
     wipClient: 'all',
     trackerClient: null,
     trackerQuarter: 'Q4',
@@ -332,7 +332,7 @@ function navigateTo(view) {
     if (!isDesktop()) {
         $('phone-home')?.classList.add('hidden');
         $('phone-conversation')?.classList.remove('visible');
-        $('phone-wip-message')?.classList.remove('visible');
+        $('phone-wip')?.classList.remove('visible');
         $('phone-tracker-message')?.classList.remove('visible');
         if (view === 'home') {
             // Check if there's an active conversation
@@ -343,7 +343,11 @@ function navigateTo(view) {
                 $('phone-home')?.classList.remove('hidden');
             }
         }
-        else if (view === 'wip') $('phone-wip-message')?.classList.add('visible');
+        else if (view === 'wip') {
+            $('phone-wip')?.classList.add('visible');
+            setupPhoneWipDropdown();
+            renderPhoneWip();
+        }
         else if (view === 'tracker') $('phone-tracker-message')?.classList.add('visible');
     } else {
         // Desktop: restore conversation state if exists
@@ -364,7 +368,7 @@ function navigateTo(view) {
         }
     }
     
-    if (view === 'wip') { setupWipDropdown(); renderWip(); }
+    if (view === 'wip' && isDesktop()) { setupWipDropdown(); renderWip(); }
     if (view === 'tracker') renderTracker();
 }
 
@@ -1315,20 +1319,19 @@ async function setupWipDropdown() {
 
 function setWipMode(mode) {
     state.wipMode = mode;
-    $('wip-mode-switch').checked = (mode === 'cards');
+    $('wip-mode-switch').checked = (mode === 'mobile');
     updateWipModeLabels();
     renderWip();
 }
 
 function toggleWipMode() {
-    state.wipMode = $('wip-mode-switch').checked ? 'cards' : 'list';
+    state.wipMode = $('wip-mode-switch').checked ? 'mobile' : 'desktop';
     updateWipModeLabels();
     renderWip();
 }
 
 function updateWipModeLabels() {
-    $('mode-list')?.classList.toggle('active', state.wipMode === 'list');
-    $('mode-cards')?.classList.toggle('active', state.wipMode === 'cards');
+    $('mode-mobile')?.classList.toggle('active', state.wipMode === 'mobile');
 }
 
 function getWipFilteredJobs() {
@@ -1390,9 +1393,9 @@ function renderWip() {
     
     const jobs = getWipFilteredJobs();
     const sections = groupByWip(jobs);
-    const isListMode = state.wipMode === 'list';
+    const isMobileMode = state.wipMode === 'mobile';
     
-    if (isListMode) {
+    if (isMobileMode) {
         // Single column list view - all sections stacked
         content.innerHTML = `
             <div class="wip-list-single">
@@ -1417,7 +1420,7 @@ function renderWip() {
     }
     
     // Add click handlers
-    if (isListMode) {
+    if (isMobileMode) {
         content.querySelectorAll('.list-row').forEach(row => {
             row.addEventListener('click', () => {
                 const jobNumber = row.dataset.jobNumber;
@@ -1429,6 +1432,90 @@ function renderWip() {
             card.addEventListener('click', () => card.classList.toggle('expanded'));
         });
     }
+}
+
+// ===== PHONE WIP (Mobile List View) =====
+async function setupPhoneWipDropdown() {
+    const trigger = $('phone-wip-client-trigger');
+    const menu = $('phone-wip-client-menu');
+    if (!trigger || !menu) return;
+    
+    if (state.allClients.length === 0) {
+        await loadClients();
+    }
+    
+    menu.innerHTML = '';
+    
+    const allOpt = document.createElement('div');
+    allOpt.className = 'custom-dropdown-option selected';
+    allOpt.dataset.value = 'all';
+    allOpt.textContent = 'All Clients';
+    menu.appendChild(allOpt);
+    
+    state.allClients.forEach(c => {
+        const opt = document.createElement('div');
+        opt.className = 'custom-dropdown-option';
+        opt.dataset.value = c.code;
+        opt.textContent = getClientDisplayName(c);
+        menu.appendChild(opt);
+    });
+    
+    trigger.onclick = (e) => { 
+        e.stopPropagation(); 
+        trigger.classList.toggle('open'); 
+        menu.classList.toggle('open'); 
+    };
+    
+    menu.onclick = (e) => {
+        const opt = e.target.closest('.custom-dropdown-option');
+        if (!opt) return;
+        menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        trigger.querySelector('span').textContent = opt.textContent;
+        trigger.classList.remove('open'); 
+        menu.classList.remove('open');
+        state.wipClient = opt.dataset.value;
+        renderPhoneWip();
+    };
+}
+
+function renderPhoneWip() {
+    const content = $('phone-wip-content');
+    if (!content) return;
+    
+    if (!state.jobsLoaded) {
+        content.innerHTML = `
+            <div class="loading-card">
+                <div class="dot-thinking">
+                    <img src="images/Robot_01.svg" alt="Dot" class="dot-robot">
+                    <img src="images/Heart_01.svg" alt="" class="dot-heart-svg">
+                </div>
+                <p>Grabbing all your jobs...</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const jobs = getWipFilteredJobs();
+    const sections = groupByWip(jobs);
+    
+    // Always use list view on phone
+    content.innerHTML = `
+        <div class="wip-list-single">
+            ${renderWipSection(sections.leftTop, true)}
+            ${renderWipSection(sections.rightTop, true)}
+            ${renderWipSection(sections.leftBottom, true)}
+            ${renderWipSection(sections.rightBottom, true)}
+        </div>
+    `;
+    
+    // Add click handlers
+    content.querySelectorAll('.list-row').forEach(row => {
+        row.addEventListener('click', () => {
+            const jobNumber = row.dataset.jobNumber;
+            if (jobNumber) openJobModal(jobNumber);
+        });
+    });
 }
 
 function renderWipSection(section, isListMode = false) {

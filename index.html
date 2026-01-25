@@ -143,12 +143,25 @@
             </div>
         </div>
 
-        <!-- Phone WIP Message -->
-        <div class="phone-desktop-only" id="phone-wip-message">
-            <img src="images/Robot.png" alt="Dot">
-            <h2>Best on desktop</h2>
-            <p>Wip is designed for bigger screens.</p>
-            <button class="pill-btn" onclick="navigateTo('home')">Back to Ask Dot</button>
+        <!-- Phone WIP View -->
+        <div class="phone-wip" id="phone-wip">
+            <div class="phone-wip-controls">
+                <div class="custom-dropdown" id="phone-wip-client-dropdown">
+                    <button class="custom-dropdown-trigger" id="phone-wip-client-trigger">
+                        <span>All Clients</span>
+                        <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="custom-dropdown-menu" id="phone-wip-client-menu">
+                        <div class="custom-dropdown-option selected" data-value="all">All Clients</div>
+                    </div>
+                </div>
+            </div>
+            <div class="phone-wip-content" id="phone-wip-content">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading jobs...</p>
+                </div>
+            </div>
         </div>
 
         <!-- Phone Tracker Message -->
@@ -264,12 +277,11 @@
                         </div>
                     </div>
                     <div class="mode-toggle">
-                        <span class="mode-label active" id="mode-list" onclick="setWipMode('list')">List</span>
                         <label class="mode-switch">
                             <input type="checkbox" id="wip-mode-switch" onchange="toggleWipMode()">
                             <span class="mode-switch-slider"></span>
                         </label>
-                        <span class="mode-label" id="mode-cards" onclick="setWipMode('cards')">Cards</span>
+                        <span class="mode-label" id="mode-mobile" onclick="toggleWipMode()">Mobile</span>
                     </div>
                 </div>
                 <div class="wip-content" id="wip-content">
