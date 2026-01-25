@@ -458,9 +458,15 @@
                     <!-- Client dropdown -->
                     <div class="job-form-group">
                         <label class="job-form-label">Client <span class="required">*</span></label>
-                        <select class="job-form-input" id="new-job-client" onchange="onClientSelected()">
-                            <option value="">Select client...</option>
-                        </select>
+                        <div class="custom-dropdown form-dropdown" id="new-job-client-dropdown">
+                            <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="new-job-client-trigger" onclick="toggleNewJobDropdown('client')">
+                                <span>Select client...</span>
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="custom-dropdown-menu" id="new-job-client-menu">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Job Name (required) -->
@@ -472,7 +478,7 @@
                     <!-- Description -->
                     <div class="job-form-group">
                         <label class="job-form-label">Description</label>
-                        <textarea class="job-form-input job-form-textarea" id="new-job-description" placeholder="What's this job about?" rows="2"></textarea></textarea>
+                        <textarea class="job-form-input job-form-textarea" id="new-job-description" placeholder="What's this job about?" rows="2"></textarea>
                     </div>
                     
                     <div class="job-modal-divider"></div>
@@ -480,31 +486,49 @@
                     <!-- Owner -->
                     <div class="job-form-group">
                         <label class="job-form-label">Owner</label>
-                        <select class="job-form-input" id="new-job-owner">
-                            <option value="">Select client first...</option>
-                        </select>
+                        <div class="custom-dropdown form-dropdown" id="new-job-owner-dropdown">
+                            <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="new-job-owner-trigger" onclick="toggleNewJobDropdown('owner')">
+                                <span>Select client first...</span>
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="custom-dropdown-menu" id="new-job-owner-menu">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Status + Ballpark row -->
                     <div class="job-form-row">
                         <div class="job-form-group">
                             <label class="job-form-label">Status</label>
-                            <select class="job-form-input" id="new-job-status">
-                                <option value="Incoming" selected>Incoming</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="On Hold">On Hold</option>
-                            </select>
+                            <div class="custom-dropdown form-dropdown" id="new-job-status-dropdown">
+                                <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="new-job-status-trigger" onclick="toggleNewJobDropdown('status')">
+                                    <span>Incoming</span>
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <div class="custom-dropdown-menu" id="new-job-status-menu">
+                                    <div class="custom-dropdown-option selected" data-value="Incoming">Incoming</div>
+                                    <div class="custom-dropdown-option" data-value="In Progress">In Progress</div>
+                                    <div class="custom-dropdown-option" data-value="On Hold">On Hold</div>
+                                </div>
+                            </div>
                         </div>
                         <div class="job-form-group">
                             <label class="job-form-label">Ballpark</label>
-                            <select class="job-form-input" id="new-job-ballpark">
-                                <option value="2500">$2,500</option>
-                                <option value="5000" selected>$5,000</option>
-                                <option value="7500">$7,500</option>
-                                <option value="10000">$10,000</option>
-                                <option value="15000">$15,000</option>
-                                <option value="20000">$20,000</option>
-                            </select>
+                            <div class="custom-dropdown form-dropdown" id="new-job-ballpark-dropdown">
+                                <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="new-job-ballpark-trigger" onclick="toggleNewJobDropdown('ballpark')">
+                                    <span>$5,000</span>
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <div class="custom-dropdown-menu" id="new-job-ballpark-menu">
+                                    <div class="custom-dropdown-option" data-value="2500">$2,500</div>
+                                    <div class="custom-dropdown-option selected" data-value="5000">$5,000</div>
+                                    <div class="custom-dropdown-option" data-value="7500">$7,500</div>
+                                    <div class="custom-dropdown-option" data-value="10000">$10,000</div>
+                                    <div class="custom-dropdown-option" data-value="15000">$15,000</div>
+                                    <div class="custom-dropdown-option" data-value="20000">$20,000</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -516,31 +540,37 @@
                         </div>
                         <div class="job-form-group">
                             <label class="job-form-label">Live</label>
-                            <select class="job-form-input" id="new-job-live">
-                                <option value="Tbc">Tbc</option>
-                                <option value="Jan">Jan</option>
-                                <option value="Feb">Feb</option>
-                                <option value="Mar">Mar</option>
-                                <option value="Apr">Apr</option>
-                                <option value="May">May</option>
-                                <option value="Jun">Jun</option>
-                                <option value="Jul">Jul</option>
-                                <option value="Aug">Aug</option>
-                                <option value="Sep">Sep</option>
-                                <option value="Oct">Oct</option>
-                                <option value="Nov">Nov</option>
-                                <option value="Dec">Dec</option>
-                            </select>
+                            <div class="custom-dropdown form-dropdown" id="new-job-live-dropdown">
+                                <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="new-job-live-trigger" onclick="toggleNewJobDropdown('live')">
+                                    <span>Tbc</span>
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <div class="custom-dropdown-menu" id="new-job-live-menu">
+                                    <div class="custom-dropdown-option selected" data-value="Tbc">Tbc</div>
+                                    <div class="custom-dropdown-option" data-value="Jan">January</div>
+                                    <div class="custom-dropdown-option" data-value="Feb">February</div>
+                                    <div class="custom-dropdown-option" data-value="Mar">March</div>
+                                    <div class="custom-dropdown-option" data-value="Apr">April</div>
+                                    <div class="custom-dropdown-option" data-value="May">May</div>
+                                    <div class="custom-dropdown-option" data-value="Jun">June</div>
+                                    <div class="custom-dropdown-option" data-value="Jul">July</div>
+                                    <div class="custom-dropdown-option" data-value="Aug">August</div>
+                                    <div class="custom-dropdown-option" data-value="Sep">September</div>
+                                    <div class="custom-dropdown-option" data-value="Oct">October</div>
+                                    <div class="custom-dropdown-option" data-value="Nov">November</div>
+                                    <div class="custom-dropdown-option" data-value="Dec">December</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="job-modal-footer">
                     <div class="with-client-toggle">
                         <label class="toggle">
-                            <input type="checkbox" id="new-job-setup-teams">
+                            <input type="checkbox" id="new-job-with-client">
                             <span class="toggle-slider"></span>
                         </label>
-                        <span class="with-client-label">Set up Teams</span>
+                        <span class="with-client-label">With Client</span>
                     </div>
                     <button class="job-btn job-btn-primary" id="new-job-create-btn" onclick="submitNewJob()">CREATE JOB</button>
                 </div>

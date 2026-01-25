@@ -801,8 +801,8 @@ function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue);
     const daysSinceUpdate = job.daysSinceUpdate || '-';
     
-    // Check if stale (contains ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤)
-    const isStale = daysSinceUpdate.includes('ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤');
+    // Check if stale (contains ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤)
+    const isStale = daysSinceUpdate.includes('ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤');
     
     // Build summary line: Stage - Live Date - With client
     let summaryParts = [];
@@ -2167,28 +2167,128 @@ function getTrackerPDF() {
 let newJobState = {
     clientCode: null,
     clientName: null,
-    jobNumber: null
+    jobNumber: null,
+    owner: '',
+    status: 'Incoming',
+    ballpark: '5000',
+    live: 'Tbc'
 };
+
+// Helper to set dropdown value
+function setNewJobDropdown(id, value, label) {
+    const trigger = $(`new-job-${id}-trigger`);
+    const menu = $(`new-job-${id}-menu`);
+    if (trigger) trigger.querySelector('span').textContent = label || value;
+    if (menu) {
+        menu.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.value === value);
+        });
+    }
+}
+
+// Helper to get dropdown value
+function getNewJobDropdownValue(id) {
+    const menu = $(`new-job-${id}-menu`);
+    if (!menu) return '';
+    const selected = menu.querySelector('.custom-dropdown-option.selected');
+    return selected ? selected.dataset.value : '';
+}
+
+// Toggle dropdown open/close
+function toggleNewJobDropdown(id) {
+    const dropdown = $(`new-job-${id}-dropdown`);
+    const trigger = $(`new-job-${id}-trigger`);
+    const menu = $(`new-job-${id}-menu`);
+    
+    if (!dropdown || !trigger || !menu) return;
+    
+    const isOpen = menu.classList.contains('open');
+    
+    // Close all other dropdowns first
+    document.querySelectorAll('.new-job-modal .custom-dropdown-menu.open').forEach(m => {
+        m.classList.remove('open');
+        m.previousElementSibling?.classList.remove('open');
+    });
+    
+    if (!isOpen) {
+        trigger.classList.add('open');
+        menu.classList.add('open');
+    }
+}
+
+// Select dropdown option
+function selectNewJobOption(id, value, label) {
+    const menu = $(`new-job-${id}-menu`);
+    const trigger = $(`new-job-${id}-trigger`);
+    
+    // Update selected state
+    menu.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.value === value);
+    });
+    
+    // Update trigger text
+    trigger.querySelector('span').textContent = label;
+    
+    // Close dropdown
+    trigger.classList.remove('open');
+    menu.classList.remove('open');
+    
+    // Update state
+    if (id === 'client') {
+        newJobState.clientCode = value;
+        newJobState.clientName = label;
+        onClientSelected(value, label);
+    } else if (id === 'owner') {
+        newJobState.owner = value;
+    } else if (id === 'status') {
+        newJobState.status = value;
+    } else if (id === 'ballpark') {
+        newJobState.ballpark = value;
+    } else if (id === 'live') {
+        newJobState.live = value;
+    }
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.new-job-modal .custom-dropdown')) {
+        document.querySelectorAll('.new-job-modal .custom-dropdown-menu.open').forEach(m => {
+            m.classList.remove('open');
+            m.previousElementSibling?.classList.remove('open');
+        });
+    }
+});
 
 async function openNewJobModal() {
     const modal = $('new-job-modal');
     if (!modal) return;
     
     // Reset state
-    newJobState = { clientCode: null, clientName: null, jobNumber: null };
+    newJobState = { 
+        clientCode: null, 
+        clientName: null, 
+        jobNumber: null,
+        owner: '',
+        status: 'Incoming',
+        ballpark: '5000',
+        live: 'Tbc'
+    };
     
-    // Reset form
-    $('new-job-client').value = '';
-    $('new-job-client').innerHTML = '<option value="">Loading...</option>';
+    // Reset form inputs
     $('new-job-name').value = '';
     $('new-job-description').value = '';
-    $('new-job-owner').innerHTML = '<option value="">Select client first...</option>';
-    $('new-job-status').value = 'Incoming';
-    $('new-job-ballpark').value = '5000';
-    $('new-job-live').value = 'Tbc';
-    $('new-job-setup-teams').checked = false;
+    $('new-job-with-client').checked = false;
     $('new-job-logo').src = 'images/logos/Unknown.png';
     $('new-job-number-wrapper').style.display = 'none';
+    
+    // Reset dropdowns
+    $('new-job-client-trigger').querySelector('span').textContent = 'Select client...';
+    $('new-job-client-menu').innerHTML = '<div class="custom-dropdown-option" style="color: var(--grey-400)">Loading...</div>';
+    $('new-job-owner-trigger').querySelector('span').textContent = 'Select client first...';
+    $('new-job-owner-menu').innerHTML = '';
+    setNewJobDropdown('status', 'Incoming', 'Incoming');
+    setNewJobDropdown('ballpark', '5000', '$5,000');
+    setNewJobDropdown('live', 'Tbc', 'Tbc');
     
     // Set default update due (+5 working days)
     const updateDue = getWorkingDaysFromNow(5);
@@ -2205,18 +2305,65 @@ async function openNewJobModal() {
         const response = await fetch('/api/clients');
         const clients = await response.json();
         
-        const clientSelect = $('new-job-client');
-        clientSelect.innerHTML = '<option value="">Select client...</option>' + 
-            clients.map(c => `<option value="${c.code}">${c.name}</option>`).join('');
+        // Top clients to show first
+        const topClientCodes = ['ONE', 'ONS', 'ONB', 'SKY', 'TOW', 'FIS', 'HUN'];
+        const topClients = [];
+        const otherClients = [];
+        
+        clients.forEach(c => {
+            if (topClientCodes.includes(c.code)) {
+                topClients.push(c);
+            } else {
+                otherClients.push(c);
+            }
+        });
+        
+        // Sort top clients by the order in topClientCodes
+        topClients.sort((a, b) => topClientCodes.indexOf(a.code) - topClientCodes.indexOf(b.code));
+        
+        let html = '';
+        
+        // Add top clients
+        topClients.forEach(c => {
+            html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectNewJobOption('client', '${c.code}', '${c.name.replace(/'/g, "\\'")}')">${c.name}</div>`;
+        });
+        
+        // Add other clients with header
+        if (otherClients.length > 0) {
+            html += '<div class="custom-dropdown-option section-header">Other</div>';
+            otherClients.forEach(c => {
+                html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectNewJobOption('client', '${c.code}', '${c.name.replace(/'/g, "\\'")}')">${c.name}</div>`;
+            });
+        }
+        
+        $('new-job-client-menu').innerHTML = html;
     } catch (err) {
         console.error('Error loading clients:', err);
-        $('new-job-client').innerHTML = '<option value="">Failed to load</option>';
+        $('new-job-client-menu').innerHTML = '<div class="custom-dropdown-option" style="color: var(--red)">Failed to load</div>';
     }
+    
+    // Add click handlers for static dropdowns
+    setupStaticDropdownHandlers();
 }
 
-async function onClientSelected() {
-    const code = $('new-job-client').value;
+function setupStaticDropdownHandlers() {
+    // Status options
+    $('new-job-status-menu').querySelectorAll('.custom-dropdown-option').forEach(opt => {
+        opt.onclick = () => selectNewJobOption('status', opt.dataset.value, opt.textContent);
+    });
     
+    // Ballpark options
+    $('new-job-ballpark-menu').querySelectorAll('.custom-dropdown-option').forEach(opt => {
+        opt.onclick = () => selectNewJobOption('ballpark', opt.dataset.value, opt.textContent);
+    });
+    
+    // Live options
+    $('new-job-live-menu').querySelectorAll('.custom-dropdown-option').forEach(opt => {
+        opt.onclick = () => selectNewJobOption('live', opt.dataset.value, opt.textContent);
+    });
+}
+
+async function onClientSelected(code, name) {
     if (!code) {
         // Reset if no client selected
         newJobState.clientCode = null;
@@ -2224,12 +2371,13 @@ async function onClientSelected() {
         newJobState.jobNumber = null;
         $('new-job-logo').src = 'images/logos/Unknown.png';
         $('new-job-number-wrapper').style.display = 'none';
-        $('new-job-owner').innerHTML = '<option value="">Select client first...</option>';
+        $('new-job-owner-trigger').querySelector('span').textContent = 'Select client first...';
+        $('new-job-owner-menu').innerHTML = '';
         return;
     }
     
     newJobState.clientCode = code;
-    newJobState.clientName = $('new-job-client').options[$('new-job-client').selectedIndex].text;
+    newJobState.clientName = name;
     
     // Update logo
     const logo = $('new-job-logo');
@@ -2258,17 +2406,24 @@ async function onClientSelected() {
     }
     
     // Load owners for this client
-    $('new-job-owner').innerHTML = '<option value="">Loading...</option>';
+    $('new-job-owner-trigger').querySelector('span').textContent = 'Loading...';
+    $('new-job-owner-menu').innerHTML = '';
+    
     try {
         const response = await fetch(`/api/people/${code}`);
         const people = await response.json();
         
-        const ownerSelect = $('new-job-owner');
-        ownerSelect.innerHTML = '<option value="">Select...</option>' + 
-            people.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        let html = `<div class="custom-dropdown-option" data-value="" onclick="selectNewJobOption('owner', '', 'Select...')">Select...</div>`;
+        people.forEach(p => {
+            html += `<div class="custom-dropdown-option" data-value="${p.name}" onclick="selectNewJobOption('owner', '${p.name.replace(/'/g, "\\'")}', '${p.name.replace(/'/g, "\\'")}')">${p.name}</div>`;
+        });
+        
+        $('new-job-owner-menu').innerHTML = html;
+        $('new-job-owner-trigger').querySelector('span').textContent = 'Select...';
+        newJobState.owner = '';
     } catch (err) {
         console.error('Error loading owners:', err);
-        $('new-job-owner').innerHTML = '<option value="">Failed to load</option>';
+        $('new-job-owner-trigger').querySelector('span').textContent = 'Failed to load';
     }
 }
 
@@ -2279,9 +2434,8 @@ async function submitNewJob() {
     
     // Validate client selected
     if (!newJobState.clientCode) {
-        $('new-job-client').focus();
-        $('new-job-client').classList.add('input-error');
-        setTimeout(() => $('new-job-client').classList.remove('input-error'), 2000);
+        $('new-job-client-trigger').classList.add('input-error');
+        setTimeout(() => $('new-job-client-trigger').classList.remove('input-error'), 2000);
         return;
     }
     
@@ -2297,21 +2451,19 @@ async function submitNewJob() {
     createBtn.disabled = true;
     createBtn.textContent = 'CREATING...';
     
-    // Get form values
-    const setupTeams = $('new-job-setup-teams').checked;
-    const status = $('new-job-status').value;
-    const ballpark = parseInt($('new-job-ballpark').value, 10);
+    // Get form values from state
+    const withClient = $('new-job-with-client').checked;
     
     const payload = {
         clientCode: newJobState.clientCode,
         jobName: jobName,
         description: $('new-job-description').value.trim(),
-        owner: $('new-job-owner').value,
+        owner: newJobState.owner,
         updateDue: $('new-job-update-due').value,
-        live: $('new-job-live').value,
-        status: status,
-        ballpark: ballpark,
-        setupTeams: setupTeams
+        live: newJobState.live,
+        status: newJobState.status,
+        ballpark: parseInt(newJobState.ballpark, 10),
+        withClient: withClient
     };
     
     try {
@@ -2339,15 +2491,7 @@ async function submitNewJob() {
         confirmLogo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
         $('new-job-confirm-title').textContent = createdJobNumber;
         $('new-job-confirm-text').textContent = 'Job created';
-        
-        if (!setupTeams) {
-            $('new-job-confirm-subtext').textContent = 'Teams & Files not set up';
-            $('new-job-confirm-subtext').style.display = 'block';
-        } else {
-            $('new-job-confirm-subtext').textContent = 'Setting up Teams & Files...';
-            $('new-job-confirm-subtext').style.display = 'block';
-            // Phase 2: Would trigger worker here
-        }
+        $('new-job-confirm-subtext').style.display = 'none'; // Phase 1B will show Teams status here
         
         $('new-job-form').style.display = 'none';
         $('new-job-step-3').style.display = 'block';
@@ -2395,6 +2539,8 @@ document.addEventListener('click', (e) => {
 // Make new job functions globally available
 window.openNewJobModal = openNewJobModal;
 window.onClientSelected = onClientSelected;
+window.toggleNewJobDropdown = toggleNewJobDropdown;
+window.selectNewJobOption = selectNewJobOption;
 window.submitNewJob = submitNewJob;
 window.closeNewJobModal = closeNewJobModal;
 
