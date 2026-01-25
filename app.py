@@ -174,7 +174,7 @@ def transform_project(record):
     # Parse dates - 'Update Due' is D/M/YYYY format from Airtable
     update_due = parse_airtable_date(fields.get('Update Due', ''))
     
-    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤", "Today", "-")
+    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤", "Today", "-")
     days_since_update = fields.get('Days Since Update', '-')
     
     # Live In is now a dropdown (month name or "Tbc") - pass through as-is
@@ -204,7 +204,7 @@ def transform_project(record):
         # Dates
         'updateDue': update_due,
         'liveDate': live_in,  # Month name like "Jan", "Feb", "Tbc"
-        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤", "Today", "-"
+        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤", "Today", "-"
         
         # Content
         'description': fields.get('Description', ''),
@@ -345,7 +345,7 @@ def create_new_job():
         live = data.get('live', 'Tbc')
         status = data.get('status', 'Incoming')  # Incoming, In Progress, On Hold
         ballpark = data.get('ballpark', 5000)  # Default $5000
-        setup_teams = data.get('setupTeams', False)
+        with_client = data.get('withClient', False)
         
         if not client_code or not job_name:
             return jsonify({'error': 'Missing required fields'}), 400
@@ -395,7 +395,7 @@ def create_new_job():
             'Project Name': job_name,
             'Status': status,
             'Stage': 'Triage',
-            'With Client?': False
+            'With Client?': with_client
         }
         
         # Add optional fields if provided
@@ -450,7 +450,7 @@ def create_new_job():
             'jobNumber': job_number,
             'recordId': project_record_id,
             'status': status,
-            'setupTeams': setup_teams
+            'withClient': with_client
         })
     
     except Exception as e:
