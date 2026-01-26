@@ -114,7 +114,7 @@ def lookup_person(email):
         return {
             'email': fields.get('Email Address', email),
             'first_name': fields.get('First Name', 'there'),
-            'client_code': fields.get('Client Link', 'UNKNOWN'),
+            'client_code': fields.get('clientCode', 'UNKNOWN'),
             'access_level': fields.get('Access', 'Client WIP')  # Default to most restricted
         }
         
@@ -140,49 +140,67 @@ def send_magic_link_email(email, first_name, token):
         <tr>
             <td align="center">
                 <table width="480" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
-                    <!-- Header -->
+                    
+                    <!-- Header with Ask Dot logo -->
                     <tr>
-                        <td style="background-color: #ED1C24; padding: 24px; text-align: center;">
-                            <span style="font-family: 'Bebas Neue', Arial, sans-serif; font-size: 32px; color: #ffffff; letter-spacing: 2px;">DOT HUB</span>
+                        <td style="padding: 24px 32px; border-bottom: 3px solid #ED1C24;">
+                            <img src="https://raw.githubusercontent.com/MGhunch/dot-hub/main/images/Askdot-header.png" alt="Ask Dot" height="32" style="display: block;">
                         </td>
                     </tr>
                     
                     <!-- Body -->
                     <tr>
-                        <td style="padding: 40px 32px;">
-                            <p style="margin: 0 0 8px 0; font-size: 20px; font-weight: 500; color: #333333;">
-                                Hi {first_name}
+                        <td style="padding: 32px;">
+                            <p style="margin: 0 0 8px 0; font-size: 17px; font-weight: 500; color: #333333;">
+                                Hi {first_name},
                             </p>
-                            <p style="margin: 0 0 32px 0; font-size: 15px; color: #666666; line-height: 1.5;">
-                                Click below to access your projects
+                            <p style="margin: 0 0 24px 0; font-size: 15px; color: #666666; line-height: 1.5;">
+                                Here you go. One click and you're in.
                             </p>
                             
                             <!-- Button -->
-                            <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                            <table cellpadding="0" cellspacing="0" style="margin: 0 0 32px 0;">
                                 <tr>
                                     <td style="background-color: #ED1C24; border-radius: 30px;">
                                         <a href="{verify_url}" style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 500; color: #ffffff; text-decoration: none;">
-                                            Open Dot Hub
+                                            Open the Hub
                                         </a>
                                     </td>
                                 </tr>
                             </table>
+
+                            <!-- What you can do -->
+                            <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: 500; color: #333333;">
+                                You can:
+                            </p>
+                            <p style="margin: 0 0 24px 0; font-size: 14px; color: #666666; line-height: 1.8;">
+                                → See what's new, what's due and what needs a nudge.<br>
+                                → Let us know if you need any changes.<br>
+                                → Ask Dot for your horoscope.
+                            </p>
                             
-                            <p style="margin: 32px 0 0 0; font-size: 13px; color: #999999; line-height: 1.5;">
-                                This link expires in 7 days.<br>
-                                If you didn't request this, just ignore it.
+                            <p style="margin: 0; font-size: 12px; color: #999999;">
+                                This link expires in 7 days. If you didn't request this, just ignore it.
                             </p>
                         </td>
                     </tr>
                     
                     <!-- Footer -->
                     <tr>
-                        <td style="padding: 24px 32px; border-top: 1px solid #eeeeee;">
-                            <p style="margin: 0; font-size: 12px; color: #999999; text-align: center;">
-                                agency intuition × artificial intelligence
-                            </p>
+                        <td style="padding: 16px 32px; border-top: 1px solid #eee;">
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td style="vertical-align: middle; padding-right: 12px;" width="60">
+                                        <img src="https://raw.githubusercontent.com/MGhunch/dot-hub/main/images/ai2-logo.png" alt="hai2" width="56" height="28" style="display: block;">
+                                    </td>
+                                    <td style="vertical-align: middle; font-size: 12px; color: #999;">
+                                        Dot is a robot, but there's humans in the loop.
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
+                    
                 </table>
             </td>
         </tr>
