@@ -197,9 +197,9 @@ def send_magic_link_email(email, first_name, token):
     
     try:
         payload = {
-            'send_to': email,
-            'subject': subject,
-            'body': body
+            'emailMessage/To': email,
+            'emailMessage/Subject': subject,
+            'emailMessage/Body': body
         }
         
         response = requests.post(POSTMAN_URL, json=payload)
