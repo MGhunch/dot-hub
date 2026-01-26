@@ -4,12 +4,15 @@ Flask server serving static frontend + API routes for Airtable data.
 Ask Dot brain lives in Traffic - this is just data.
 """
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, make_response, redirect
 from flask_cors import CORS
 import requests
 import os
 from datetime import datetime
 import re
+import hashlib  # NEW: For auth tokens
+import time     # NEW: For auth tokens
+import base64   # NEW: For auth tokens
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
@@ -27,14 +30,346 @@ def get_airtable_url(table):
     return f'https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{table}'
 
 
+# ===== AUTH CONFIGURATION (NEW) =====
+POSTMAN_URL = os.environ.get('PA_POSTMAN_URL', '')
+TOKEN_SECRET = os.environ.get('TOKEN_SECRET', 'dot-hub-secret-change-me')
+HUB_URL = os.environ.get('HUB_URL', 'https://hub.hunch.co.nz')
+TOKEN_EXPIRY_DAYS = 7
+
+
+# ===== AUTH FUNCTIONS (NEW) =====
+
+def generate_token(email, client_code, first_name):
+    """Generate a signed token containing user info + expiry."""
+    expires = int(time.time()) + (TOKEN_EXPIRY_DAYS * 24 * 60 * 60)
+    data = f"{email}|{client_code}|{first_name}|{expires}"
+    sig = hashlib.sha256(f"{data}|{TOKEN_SECRET}".encode()).hexdigest()[:8]
+    token_data = f"{data}|{sig}"
+    token = base64.urlsafe_b64encode(token_data.encode()).decode().rstrip('=')
+    return token
+
+
+def verify_token(token):
+    """Verify and decode a token. Returns (user_dict, error_string)."""
+    try:
+        # Add back padding if needed
+        padding = 4 - (len(token) % 4)
+        if padding != 4:
+            token += '=' * padding
+        
+        token_data = base64.urlsafe_b64decode(token.encode()).decode()
+        parts = token_data.split('|')
+        
+        if len(parts) != 5:
+            return None, 'invalid'
+        
+        email, client_code, first_name, expires, sig = parts
+        
+        # Verify signature
+        data = f"{email}|{client_code}|{first_name}|{expires}"
+        expected_sig = hashlib.sha256(f"{data}|{TOKEN_SECRET}".encode()).hexdigest()[:8]
+        
+        if sig != expected_sig:
+            return None, 'invalid'
+        
+        # Check expiry
+        if int(expires) < time.time():
+            return None, 'expired'
+        
+        return {
+            'email': email,
+            'client_code': client_code,
+            'first_name': first_name
+        }, None
+        
+    except Exception as e:
+        print(f"[Auth] Token verification error: {e}")
+        return None, 'invalid'
+
+
+def lookup_person(email):
+    """Look up a person by email in Airtable People table."""
+    if not AIRTABLE_API_KEY or not AIRTABLE_BASE_ID:
+        print("[Auth] Warning: Airtable not configured")
+        return None
+    
+    url = get_airtable_url('People')
+    params = {
+        'filterByFormula': f'LOWER({{Email Address}}) = LOWER("{email}")',
+        'maxRecords': 1
+    }
+    
+    try:
+        response = requests.get(url, headers=HEADERS, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data.get('records'):
+            return None
+        
+        record = data['records'][0]
+        fields = record.get('fields', {})
+        
+        return {
+            'email': fields.get('Email Address', email),
+            'first_name': fields.get('First Name', 'there'),
+            'client_code': fields.get('Client Link', 'UNKNOWN')
+        }
+        
+    except Exception as e:
+        print(f"[Auth] Airtable lookup error: {e}")
+        return None
+
+
+def send_magic_link_email(email, first_name, token):
+    """Send magic link email via Postman."""
+    verify_url = f"{HUB_URL}/verify?token={token}"
+    
+    subject = "Your Dot Hub login link"
+    
+    body = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="480" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #ED1C24; padding: 24px; text-align: center;">
+                            <span style="font-family: 'Bebas Neue', Arial, sans-serif; font-size: 32px; color: #ffffff; letter-spacing: 2px;">DOT HUB</span>
+                        </td>
+                    </tr>
+                    
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 32px;">
+                            <p style="margin: 0 0 8px 0; font-size: 20px; font-weight: 500; color: #333333;">
+                                Hi {first_name}
+                            </p>
+                            <p style="margin: 0 0 32px 0; font-size: 15px; color: #666666; line-height: 1.5;">
+                                Click below to access your projects
+                            </p>
+                            
+                            <!-- Button -->
+                            <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                                <tr>
+                                    <td style="background-color: #ED1C24; border-radius: 30px;">
+                                        <a href="{verify_url}" style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 500; color: #ffffff; text-decoration: none;">
+                                            Open Dot Hub
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p style="margin: 32px 0 0 0; font-size: 13px; color: #999999; line-height: 1.5;">
+                                This link expires in 7 days.<br>
+                                If you didn't request this, just ignore it.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 24px 32px; border-top: 1px solid #eeeeee;">
+                            <p style="margin: 0; font-size: 12px; color: #999999; text-align: center;">
+                                agency intuition × artificial intelligence
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>"""
+    
+    if not POSTMAN_URL:
+        print(f"[Auth] Warning: Postman URL not configured. Would send to: {email}")
+        print(f"[Auth] Verify URL: {verify_url}")
+        return True  # Return success for testing without Postman
+    
+    try:
+        payload = {
+            'send_to': email,
+            'subject': subject,
+            'body': body
+        }
+        
+        response = requests.post(POSTMAN_URL, json=payload)
+        response.raise_for_status()
+        print(f"[Auth] Email sent to {email}")
+        return True
+        
+    except Exception as e:
+        print(f"[Auth] Email send error: {e}")
+        return False
+
+
+# ===== AUTH ROUTES (NEW) =====
+
+@app.route('/api/request-login', methods=['POST'])
+def handle_request_login():
+    """Request a magic link. Expects: { "email": "user@example.com" }"""
+    data = request.get_json() or {}
+    email = data.get('email', '').strip().lower()
+    
+    if not email:
+        return jsonify({
+            'success': False,
+            'error': 'no_email',
+            'message': 'Please enter an email address'
+        }), 400
+    
+    # Look up in People table
+    person = lookup_person(email)
+    
+    if not person:
+        return jsonify({
+            'success': False,
+            'error': 'not_found',
+            'message': "I don't recognise that email"
+        }), 404
+    
+    # Generate token
+    token = generate_token(
+        email=person['email'],
+        client_code=person['client_code'],
+        first_name=person['first_name']
+    )
+    
+    # Send email
+    sent = send_magic_link_email(
+        email=person['email'],
+        first_name=person['first_name'],
+        token=token
+    )
+    
+    if not sent:
+        return jsonify({
+            'success': False,
+            'error': 'email_failed',
+            'message': 'Failed to send email'
+        }), 500
+    
+    return jsonify({
+        'success': True,
+        'message': f"Link sent to {person['email']}"
+    })
+
+
+@app.route('/verify')
+def handle_verify():
+    """Verify a magic link token and set session cookie."""
+    token = request.args.get('token', '')
+    
+    if not token:
+        return redirect(f"/?error=invalid")
+    
+    user, error = verify_token(token)
+    
+    if error == 'expired':
+        return redirect(f"/?error=expired")
+    
+    if error or not user:
+        return redirect(f"/?error=invalid")
+    
+    # Success! Set cookie and redirect to Hub
+    response = make_response(redirect('/'))
+    
+    # Create a session token (signed, same approach)
+    session_token = generate_token(
+        email=user['email'],
+        client_code=user['client_code'],
+        first_name=user['first_name']
+    )
+    
+    response.set_cookie(
+        'dot_session',
+        session_token,
+        max_age=TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
+        httponly=True,
+        secure=True,
+        samesite='Lax'
+    )
+    
+    return response
+
+
+@app.route('/api/check-session')
+def handle_check_session():
+    """Check if current session is valid. Used by frontend to determine login state."""
+    session_token = request.cookies.get('dot_session')
+    
+    if not session_token:
+        return jsonify({'authenticated': False})
+    
+    user, error = verify_token(session_token)
+    
+    if error or not user:
+        return jsonify({'authenticated': False})
+    
+    return jsonify({
+        'authenticated': True,
+        'user': {
+            'email': user['email'],
+            'firstName': user['first_name'],
+            'clientCode': user['client_code']
+        }
+    })
+
+
+@app.route('/api/logout', methods=['POST'])
+def handle_logout():
+    """Clear session cookie."""
+    response = make_response(jsonify({'success': True}))
+    response.delete_cookie('dot_session')
+    return response
+
+
+# ===== AUTH TEST ROUTES (NEW - Remove before production) =====
+
+@app.route('/test/auth/token')
+def test_auth_token():
+    """Test token generation and verification."""
+    token = generate_token(
+        email='test@example.com',
+        client_code='TEST',
+        first_name='Tester'
+    )
+    user, error = verify_token(token)
+    
+    return jsonify({
+        'token': token,
+        'token_length': len(token),
+        'verified': user,
+        'error': error
+    })
+
+
+@app.route('/test/auth/lookup/<email>')
+def test_auth_lookup(email):
+    """Test Airtable People lookup."""
+    person = lookup_person(email)
+    return jsonify({
+        'email': email,
+        'found': person is not None,
+        'person': person
+    })
+
+
 # ===== HEALTH CHECK =====
 @app.route('/api/health')
 def health():
     return jsonify({
         'status': 'ok',
         'service': 'dot-hub',
-        'version': '1.0',
-        'features': ['static', 'api', 'universal-schema']
+        'version': '1.1',  # Bumped for auth
+        'features': ['static', 'api', 'universal-schema', 'magic-link-auth']
     })
 
 
@@ -174,7 +509,7 @@ def transform_project(record):
     # Parse dates - 'Update Due' is D/M/YYYY format from Airtable
     update_due = parse_airtable_date(fields.get('Update Due', ''))
     
-    # Days Since Update - pre-calculated by Airtable formula (e.g., "12 days ago ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤", "Today", "-")
+    # Days Since Update - pre-calculated by Airtable formula
     days_since_update = fields.get('Days Since Update', '-')
     
     # Live In is now a dropdown (month name or "Tbc") - pass through as-is
@@ -204,7 +539,7 @@ def transform_project(record):
         # Dates
         'updateDue': update_due,
         'liveDate': live_in,  # Month name like "Jan", "Feb", "Tbc"
-        'daysSinceUpdate': days_since_update,  # Pre-calculated: "12 days ago ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤", "Today", "-"
+        'daysSinceUpdate': days_since_update,
         
         # Content
         'description': fields.get('Description', ''),
@@ -428,7 +763,6 @@ def create_new_job():
         print(f'[Hub API] Created new job: {job_number} - {job_name}')
         
         # Step 4: Create Tracker record with ballpark
-        from datetime import datetime
         current_month = datetime.now().strftime('%B')  # e.g. "January"
         
         tracker_url = get_airtable_url('Tracker')
