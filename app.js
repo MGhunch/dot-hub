@@ -1329,6 +1329,7 @@ function toggleWipMode() {
 }
 
 function updateWipModeLabels() {
+    $('mode-mobile')?.classList.toggle('active', state.wipMode === 'mobile');
     $('mode-desktop')?.classList.toggle('active', state.wipMode === 'desktop');
 }
 

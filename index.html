@@ -277,11 +277,12 @@
                         </div>
                     </div>
                     <div class="mode-toggle">
+                        <span class="mode-label" id="mode-mobile" onclick="setWipMode('mobile')">Mobile</span>
                         <label class="mode-switch">
                             <input type="checkbox" id="wip-mode-switch" checked onchange="toggleWipMode()">
                             <span class="mode-switch-slider"></span>
                         </label>
-                        <span class="mode-label" id="mode-desktop" onclick="toggleWipMode()">Desktop</span>
+                        <span class="mode-label active" id="mode-desktop" onclick="setWipMode('desktop')">Desktop</span>
                     </div>
                 </div>
                 <div class="wip-content" id="wip-content">
