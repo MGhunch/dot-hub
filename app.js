@@ -628,6 +628,15 @@ async function processQuestion(question) {
             }
             break;
             
+        case 'horoscope':
+            // Horoscope response - sass from the stars
+            renderResponse({
+                message: response.message,
+                jobs: null,
+                nextPrompt: response.nextPrompt
+            });
+            break;
+            
         case 'error':
             // Something went wrong
             renderResponse({
