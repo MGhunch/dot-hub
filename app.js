@@ -50,9 +50,9 @@ const $$ = (sel) => document.querySelectorAll(sel);
 document.addEventListener('DOMContentLoaded', init);
 
 function init() {
-    checkSession();
+    handleDeepLink();    // First - capture URL params
+    checkSession();      // Then - check session (auto-login if deep link)
     setupEventListeners();
-    handleDeepLink();
 }
 
 // ===== DEEP LINK HANDLING =====
@@ -113,6 +113,21 @@ function applyDeepLink() {
     // Now navigate - render functions will use our pre-set values
     if (view && ['wip', 'tracker', 'home'].includes(view)) {
         navigateTo(view);
+    }
+    
+    // Open job modal if job param provided (after navigation and data load)
+    if (job) {
+        // Format job number: "ONS078" -> "ONS 078"
+        const formattedJob = job.replace(/([A-Z]+)(\d+)/, '$1 $2');
+        // Wait for jobs to load, then open modal
+        const waitForJobs = setInterval(() => {
+            if (state.jobsLoaded) {
+                clearInterval(waitForJobs);
+                openJobModal(formattedJob);
+            }
+        }, 100);
+        // Timeout after 10 seconds
+        setTimeout(() => clearInterval(waitForJobs), 10000);
     }
 }
 
@@ -308,7 +323,15 @@ function unlockApp() {
 
 function checkSession() {
     const stored = sessionStorage.getItem('dotUser');
-    if (stored) { state.currentUser = JSON.parse(stored); unlockApp(); }
+    if (stored) { 
+        state.currentUser = JSON.parse(stored); 
+        unlockApp(); 
+    } else if (state.deepLink) {
+        // Auto-login for deep links when no session exists
+        state.currentUser = PINS['1919']; // Team
+        sessionStorage.setItem('dotUser', JSON.stringify(state.currentUser));
+        unlockApp();
+    }
 }
 
 function signOut() {
