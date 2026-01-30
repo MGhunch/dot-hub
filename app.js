@@ -2725,25 +2725,35 @@ async function submitNewJob() {
     createBtn.disabled = true;
     createBtn.textContent = 'CREATING...';
     
-    // Get form values from state
-    const withClient = $('new-job-with-client').checked;
-    const setupTeams = $('new-job-setup-teams').checked;
+    // Get form values
+    const description = $('new-job-description').value.trim();
+    const ballpark = parseInt(newJobState.ballpark, 10);
     
+    // Build brief object for Setup Worker
+    // Map form fields → brief fields (Worker expects brief format from Claude extraction)
+    // Form uses UI-friendly names, brief uses extraction schema names
+    const brief = {
+        jobName: jobName,           // same
+        theJob: description || null, // form: description → brief: theJob
+        owner: newJobState.owner || null,  // same
+        costs: ballpark ? `$${ballpark.toLocaleString()}` : null,  // form: ballpark (number) → brief: costs (string)
+        when: newJobState.live || null,    // form: live → brief: when
+        updateDue: $('new-job-update-due').value || null  // same
+    };
+    
+    // Build payload for Setup Worker
     const payload = {
         clientCode: newJobState.clientCode,
-        jobName: jobName,
-        description: $('new-job-description').value.trim(),
-        owner: newJobState.owner,
-        updateDue: $('new-job-update-due').value,
-        live: newJobState.live,
-        status: newJobState.status,
-        ballpark: parseInt(newJobState.ballpark, 10),
-        withClient: withClient,
-        setupTeams: setupTeams
+        clientName: newJobState.clientName,
+        senderEmail: `${state.currentUser?.name?.toLowerCase() || 'hub'}@hunch.co.nz`,
+        senderName: state.currentUser?.fullName || state.currentUser?.name || 'Hub User',
+        subjectLine: `New job: ${jobName}`,
+        brief: brief
     };
     
     try {
-        const response = await fetch('/api/new-job', {
+        // Call Setup Worker directly - it handles everything
+        const response = await fetch('https://dot-workers.up.railway.app/setup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -2751,8 +2761,8 @@ async function submitNewJob() {
         
         const data = await response.json();
         
-        if (data.error) {
-            alert('Error creating job: ' + data.error);
+        if (!data.success) {
+            alert('Error creating job: ' + (data.error || 'Unknown error'));
             createBtn.disabled = false;
             createBtn.textContent = 'CREATE JOB';
             return;
@@ -2768,23 +2778,12 @@ async function submitNewJob() {
         $('new-job-confirm-title').textContent = createdJobNumber;
         $('new-job-confirm-text').textContent = 'Job created';
         
-        // Setup Teams if checkbox was checked
-        if (setupTeams && data.teamId) {
-            $('new-job-confirm-subtext').textContent = 'Setting up Teams & Files...';
+        // Show results summary
+        const results = data.results || {};
+        if (results.channel?.success) {
+            $('new-job-confirm-subtext').textContent = 'Teams channel ready ✓';
             $('new-job-confirm-subtext').style.display = 'block';
-            
-            // Fire setup worker (don't await - runs in background)
-            fetch('https://dot-workers.up.railway.app/setup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    teamId: data.teamId,
-                    jobNumber: createdJobNumber,
-                    jobName: jobName,
-                    recordId: data.recordId
-                })
-            }).catch(e => console.error('Setup Teams failed:', e));
-        } else if (setupTeams && !data.teamId) {
+        } else if (results.channel?.skipped) {
             $('new-job-confirm-subtext').textContent = 'Teams not configured for this client';
             $('new-job-confirm-subtext').style.display = 'block';
         } else {
