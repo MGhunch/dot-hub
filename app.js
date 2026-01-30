@@ -2725,6 +2725,9 @@ async function submitNewJob() {
     createBtn.disabled = true;
     createBtn.textContent = 'CREATING...';
     
+    // Show processing toast
+    showToast('Setting up job...', 'info');
+    
     // Get form values
     const description = $('new-job-description').value.trim();
     const ballpark = parseInt(newJobState.ballpark, 10);
