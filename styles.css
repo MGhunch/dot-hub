@@ -203,7 +203,119 @@ body {
     margin-top: 40px;
     opacity: 0.6;
 }
+/* ===== LOGIN SCREEN ===== */
+.login-screen {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
 
+.login-screen.hidden {
+    display: none;
+}
+
+.login-state {
+    text-align: center;
+    padding: 24px;
+    max-width: 320px;
+    width: 100%;
+}
+
+.login-state.hidden {
+    display: none;
+}
+
+.login-logo {
+    margin-bottom: 24px;
+}
+
+.login-logo img {
+    height: 80px;
+    width: auto;
+}
+
+.login-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: #333;
+    margin: 0 0 8px 0;
+}
+
+.login-subtitle {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: #666;
+    margin: 0 0 24px 0;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.login-email {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    padding: 14px 16px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.login-email:focus {
+    border-color: #ED1C24;
+}
+
+.login-btn {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    padding: 14px 24px;
+    background: #ED1C24;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.login-btn:hover {
+    background: #d41920;
+}
+
+.login-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.login-error {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #ED1C24;
+    margin: 16px 0 0 0;
+    min-height: 20px;
+}
+
+.login-retry {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #666;
+    margin: 24px 0 0 0;
+}
+
+.login-retry a {
+    color: #ED1C24;
+    text-decoration: none;
+}
+
+.login-retry a:hover {
+    text-decoration: underline;
+}
 /* ===== LAYOUT SWITCHING ===== */
 .phone-container { display: none; }
 .desktop-container { display: none; }
