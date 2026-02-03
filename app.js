@@ -2269,7 +2269,7 @@ function renderTrackerContent() {
                             const chevronDisabled = p._isGrouped ? 'style="color:var(--grey-200);cursor:default;"' : '';
                             return `
                                 <tr>
-                                    <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">${ICON_CHEVRON_RIGHT}</button></td>
+                                    <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerDetail('${p.jobNumber}', '${trackerCurrentMonth}')`}">${ICON_CHEVRON_RIGHT}</button></td>
                                     <td class="project-name">${p.jobNumber}  -  ${p.projectName}</td>
                                     <td>${p.owner || ''}</td>
                                     <td>${p.description || ''}</td>
@@ -2303,7 +2303,7 @@ function renderTrackerContent() {
                                 const chevronDisabled = p._isGrouped ? 'style="color:var(--grey-200);cursor:default;"' : '';
                                 return `
                                     <tr>
-                                        <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerEditModal('${p.jobNumber}', '${trackerCurrentMonth}')`}">${ICON_CHEVRON_RIGHT}</button></td>
+                                        <td class="chevron-cell"><button class="chevron-btn" ${chevronDisabled} onclick="${p._isGrouped ? '' : `openTrackerDetail('${p.jobNumber}', '${trackerCurrentMonth}')`}">${ICON_CHEVRON_RIGHT}</button></td>
                                         <td class="project-name">${p.jobNumber}  -  ${p.projectName}</td>
                                         <td>${p.owner || ''}</td>
                                         <td>${p.description || ''}</td>
@@ -2584,6 +2584,15 @@ function openTrackerEditModal(jobNumber, month) {
     updateTrackerBallparkUI(isBallpark);
     
     $('tracker-edit-modal')?.classList.add('visible');
+}
+
+// Helper: open the right modal for Tracker based on access level
+function openTrackerDetail(jobNumber, month) {
+    if (state.currentUser?.accessLevel === 'Full') {
+        openTrackerEditModal(jobNumber, month);
+    } else {
+        openJobSummary(jobNumber);
+    }
 }
 
 function closeTrackerModal() {
@@ -3083,6 +3092,7 @@ window.closeComingSoonModal = closeComingSoonModal;
 
 // Make functions available globally
 window.openTrackerEditModal = openTrackerEditModal;
+window.openTrackerDetail = openTrackerDetail;
 window.closeTrackerModal = closeTrackerModal;
 window.saveTrackerProject = saveTrackerProject;
 window.getTrackerPDF = getTrackerPDF;
