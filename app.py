@@ -114,7 +114,7 @@ def lookup_person(email):
         return {
             'email': fields.get('Email Address', email),
             'first_name': fields.get('First Name', 'there'),
-            'client_code': fields.get('clientCode', 'UNKNOWN'),
+            'client_code': fields.get('clientCode', ['UNKNOWN'])[0],
             'access_level': fields.get('Access', 'Client WIP')  # Default to most restricted
         }
         
