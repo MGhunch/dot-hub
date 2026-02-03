@@ -733,7 +733,7 @@ async function processQuestion(question) {
             // Horoscope response - sass from the stars
             renderResponse({
                 message: response.message,
-                jobs: null,
+                jobs: [],
                 nextPrompt: response.nextPrompt
             });
             break;
