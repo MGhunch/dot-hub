@@ -280,6 +280,9 @@ async function checkSession() {
         // Clear the URL param
         window.history.replaceState({}, document.title, window.location.pathname);
         
+        // Show login screen with error
+        $('login-screen')?.classList.remove('hidden');
+        
         // Show appropriate error
         const errorEl = $('login-error');
         if (error === 'expired') {
@@ -304,10 +307,14 @@ async function checkSession() {
                 accessLevel: data.user.accessLevel
             };
             unlockApp();
+            return; // Exit early - user is authenticated, don't show login
         }
     } catch (e) {
         console.error('Session check failed:', e);
     }
+    
+    // If we get here, user is NOT authenticated - show login screen
+    $('login-screen')?.classList.remove('hidden');
 }
 
 async function requestLogin() {
