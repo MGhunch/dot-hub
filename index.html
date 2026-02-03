@@ -16,35 +16,33 @@
     <!-- Toast notifications -->
     <div class="toast" id="toast"></div>
 
-    <!-- ===== PIN SCREEN (shared) ===== -->
-    <div class="pin-screen" id="pin-screen">
-        <div class="pin-logo">
+   <!-- ===== LOGIN SCREEN ===== -->
+<div class="login-screen" id="login-screen">
+    
+    <!-- State 1: Email Input -->
+    <div class="login-state" id="login-input">
+        <div class="login-logo">
             <img src="images/Hello.png" alt="Hello">
         </div>
-        <p class="pin-title">Please enter your PIN</p>
-        <div class="pin-dots">
-            <div class="pin-dot" id="dot-0"></div>
-            <div class="pin-dot" id="dot-1"></div>
-            <div class="pin-dot" id="dot-2"></div>
-            <div class="pin-dot" id="dot-3"></div>
+        <p class="login-title">Let's get you in.</p>
+        <p class="login-subtitle">Pop in your email to get a link.</p>
+        <div class="login-form">
+            <input type="email" class="login-email" id="login-email" placeholder="your@email.com">
+            <button class="login-btn" id="login-send">Send link</button>
         </div>
-        <div class="pin-keypad">
-            <button class="pin-key" data-digit="1">1</button>
-            <button class="pin-key" data-digit="2">2</button>
-            <button class="pin-key" data-digit="3">3</button>
-            <button class="pin-key" data-digit="4">4</button>
-            <button class="pin-key" data-digit="5">5</button>
-            <button class="pin-key" data-digit="6">6</button>
-            <button class="pin-key" data-digit="7">7</button>
-            <button class="pin-key" data-digit="8">8</button>
-            <button class="pin-key" data-digit="9">9</button>
-            <button class="pin-key empty"></button>
-            <button class="pin-key" data-digit="0">0</button>
-            <button class="pin-key delete" id="pin-delete">&#x232B;</button>
-        </div>
-        <p class="pin-error-msg" id="pin-error">Sorry, try that again</p>
+        <p class="login-error" id="login-error"></p>
     </div>
-
+    
+    <!-- State 2: Link Sent -->
+    <div class="login-state hidden" id="login-sent">
+        <div class="login-logo">
+            <img src="images/Onit.png" alt="On it">
+        </div>
+        <p class="login-title">Check your inbox.</p>
+        <p class="login-subtitle">Your link is on its way. ✨</p>
+        <p class="login-retry">Wrong email? <a href="#" id="login-try-again">Try again</a></p>
+    </div>
+    
     <!-- ===== PHONE LAYOUT (Mobile <900px) ===== -->
     <div class="phone-container" id="phone-container">
         <!-- Phone Header -->
