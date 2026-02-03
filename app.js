@@ -116,7 +116,7 @@ function applyDeepLink() {
         const waitForJobs = setInterval(() => {
             if (state.jobsLoaded) {
                 clearInterval(waitForJobs);
-                openJobModal(formattedJob);
+                openJobDetail(formattedJob);
             }
         }, 100);
         // Timeout after 10 seconds
@@ -1035,7 +1035,7 @@ function createUniversalCard(job, id) {
                 <div class="section-label" style="margin-top:14px">Recent Activity</div>
                 ${recentActivity}
                 <div class="job-expanded-footer">
-                    <button class="pill-btn update-btn" onclick="event.stopPropagation(); openJobModal('${job.jobNumber}')">Update</button>
+                    <button class="pill-btn update-btn" onclick="event.stopPropagation(); openJobDetail('${job.jobNumber}')">More →</button>
                 </div>
             </div>
         </div>
@@ -1185,6 +1185,55 @@ function closeJobModal() {
     currentEditJob = null;
 }
 
+// ===== JOB SUMMARY MODAL (read-only for clients) =====
+function openJobSummary(jobNumber) {
+    const job = state.allJobs.find(j => j.jobNumber === jobNumber);
+    if (!job) return;
+    
+    const modal = $('job-summary-modal');
+    if (!modal) return;
+    
+    // Populate header
+    $('job-summary-title').textContent = `${jobNumber} | ${job.jobName || 'Untitled'}`;
+    $('job-summary-logo').src = getLogoUrl(job.clientCode);
+    $('job-summary-logo').onerror = function() { this.src = 'images/logos/Unknown.png'; };
+    $('job-summary-logo').alt = job.clientCode;
+    
+    // Populate fields
+    $('job-summary-desc').textContent = job.description || 'No description';
+    $('job-summary-owner').textContent = job.projectOwner || 'Unassigned';
+    $('job-summary-story').textContent = job.theStory || 'Still working on it';
+    $('job-summary-update').textContent = job.update || 'No updates yet';
+    
+    // Format dates
+    if (job.updateDue) {
+        const date = new Date(job.updateDue);
+        $('job-summary-due').textContent = date.toLocaleDateString('en-GB', { 
+            day: 'numeric', month: 'short', year: 'numeric' 
+        });
+    } else {
+        $('job-summary-due').textContent = 'Not set';
+    }
+    
+    $('job-summary-live').textContent = job.liveDate || 'TBC';
+    
+    // Show modal
+    modal.classList.add('visible');
+}
+
+function closeJobSummary() {
+    $('job-summary-modal')?.classList.remove('visible');
+}
+
+// Helper: open the right modal based on access level
+function openJobDetail(jobNumber) {
+    if (state.currentUser?.accessLevel === 'Full') {
+        openJobModal(jobNumber);
+    } else {
+        openJobSummary(jobNumber);
+    }
+}
+
 async function saveJobUpdate() {
     if (!currentEditJob) return;
     
@@ -1274,6 +1323,9 @@ async function saveJobUpdate() {
 // Make modal functions global
 window.openJobModal = openJobModal;
 window.closeJobModal = closeJobModal;
+window.openJobSummary = openJobSummary;
+window.closeJobSummary = closeJobSummary;
+window.openJobDetail = openJobDetail;
 window.saveJobUpdate = saveJobUpdate;
 window.openJobNameModal = openJobNameModal;
 window.closeJobNameModal = closeJobNameModal;
@@ -1616,7 +1668,7 @@ function renderWip() {
         content.querySelectorAll('.list-row').forEach(row => {
             row.addEventListener('click', () => {
                 const jobNumber = row.dataset.jobNumber;
-                if (jobNumber) openJobModal(jobNumber);
+                if (jobNumber) openJobDetail(jobNumber);
             });
         });
     } else {
@@ -1716,7 +1768,7 @@ function renderPhoneWip() {
     content.querySelectorAll('.list-row').forEach(row => {
         row.addEventListener('click', () => {
             const jobNumber = row.dataset.jobNumber;
-            if (jobNumber) openJobModal(jobNumber);
+            if (jobNumber) openJobDetail(jobNumber);
         });
     });
 }
@@ -1788,7 +1840,7 @@ function createListRow(job) {
 
 // Old submitWipUpdate - redirects to modal
 async function submitWipUpdate(jobNumber, btn) {
-    openJobModal(jobNumber);
+    openJobDetail(jobNumber);
 }
 
 function toggleWipWithClient(jobNumber, isWithClient) {

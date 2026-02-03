@@ -2516,6 +2516,36 @@ body {
     gap: 12px;
 }
 
+/* Summary Card (read-only) styles */
+.summary-section {
+    margin-bottom: 16px;
+}
+
+.summary-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--grey-400);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.summary-text {
+    font-size: 14px;
+    color: var(--grey-800);
+    line-height: 1.5;
+}
+
+.summary-row {
+    display: flex;
+    gap: 24px;
+}
+
+.summary-row .summary-section {
+    flex: 1;
+    margin-bottom: 0;
+}
+
 .job-form-group {
     display: flex;
     flex-direction: column;
