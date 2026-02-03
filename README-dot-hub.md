@@ -1,6 +1,6 @@
 # dot-hub
 
-The frontend interface for Dot. Serves the Hub UI and provides API routes for Airtable data.
+The frontend interface for Dot. Serves the Hub UI and provides API routes for Airtable data. Needs refactoring.
 
 ---
 
