@@ -245,7 +245,7 @@ body {
 
 .login-logo {
     margin-bottom: 32px;
-    height: 180px;
+    height: 200px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -253,16 +253,18 @@ body {
 
 .login-logo img {
     max-height: 100%;
+    max-width: 200px;
     width: auto;
     object-fit: contain;
 }
 
 .login-title {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 24px;
+    font-size: 28px;
     color: #333;
     margin: 0 0 8px 0;
     text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .login-subtitle {
@@ -293,8 +295,9 @@ body {
 }
 
 .login-btn {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
     padding: 14px 24px;
     background: #ED1C24;
     color: #fff;
@@ -303,7 +306,7 @@ body {
     cursor: pointer;
     transition: background 0.2s;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
 }
 
 .login-btn:hover {
