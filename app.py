@@ -127,86 +127,46 @@ def send_magic_link_email(email, first_name, token):
     """Send magic link email via Postman."""
     verify_url = f"{HUB_URL}/verify?token={token}"
     
-    subject = "Your Dot Hub login link"
+    subject = "Log in. Ask Dot..."
     
-    body = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
-        <tr>
-            <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="max-width: 100%; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
-                    
-                    <!-- Header with Ask Dot logo -->
-                    <tr>
-                        <td style="padding: 24px 32px; border-bottom: 3px solid #ED1C24;">
-                            <img src="https://raw.githubusercontent.com/MGhunch/dot-hub/main/images/Askdot-header.png" alt="Ask Dot" height="32" style="display: block;">
-                        </td>
-                    </tr>
-                    
-                    <!-- Body -->
-                    <tr>
-                        <td style="padding: 32px;">
-                            <p style="margin: 0 0 8px 0; font-size: 17px; font-weight: 500; color: #333333;">
-                                Hi {first_name},
-                            </p>
-                            <p style="margin: 0 0 24px 0; font-size: 15px; color: #666666; line-height: 1.5;">
-                                Here you go. One click and you're in.
-                            </p>
-                            
-                            <!-- Button -->
-                            <table cellpadding="0" cellspacing="0" style="margin: 0 0 32px 0;">
-                                <tr>
-                                    <td style="background-color: #ED1C24; border-radius: 30px;">
-                                        <a href="{verify_url}" style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 500; color: #ffffff; text-decoration: none;">
-                                            Open the Hub
-                                        </a>
-                                    </td>
-                                </tr>
-                            </table>
+    body = f"""<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
 
-                            <!-- What you can do -->
-                            <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: 500; color: #333333;">
-                                You can:
-                            </p>
-                            <p style="margin: 0 0 24px 0; font-size: 14px; color: #666666; line-height: 1.8;">
-                                → See what's new, what's due and what needs a nudge.<br>
-                                → Let us know if you need any changes.<br>
-                                → Ask Dot for your horoscope.
-                            </p>
-                            
-                            <p style="margin: 0; font-size: 12px; color: #999999;">
-                                This link expires in 7 days. If you didn't request this, just ignore it.
-                            </p>
-                        </td>
-                    </tr>
-                    
-                    <!-- Footer -->
-                    <tr>
-                        <td style="padding: 16px 32px; border-top: 1px solid #eee;">
-                            <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                                <tr>
-                                    <td style="vertical-align: middle; padding-right: 12px;" width="60">
-                                        <img src="https://raw.githubusercontent.com/MGhunch/dot-hub/main/images/ai2-logo.png" alt="hai2" width="56" height="28" style="display: block;">
-                                    </td>
-                                    <td style="vertical-align: middle; font-size: 12px; color: #999;">
-                                        Dot is a robot, but there's humans in the loop.
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>"""
+<div style="padding-bottom: 16px; margin-bottom: 20px; border-bottom: 3px solid #ED1C24;">
+    <img src="https://raw.githubusercontent.com/MGhunch/dot-hub/main/images/Askdot-header.png" alt="Ask Dot" height="32" style="display: block;">
+</div>
+
+<p style="margin: 0 0 8px 0; font-size: 17px; font-weight: 500;">Hi {first_name},</p>
+<p style="margin: 0 0 24px 0; color: #666;">One click and you're in.</p>
+
+<table cellpadding="0" cellspacing="0" style="margin: 0 0 28px 0;">
+    <tr>
+        <td style="background-color: #ED1C24; border-radius: 30px;">
+            <a href="{verify_url}" style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 500; color: #ffffff; text-decoration: none;">OPEN THE HUB</a>
+        </td>
+    </tr>
+</table>
+
+<p style="margin: 0 0 12px 0; font-size: 14px; font-weight: 500;">You can:</p>
+<p style="margin: 0 0 24px 0; font-size: 14px; color: #666; line-height: 1.8;">
+    → See what's new, what's due and what's next.<br>
+    → Let us know if anything needs a nudge.<br>
+    → Ask Dot for your horoscope.
+</p>
+
+<p style="margin: 0 0 24px 0; font-size: 12px; color: #999;">This link expires in 7 days. If you didn't request this, just ignore it.</p>
+
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
+    <tr>
+        <td style="vertical-align: middle; padding-right: 12px;" width="60">
+            <img src="https://raw.githubusercontent.com/MGhunch/dot-hub/main/images/ai2-logo.png" alt="hai2" width="56" height="28" style="display: block;">
+        </td>
+        <td style="vertical-align: middle; font-size: 12px; color: #999;">
+            Dot is a robot, but there's humans in the loop.
+        </td>
+    </tr>
+</table>
+
+</div>"""
     
     if not POSTMAN_URL:
         print(f"[Auth] Warning: Postman URL not configured. Would send to: {email}")
