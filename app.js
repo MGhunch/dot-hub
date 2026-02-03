@@ -135,6 +135,10 @@ function setupEventListeners() {
     $('phone-overlay')?.addEventListener('click', closePhoneMenu);
     $('phone-home-btn')?.addEventListener('click', () => goHome());
     
+    // User dropdown
+    $('user-dropdown-trigger')?.addEventListener('click', toggleUserDropdown);
+    document.querySelector('.user-dropdown-item[data-action="signout"]')?.addEventListener('click', signOut);
+    
     $$('#phone-dropdown .dropdown-item').forEach(item => {
         item.addEventListener('click', () => {
             closePhoneMenu();
@@ -192,6 +196,10 @@ function setupEventListeners() {
         // Close plus menus on outside click
         if (!e.target.closest('.input-plus') && !e.target.closest('.plus-menu')) {
             $$('.plus-menu.open').forEach(m => m.classList.remove('open'));
+        }
+        // Close user dropdown on outside click
+        if (!e.target.closest('.user-dropdown')) {
+            document.querySelector('.user-dropdown')?.classList.remove('open');
         }
     });
 
@@ -365,6 +373,11 @@ function unlockApp() {
     if ($('phone-home-input')) $('phone-home-input').placeholder = placeholder;
     if ($('desktop-home-input')) $('desktop-home-input').placeholder = placeholder;
     
+    // Set user display name in header dropdown
+    const displayName = state.currentUser?.name || 'User';
+    const userNameEl = $('user-display-name');
+    if (userNameEl) userNameEl.textContent = displayName;
+    
     // Apply access level filtering
     applyAccessLevel();
     
@@ -500,6 +513,11 @@ function closePhoneMenu() {
     $('phone-hamburger')?.classList.remove('open');
     $('phone-dropdown')?.classList.remove('open');
     $('phone-overlay')?.classList.remove('open');
+}
+
+function toggleUserDropdown(e) {
+    e.stopPropagation();
+    document.querySelector('.user-dropdown')?.classList.toggle('open');
 }
 
 // ===== DATA LOADING =====
