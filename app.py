@@ -150,7 +150,7 @@ def send_magic_link_email(email, first_name, token):
 <p style="margin: 0 0 24px 0; font-size: 16px; color: #666; line-height: 1.8;">
     → See what's new, what's due and what's next.<br>
     → Let us know if anything needs a nudge.<br>
-    → Ask Dot for your horoscope.
+    → Or just ask Dot for your horoscope.
 </p>
 
 <p style="margin: 0 0 24px 0; font-size: 12px; color: #999;">This link expires in 7 days. If you didn't request this, just ignore it.</p>
