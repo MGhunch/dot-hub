@@ -467,9 +467,9 @@ async function signOut() {
     state.currentUser = null;
     state.clientFilter = null;
     
-    // Reset login screen
+    // Reset login screen and show it
     resetLoginForm();
-    $('login-screen')?.classList.remove('hidden');
+    document.body.classList.add('logged-out');
     
     goHome();
 }
