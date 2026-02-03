@@ -43,6 +43,9 @@ const $$ = (sel) => document.querySelectorAll(sel);
 document.addEventListener('DOMContentLoaded', init);
 
 function init() {
+    // Start in logged-out state
+    document.body.classList.add('logged-out');
+    
     handleDeepLink();    // First - capture URL params
     checkSession();      // Then - check session (auto-login if deep link)
     setupEventListeners();
@@ -125,10 +128,15 @@ function applyDeepLink() {
 }
 
 function setupEventListeners() {
-    // Login form
-    $('login-send')?.addEventListener('click', requestLogin);
-    $('login-email')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') requestLogin(); });
+    // Login form - Desktop
+    $('login-send')?.addEventListener('click', () => requestLogin('desktop'));
+    $('login-email')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') requestLogin('desktop'); });
     $('login-try-again')?.addEventListener('click', (e) => { e.preventDefault(); resetLoginForm(); });
+    
+    // Login form - Phone
+    $('phone-login-send')?.addEventListener('click', () => requestLogin('phone'));
+    $('phone-login-email')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') requestLogin('phone'); });
+    $('phone-login-try-again')?.addEventListener('click', (e) => { e.preventDefault(); resetLoginForm(); });
 
     // Phone navigation
     $('phone-hamburger')?.addEventListener('click', togglePhoneMenu);
@@ -280,16 +288,15 @@ async function checkSession() {
         // Clear the URL param
         window.history.replaceState({}, document.title, window.location.pathname);
         
-        // Show login screen with error
-        $('login-screen')?.classList.remove('hidden');
-        
-        // Show appropriate error
+        // Show appropriate error (both mobile and desktop)
         const errorEl = $('login-error');
-        if (error === 'expired') {
-            errorEl.textContent = "Sorry, that link's run out of juice. Try again?";
-        } else {
-            errorEl.textContent = "That link didn't work. Try again?";
-        }
+        const phoneErrorEl = $('phone-login-error');
+        const errorMsg = error === 'expired' 
+            ? "Sorry, that link's run out of juice. Try again?"
+            : "That link didn't work. Try again?";
+        
+        if (errorEl) errorEl.textContent = errorMsg;
+        if (phoneErrorEl) phoneErrorEl.textContent = errorMsg;
         return;
     }
     
@@ -307,37 +314,37 @@ async function checkSession() {
                 accessLevel: data.user.accessLevel
             };
             unlockApp();
-            return; // Exit early - user is authenticated, don't show login
         }
     } catch (e) {
         console.error('Session check failed:', e);
     }
-    
-    // If we get here, user is NOT authenticated - show login screen
-    $('login-screen')?.classList.remove('hidden');
 }
 
-async function requestLogin() {
-    const emailInput = $('login-email');
+async function requestLogin(source = 'desktop') {
+    const isPhone = source === 'phone';
+    const emailInput = isPhone ? $('phone-login-email') : $('login-email');
+    const errorEl = isPhone ? $('phone-login-error') : $('login-error');
+    const btn = isPhone ? $('phone-login-send') : $('login-send');
+    
     const email = emailInput?.value.trim().toLowerCase();
-    const errorEl = $('login-error');
-    const btn = $('login-send');
     
     if (!email) {
-        errorEl.textContent = 'Pop in your email address';
+        if (errorEl) errorEl.textContent = 'Pop in your email address';
         return;
     }
     
     // Basic email validation
     if (!email.includes('@') || !email.includes('.')) {
-        errorEl.textContent = "That doesn't look like an email";
+        if (errorEl) errorEl.textContent = "That doesn't look like an email";
         return;
     }
     
     // Disable button while requesting
-    btn.disabled = true;
-    btn.textContent = 'Sending...';
-    errorEl.textContent = '';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+    }
+    if (errorEl) errorEl.textContent = '';
     
     try {
         const response = await fetch('/api/request-login', {
@@ -349,33 +356,61 @@ async function requestLogin() {
         const data = await response.json();
         
         if (data.success) {
-            // Show "link sent" state
-            $('login-input')?.classList.add('hidden');
-            $('login-sent')?.classList.remove('hidden');
+            // Show "link sent" state on both phone and desktop
+            $('desktop-login-input')?.classList.add('hidden');
+            $('desktop-login-sent')?.classList.remove('hidden');
+            $('phone-login-input')?.classList.add('hidden');
+            $('phone-login-sent')?.classList.remove('hidden');
         } else {
-            errorEl.textContent = data.message || "Something went wrong. Try again?";
-            btn.disabled = false;
-            btn.textContent = 'Send link';
+            if (errorEl) errorEl.textContent = data.message || "Something went wrong. Try again?";
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Send link';
+            }
         }
     } catch (e) {
         console.error('Login request failed:', e);
-        errorEl.textContent = "Couldn't connect. Try again?";
-        btn.disabled = false;
-        btn.textContent = 'Send link';
+        if (errorEl) errorEl.textContent = "Couldn't connect. Try again?";
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Send link';
+        }
     }
 }
 
 function resetLoginForm() {
-    $('login-sent')?.classList.add('hidden');
-    $('login-input')?.classList.remove('hidden');
-    $('login-email').value = '';
-    $('login-error').textContent = '';
-    $('login-send').disabled = false;
-    $('login-send').textContent = 'Send link';
+    // Reset both phone and desktop login forms
+    $('desktop-login-sent')?.classList.add('hidden');
+    $('desktop-login-input')?.classList.remove('hidden');
+    $('phone-login-sent')?.classList.add('hidden');
+    $('phone-login-input')?.classList.remove('hidden');
+    
+    // Clear inputs and errors
+    const loginEmail = $('login-email');
+    const phoneLoginEmail = $('phone-login-email');
+    if (loginEmail) loginEmail.value = '';
+    if (phoneLoginEmail) phoneLoginEmail.value = '';
+    
+    $('login-error')?.textContent && ($('login-error').textContent = '');
+    $('phone-login-error')?.textContent && ($('phone-login-error').textContent = '');
+    
+    // Re-enable buttons
+    const loginSend = $('login-send');
+    const phoneLoginSend = $('phone-login-send');
+    if (loginSend) {
+        loginSend.disabled = false;
+        loginSend.textContent = 'Send link';
+    }
+    if (phoneLoginSend) {
+        phoneLoginSend.disabled = false;
+        phoneLoginSend.textContent = 'Send link';
+    }
 }
 
 function unlockApp() {
-    $('login-screen')?.classList.add('hidden');
+    // Remove logged-out state
+    document.body.classList.remove('logged-out');
+    
     const placeholder = `What's cooking ${state.currentUser.name}?`;
     if ($('phone-home-input')) $('phone-home-input').placeholder = placeholder;
     if ($('desktop-home-input')) $('desktop-home-input').placeholder = placeholder;
