@@ -129,14 +129,14 @@ def send_magic_link_email(email, first_name, token):
     
     subject = "Log in. Ask Dot..."
     
-    body = f"""<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; line-height: 1.6; color: #333;">
+    body = f"""<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 16px; line-height: 1.6; color: #333;">
 
 <div style="padding-bottom: 16px; margin-bottom: 20px; border-bottom: 3px solid #ED1C24;">
     <img src="https://raw.githubusercontent.com/MGhunch/dot-hub/main/images/Askdot-header.png" alt="Ask Dot" height="32" style="display: block;">
 </div>
 
-<p style="margin: 0 0 8px 0; font-size: 17px; font-weight: 500;">Hi {first_name},</p>
-<p style="margin: 0 0 24px 0; color: #666;">One click and you're in.</p>
+<p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 500;">Hi {first_name},</p>
+<p style="margin: 0 0 24px 0; font-size: 16px; color: #666;">One click and you're in.</p>
 
 <table cellpadding="0" cellspacing="0" style="margin: 0 0 28px 0;">
     <tr>
@@ -146,8 +146,8 @@ def send_magic_link_email(email, first_name, token):
     </tr>
 </table>
 
-<p style="margin: 0 0 12px 0; font-size: 14px; font-weight: 500;">You can:</p>
-<p style="margin: 0 0 24px 0; font-size: 14px; color: #666; line-height: 1.8;">
+<p style="margin: 0 0 12px 0; font-size: 16px; font-weight: 500;">You can:</p>
+<p style="margin: 0 0 24px 0; font-size: 16px; color: #666; line-height: 1.8;">
     → See what's new, what's due and what's next.<br>
     → Let us know if anything needs a nudge.<br>
     → Ask Dot for your horoscope.
