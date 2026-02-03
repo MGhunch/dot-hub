@@ -775,7 +775,7 @@ async function askDot(question) {
                 content: question,
                 senderName: state.currentUser?.name || 'Hub User',
                 sessionId: sessionId,
-                jobs: state.allJobs,
+                jobs: getAccessFilteredJobs(),
                 history: state.conversationHistory.slice(0, -1)  // Send history WITHOUT current message
             })
         });
@@ -1486,6 +1486,14 @@ function toggleWipMode() {
 function updateWipModeLabels() {
     $('mode-mobile')?.classList.toggle('active', state.wipMode === 'mobile');
     $('mode-desktop')?.classList.toggle('active', state.wipMode === 'desktop');
+}
+
+function getAccessFilteredJobs() {
+    // For chat: return only jobs the user has access to
+    if (state.clientFilter) {
+        return state.allJobs.filter(j => j.clientCode === state.clientFilter);
+    }
+    return state.allJobs;
 }
 
 function getWipFilteredJobs() {
