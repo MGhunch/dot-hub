@@ -43,9 +43,6 @@ const $$ = (sel) => document.querySelectorAll(sel);
 document.addEventListener('DOMContentLoaded', init);
 
 function init() {
-    // Start in logged-out state
-    document.body.classList.add('logged-out');
-    
     handleDeepLink();    // First - capture URL params
     checkSession();      // Then - check session (auto-login if deep link)
     setupEventListeners();
