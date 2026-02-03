@@ -16,17 +16,10 @@ const CLIENT_DISPLAY_NAMES = {
     'ONS': 'One NZ (Simplification)'
 };
 
-const PINS = {
-    '9871': { name: 'Michael', fullName: 'Michael Goldthorpe', client: 'ALL', clientName: 'Hunch', mode: 'hunch' },
-    '9262': { name: 'Emma', fullName: 'Emma Moore', client: 'ALL', clientName: 'Hunch', mode: 'hunch' },
-    '1919': { name: 'Team', fullName: 'Hunch Team', client: 'ALL', clientName: 'Hunch', mode: 'hunch' }
-};
-
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 
 // ===== STATE =====
 const state = {
-    enteredPin: '',
     currentUser: null,
     currentView: 'home',
     allClients: [],
@@ -132,11 +125,10 @@ function applyDeepLink() {
 }
 
 function setupEventListeners() {
-    // PIN keypad
-    $$('.pin-key[data-digit]').forEach(key => {
-        key.addEventListener('click', () => enterPin(parseInt(key.dataset.digit)));
-    });
-    $('pin-delete')?.addEventListener('click', deletePin);
+    // Login form
+    $('login-send')?.addEventListener('click', requestLogin);
+    $('login-email')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') requestLogin(); });
+    $('login-try-again')?.addEventListener('click', (e) => { e.preventDefault(); resetLoginForm(); });
 
     // Phone navigation
     $('phone-hamburger')?.addEventListener('click', togglePhoneMenu);
@@ -270,49 +262,112 @@ function clearSessionSilently() {
     }
 }
 
-// ===== PIN HANDLING =====
-function enterPin(digit) {
-    if (state.enteredPin.length >= 4) return;
-    state.enteredPin += digit;
-    updatePinDots();
-    $('pin-error')?.classList.remove('visible');
-    if (state.enteredPin.length === 4) setTimeout(checkPin, 150);
-}
-
-function deletePin() {
-    state.enteredPin = state.enteredPin.slice(0, -1);
-    updatePinDots();
-    $('pin-error')?.classList.remove('visible');
-}
-
-function updatePinDots() {
-    for (let i = 0; i < 4; i++) {
-        const dot = $('dot-' + i);
-        if (dot) {
-            dot.classList.remove('filled', 'error');
-            if (i < state.enteredPin.length) dot.classList.add('filled');
+// ===== AUTH HANDLING =====
+async function checkSession() {
+    // Check for URL error params first
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    
+    if (error) {
+        // Clear the URL param
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show appropriate error
+        const errorEl = $('login-error');
+        if (error === 'expired') {
+            errorEl.textContent = "Sorry, that link's run out of juice. Try again?";
+        } else {
+            errorEl.textContent = "That link didn't work. Try again?";
         }
+        return;
+    }
+    
+    // Check for existing session
+    try {
+        const response = await fetch('/api/check-session');
+        const data = await response.json();
+        
+        if (data.authenticated && data.user) {
+            state.currentUser = {
+                name: data.user.firstName,
+                fullName: data.user.firstName,
+                email: data.user.email,
+                client: data.user.clientCode,
+                accessLevel: data.user.accessLevel
+            };
+            unlockApp();
+        }
+    } catch (e) {
+        console.error('Session check failed:', e);
     }
 }
 
-function checkPin() {
-    const user = PINS[state.enteredPin];
-    if (user) {
-        state.currentUser = { ...user, pin: state.enteredPin };
-        sessionStorage.setItem('dotUser', JSON.stringify(state.currentUser));
-        unlockApp();
-    } else {
-        $$('.pin-dot').forEach(d => d.classList.add('error'));
-        $('pin-error')?.classList.add('visible');
-        setTimeout(() => { state.enteredPin = ''; updatePinDots(); }, 500);
+async function requestLogin() {
+    const emailInput = $('login-email');
+    const email = emailInput?.value.trim().toLowerCase();
+    const errorEl = $('login-error');
+    const btn = $('login-send');
+    
+    if (!email) {
+        errorEl.textContent = 'Pop in your email address';
+        return;
     }
+    
+    // Basic email validation
+    if (!email.includes('@') || !email.includes('.')) {
+        errorEl.textContent = "That doesn't look like an email";
+        return;
+    }
+    
+    // Disable button while requesting
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    errorEl.textContent = '';
+    
+    try {
+        const response = await fetch('/api/request-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show "link sent" state
+            $('login-input')?.classList.add('hidden');
+            $('login-sent')?.classList.remove('hidden');
+        } else {
+            errorEl.textContent = data.message || "Something went wrong. Try again?";
+            btn.disabled = false;
+            btn.textContent = 'Send link';
+        }
+    } catch (e) {
+        console.error('Login request failed:', e);
+        errorEl.textContent = "Couldn't connect. Try again?";
+        btn.disabled = false;
+        btn.textContent = 'Send link';
+    }
+}
+
+function resetLoginForm() {
+    $('login-sent')?.classList.add('hidden');
+    $('login-input')?.classList.remove('hidden');
+    $('login-email').value = '';
+    $('login-error').textContent = '';
+    $('login-send').disabled = false;
+    $('login-send').textContent = 'Send link';
 }
 
 function unlockApp() {
-    $('pin-screen')?.classList.add('hidden');
+    $('login-screen')?.classList.add('hidden');
     const placeholder = `What's cooking ${state.currentUser.name}?`;
     if ($('phone-home-input')) $('phone-home-input').placeholder = placeholder;
     if ($('desktop-home-input')) $('desktop-home-input').placeholder = placeholder;
+    
+    // Apply access level filtering
+    applyAccessLevel();
+    
     loadClients();
     loadJobs();
     resetInactivityTimer();
@@ -321,26 +376,49 @@ function unlockApp() {
     applyDeepLink();
 }
 
-function checkSession() {
-    const stored = sessionStorage.getItem('dotUser');
-    if (stored) { 
-        state.currentUser = JSON.parse(stored); 
-        unlockApp(); 
-    } else if (state.deepLink) {
-        // Auto-login for deep links when no session exists
-        state.currentUser = PINS['1919']; // Team
-        sessionStorage.setItem('dotUser', JSON.stringify(state.currentUser));
-        unlockApp();
+function applyAccessLevel() {
+    const level = state.currentUser?.accessLevel || 'Client WIP';
+    const client = state.currentUser?.client;
+    
+    // Get nav elements
+    const trackerNavPhone = document.querySelector('#phone-dropdown .dropdown-item[data-view="tracker"]');
+    const trackerNavDesktop = document.querySelector('.nav-tab[data-view="tracker"]');
+    
+    if (level === 'Client WIP') {
+        // Hide Tracker nav entirely
+        trackerNavPhone?.classList.add('hidden');
+        trackerNavDesktop?.classList.add('hidden');
+    } else {
+        // Show Tracker nav
+        trackerNavPhone?.classList.remove('hidden');
+        trackerNavDesktop?.classList.remove('hidden');
+    }
+    
+    // Store client filter for WIP/Tracker views
+    if (level !== 'Full' && client && client !== 'ALL') {
+        state.clientFilter = client;
+    } else {
+        state.clientFilter = null;
     }
 }
 
-function signOut() {
+async function signOut() {
     clearDotSession();  // Clear conversation memory on Traffic
+    
+    try {
+        await fetch('/api/logout', { method: 'POST' });
+    } catch (e) {
+        console.error('Logout failed:', e);
+    }
+    
     sessionStorage.removeItem('dotUser');
     state.currentUser = null;
-    state.enteredPin = '';
-    updatePinDots();
-    $('pin-screen')?.classList.remove('hidden');
+    state.clientFilter = null;
+    
+    // Reset login screen
+    resetLoginForm();
+    $('login-screen')?.classList.remove('hidden');
+    
     goHome();
 }
 
@@ -1341,7 +1419,18 @@ async function setupWipDropdown() {
         await loadClients();
     }
     
-    // Check if we have a pre-set client from deep link
+    // If user has client filter (non-Full access), lock to their client
+    if (state.clientFilter) {
+        const client = state.allClients.find(c => c.code === state.clientFilter);
+        const displayName = client ? getClientDisplayName(client) : state.clientFilter;
+        trigger.querySelector('span').textContent = displayName;
+        trigger.style.pointerEvents = 'none'; // Disable dropdown
+        trigger.querySelector('svg')?.classList.add('hidden'); // Hide chevron
+        state.wipClient = state.clientFilter;
+        return;
+    }
+    
+    // Full access - show all options
     const presetClient = state.wipClient || 'all';
     
     menu.innerHTML = '';
@@ -1400,7 +1489,18 @@ function updateWipModeLabels() {
 }
 
 function getWipFilteredJobs() {
-    let jobs = state.wipClient === 'all' ? state.allJobs.slice() : state.allJobs.filter(j => j.clientCode === state.wipClient);
+    let jobs = state.allJobs.slice();
+    
+    // Apply access level filter first (restricts to client's jobs)
+    if (state.clientFilter) {
+        jobs = jobs.filter(j => j.clientCode === state.clientFilter);
+    }
+    
+    // Then apply user's view filter (if they're allowed to see all)
+    if (state.wipClient !== 'all' && !state.clientFilter) {
+        jobs = jobs.filter(j => j.clientCode === state.wipClient);
+    }
+    
     return jobs.filter(j => { const num = j.jobNumber.split(' ')[1]; return num !== '000' && num !== '999'; });
 }
 
@@ -1507,6 +1607,17 @@ async function setupPhoneWipDropdown() {
     
     if (state.allClients.length === 0) {
         await loadClients();
+    }
+    
+    // If user has client filter (non-Full access), lock to their client
+    if (state.clientFilter) {
+        const client = state.allClients.find(c => c.code === state.clientFilter);
+        const displayName = client ? getClientDisplayName(client) : state.clientFilter;
+        trigger.querySelector('span').textContent = displayName;
+        trigger.style.pointerEvents = 'none'; // Disable dropdown
+        trigger.querySelector('svg')?.classList.add('hidden'); // Hide chevron
+        state.wipClient = state.clientFilter;
+        return;
     }
     
     menu.innerHTML = '';
@@ -1758,7 +1869,14 @@ async function loadTrackerClients() {
 
 function populateTrackerClients(data) {
     trackerClients = {};
-    data.forEach(c => {
+    
+    // If user has client filter, only show their client
+    let filteredData = data;
+    if (state.clientFilter) {
+        filteredData = data.filter(c => c.code === state.clientFilter);
+    }
+    
+    filteredData.forEach(c => {
         trackerClients[c.code] = {
             name: c.name,
             committed: c.committed,
@@ -1774,6 +1892,16 @@ function populateTrackerClients(data) {
     const trigger = $('tracker-client-trigger');
     if (!menu || !trigger) return;
     
+    // If user has client filter, lock the dropdown
+    if (state.clientFilter && filteredData.length > 0) {
+        const client = filteredData[0];
+        trigger.querySelector('span').textContent = client.name;
+        trigger.style.pointerEvents = 'none'; // Disable dropdown
+        trigger.querySelector('svg')?.classList.add('hidden'); // Hide chevron
+        state.trackerClient = client.code;
+        return;
+    }
+    
     menu.innerHTML = '';
     
     // Check if we already have a client set (from deep link)
@@ -1782,7 +1910,7 @@ function populateTrackerClients(data) {
     let defaultClient = null;
     let defaultName = '';
     
-    data.forEach((c, idx) => {
+    filteredData.forEach((c, idx) => {
         const option = document.createElement('div');
         const isDefault = lastClient ? (c.code === lastClient) : (idx === 0);
         option.className = 'custom-dropdown-option' + (isDefault ? ' selected' : '');
@@ -1795,9 +1923,9 @@ function populateTrackerClients(data) {
     if (defaultClient) {
         state.trackerClient = defaultClient;
         trigger.querySelector('span').textContent = defaultName;
-    } else if (data.length > 0) {
-        state.trackerClient = data[0].code;
-        trigger.querySelector('span').textContent = data[0].name;
+    } else if (filteredData.length > 0) {
+        state.trackerClient = filteredData[0].code;
+        trigger.querySelector('span').textContent = filteredData[0].name;
     }
 }
 
