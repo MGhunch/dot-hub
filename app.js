@@ -776,7 +776,8 @@ async function askDot(question) {
                 senderName: state.currentUser?.name || 'Hub User',
                 sessionId: sessionId,
                 jobs: getAccessFilteredJobs(),
-                history: state.conversationHistory.slice(0, -1)  // Send history WITHOUT current message
+                history: state.conversationHistory.slice(0, -1),  // Send history WITHOUT current message
+                accessLevel: state.currentUser?.accessLevel || 'Client WIP'
             })
         });
         
