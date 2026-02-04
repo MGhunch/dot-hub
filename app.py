@@ -333,6 +333,49 @@ def handle_verify():
     return response
 
 
+@app.route('/job/<job_number>')
+def handle_job_link(job_number):
+    """
+    Deep link to job - validates token and opens job modal.
+    Used by TO DO email links.
+    
+    URL format: /job/SKY018?t=<token>
+    """
+    token = request.args.get('t', '')
+    
+    if not token:
+        return redirect(f"/?error=invalid")
+    
+    user, error = verify_token(token)
+    
+    if error == 'expired':
+        return redirect(f"/?error=expired")
+    
+    if error or not user:
+        return redirect(f"/?error=invalid")
+    
+    # Set session cookie
+    response = make_response(redirect(f"/?job={job_number}"))
+    
+    session_token = generate_token(
+        email=user['email'],
+        client_code=user['client_code'],
+        first_name=user['first_name'],
+        access_level=user['access_level']
+    )
+    
+    response.set_cookie(
+        'dot_session',
+        session_token,
+        max_age=TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
+        httponly=True,
+        secure=True,
+        samesite='Lax'
+    )
+    
+    return response
+
+
 @app.route('/api/check-session')
 def handle_check_session():
     """Check if current session is valid. Used by frontend to determine login state."""
