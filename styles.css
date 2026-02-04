@@ -48,6 +48,9 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+/* ===== UTILITIES ===== */
+.hidden { display: none !important; }
+
 /* ===== TOAST ===== */
 .toast {
     position: fixed;
