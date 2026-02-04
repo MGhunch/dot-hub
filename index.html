@@ -254,6 +254,9 @@
                                 <div class="plus-menu-item" data-action="upload">
                                     <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Upload
                                 </div>
+                                <div class="plus-menu-item" data-action="files">
+                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Files
+                                </div>
                             </div>
                             <input type="text" class="home-input" id="desktop-home-input" placeholder="What's cooking?">
                             <button class="input-send" id="desktop-home-send">
@@ -288,6 +291,9 @@
                                 </div>
                                 <div class="plus-menu-item" data-action="upload">
                                     <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Upload
+                                </div>
+                                <div class="plus-menu-item" data-action="files">
+                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Files
                                 </div>
                             </div>
                             <input type="text" class="chat-input" id="desktop-chat-input" placeholder="Ask a follow-up...">
@@ -704,6 +710,47 @@
             <button class="coming-soon-close" onclick="closeComingSoonModal()">&times;</button>
             <img src="images/dot-sitting.png" alt="Dot" class="coming-soon-img">
             <p class="coming-soon-text" id="coming-soon-text">Coming soon</p>
+        </div>
+    </div>
+
+    <!-- Files Modal -->
+    <div class="job-modal-overlay" id="files-modal">
+        <div class="job-modal files-modal">
+            <div class="job-modal-header">
+                <div class="job-modal-header-left">
+                    <img class="job-modal-logo" id="files-modal-logo" src="images/logos/Unknown.png" alt="">
+                    <h2 class="job-modal-title">FIND FILES</h2>
+                </div>
+                <button class="job-modal-close" onclick="closeFilesModal()">&times;</button>
+            </div>
+            <div class="job-modal-body">
+                <!-- Client dropdown -->
+                <div class="job-form-group">
+                    <label class="job-form-label">Client</label>
+                    <div class="custom-dropdown form-dropdown" id="files-client-dropdown">
+                        <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="files-client-trigger" onclick="toggleFilesDropdown('client')">
+                            <span>Select client...</span>
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="custom-dropdown-menu" id="files-client-menu"></div>
+                    </div>
+                </div>
+                
+                <!-- Job dropdown -->
+                <div class="job-form-group">
+                    <label class="job-form-label">Job</label>
+                    <div class="custom-dropdown form-dropdown" id="files-job-dropdown">
+                        <button type="button" class="custom-dropdown-trigger form-dropdown-trigger disabled" id="files-job-trigger" onclick="toggleFilesDropdown('job')">
+                            <span>Select client first...</span>
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="custom-dropdown-menu" id="files-job-menu"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="job-modal-footer">
+                <button class="job-btn job-btn-secondary disabled" id="files-go-btn" onclick="goToFiles()">FIND FILES</button>
+            </div>
         </div>
     </div>
 

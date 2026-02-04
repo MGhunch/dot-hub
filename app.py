@@ -585,6 +585,7 @@ def transform_project(record):
         
         # Links
         'channelUrl': fields.get('Channel Url', ''),
+        'filesUrl': fields.get('Files Url', ''),
     }
 
 

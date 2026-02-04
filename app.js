@@ -231,6 +231,8 @@ function setupEventListeners() {
             // Route to appropriate handler
             if (action === 'new-job') {
                 openNewJobModal();
+            } else if (action === 'files') {
+                openFilesModal();
             } else {
                 showComingSoonModal(action);
             }
@@ -3191,6 +3193,168 @@ function hideLoadingModal() {
 // Make functions available globally
 window.showComingSoonModal = showComingSoonModal;
 window.closeComingSoonModal = closeComingSoonModal;
+
+// ===== FILES MODAL =====
+let filesState = { clientCode: null, jobNumber: null, filesUrl: null };
+
+function openFilesModal() {
+    const modal = $('files-modal');
+    if (!modal) return;
+    
+    // Reset state
+    filesState = { clientCode: null, jobNumber: null, filesUrl: null };
+    
+    // Reset UI
+    $('files-modal-logo').src = 'images/logos/Unknown.png';
+    $('files-client-trigger').querySelector('span').textContent = 'Select client...';
+    $('files-job-trigger').querySelector('span').textContent = 'Select client first...';
+    $('files-job-trigger').classList.add('disabled');
+    $('files-go-btn').classList.add('disabled');
+    
+    // Populate clients from state.allClients
+    const topClientCodes = ['ONE', 'ONS', 'ONB', 'SKY', 'TOW', 'FIS', 'HUN'];
+    const topClients = [];
+    const otherClients = [];
+    
+    state.allClients.forEach(c => {
+        if (topClientCodes.includes(c.code)) {
+            topClients.push(c);
+        } else {
+            otherClients.push(c);
+        }
+    });
+    
+    topClients.sort((a, b) => topClientCodes.indexOf(a.code) - topClientCodes.indexOf(b.code));
+    
+    let html = '';
+    topClients.forEach(c => {
+        html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectFilesClient('${c.code}', '${c.name.replace(/'/g, "\\'")}')">${c.name}</div>`;
+    });
+    
+    if (otherClients.length > 0) {
+        html += '<div class="custom-dropdown-option section-header">Other</div>';
+        otherClients.forEach(c => {
+            html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectFilesClient('${c.code}', '${c.name.replace(/'/g, "\\'")}')">${c.name}</div>`;
+        });
+    }
+    
+    $('files-client-menu').innerHTML = html;
+    modal.classList.add('visible');
+}
+
+function closeFilesModal() {
+    $('files-modal')?.classList.remove('visible');
+    filesState = { clientCode: null, jobNumber: null, filesUrl: null };
+}
+
+function toggleFilesDropdown(id) {
+    const trigger = $(`files-${id}-trigger`);
+    const menu = $(`files-${id}-menu`);
+    
+    if (!trigger || !menu) return;
+    if (trigger.classList.contains('disabled')) return;
+    
+    const isOpen = menu.classList.contains('open');
+    
+    // Close all files dropdowns first
+    document.querySelectorAll('#files-modal .custom-dropdown-menu.open').forEach(m => {
+        m.classList.remove('open');
+        m.previousElementSibling?.classList.remove('open');
+    });
+    
+    if (!isOpen) {
+        trigger.classList.add('open');
+        menu.classList.add('open');
+    }
+}
+
+function selectFilesClient(code, name) {
+    filesState.clientCode = code;
+    filesState.jobNumber = null;
+    filesState.filesUrl = null;
+    
+    // Update UI
+    $('files-client-trigger').querySelector('span').textContent = name;
+    $('files-client-trigger').classList.remove('open');
+    $('files-client-menu').classList.remove('open');
+    
+    // Update logo
+    const logo = $('files-modal-logo');
+    logo.src = getLogoUrl(code);
+    logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
+    
+    // Populate jobs dropdown from state.allJobs
+    const clientJobs = state.allJobs.filter(j => j.clientCode === code);
+    
+    let html = '';
+    clientJobs.forEach(j => {
+        const label = `${j.jobNumber} | ${j.jobName}`;
+        const filesUrl = j.filesUrl || '';
+        html += `<div class="custom-dropdown-option" data-value="${j.jobNumber}" onclick="selectFilesJob('${j.jobNumber}', '${j.jobName.replace(/'/g, "\\'")}', '${filesUrl.replace(/'/g, "\\'")}')">${label}</div>`;
+    });
+    
+    if (clientJobs.length === 0) {
+        html = '<div class="custom-dropdown-option" style="color: var(--grey-400)">No jobs found</div>';
+    }
+    
+    $('files-job-menu').innerHTML = html;
+    $('files-job-trigger').querySelector('span').textContent = 'Select job...';
+    $('files-job-trigger').classList.remove('disabled');
+    
+    // Reset button
+    $('files-go-btn').classList.add('disabled');
+}
+
+function selectFilesJob(jobNumber, jobName, filesUrl) {
+    filesState.jobNumber = jobNumber;
+    filesState.filesUrl = filesUrl;
+    
+    // Update UI
+    $('files-job-trigger').querySelector('span').textContent = `${jobNumber} | ${jobName}`;
+    $('files-job-trigger').classList.remove('open');
+    $('files-job-menu').classList.remove('open');
+    
+    // Enable button
+    $('files-go-btn').classList.remove('disabled');
+}
+
+function goToFiles() {
+    if (!filesState.jobNumber) return;
+    
+    if (!filesState.filesUrl) {
+        showToast('No files link set up for this job', 'error');
+        return;
+    }
+    
+    // Open in new tab
+    window.open(filesState.filesUrl, '_blank');
+    closeFilesModal();
+}
+
+// Close files modal on overlay click
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'files-modal') {
+        closeFilesModal();
+    }
+});
+
+// Close files dropdowns on outside click  
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#files-modal .custom-dropdown')) {
+        document.querySelectorAll('#files-modal .custom-dropdown-menu.open').forEach(m => {
+            m.classList.remove('open');
+            m.previousElementSibling?.classList.remove('open');
+        });
+    }
+});
+
+// Make files functions globally available
+window.openFilesModal = openFilesModal;
+window.closeFilesModal = closeFilesModal;
+window.toggleFilesDropdown = toggleFilesDropdown;
+window.selectFilesClient = selectFilesClient;
+window.selectFilesJob = selectFilesJob;
+window.goToFiles = goToFiles;
 
 // Make functions available globally
 window.openTrackerEditModal = openTrackerEditModal;
