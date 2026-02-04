@@ -3296,7 +3296,7 @@ function selectFilesClient(code, name) {
     logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
     
     // Populate jobs dropdown from state.allJobs
-    const clientJobs = state.allJobs.filter(j => j.clientCode === code);
+    const clientJobs = state.allJobs.filter(j => j.clientCode === code && j.filesUrl);
     
     let html = '';
     clientJobs.forEach(j => {
