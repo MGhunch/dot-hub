@@ -63,10 +63,10 @@ body {
     transition: opacity 0.2s ease;
     pointer-events: none;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    background: var(--red);
+    color: var(--white);
 }
 .toast.visible { opacity: 1; }
-.toast.error { background: var(--grey-800); color: var(--white); }
-.toast.success { background: var(--red); color: var(--white); }
 
 /* ===== PIN SCREEN ===== */
 .pin-screen {
