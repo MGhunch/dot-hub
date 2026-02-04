@@ -1224,51 +1224,6 @@ def update_tracker():
         return jsonify({'error': str(e)}), 500
 
 
-# ===== DEEP LINK ROUTE (for email links) =====
-@app.route('/job/<job_number>')
-def handle_job_link(job_number):
-    """
-    Handle deep links from TO DO emails.
-    Validates token, sets session cookie, redirects to /?job=XXX
-    """
-    token = request.args.get('t', '')
-    
-    if not token:
-        print(f"[Auth] Deep link missing token: /job/{job_number}")
-        return redirect(f"/?error=invalid")
-    
-    user, error = verify_token(token)
-    
-    if error:
-        print(f"[Auth] Deep link token error: {error}")
-        return redirect(f"/?error={error}")
-    
-    print(f"[Auth] Deep link valid: {user['email']} -> {job_number}")
-    
-    # Generate fresh session token
-    session_token = generate_token(
-        email=user['email'],
-        client_code=user['client_code'],
-        first_name=user['first_name'],
-        access_level=user['access_level']
-    )
-    
-    # Redirect to home with job param - frontend will open modal
-    response = make_response(redirect(f"/?job={job_number}"))
-    
-    # Set session cookie
-    response.set_cookie(
-        'dot_session',
-        session_token,
-        max_age=TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
-        httponly=True,
-        secure=True,
-        samesite='Lax'
-    )
-    
-    return response
-
-
 # ===== STATIC FILES CATCH-ALL (must be last) =====
 @app.route('/<path:path>')
 def serve_static(path):
