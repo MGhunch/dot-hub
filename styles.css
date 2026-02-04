@@ -3041,10 +3041,12 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 
 .loading-modal-overlay.visible .loading-modal {
     transform: translateY(0) scale(1);
-}
 
+}
 .loading-modal .dot-thinking {
-    margin-bottom: 16px;
+    margin: 0 auto 16px auto;
+    width: 50px;
+    height: 68px;
 }
 
 .loading-modal-text {
