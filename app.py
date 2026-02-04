@@ -169,7 +169,7 @@ def send_magic_link_email(email, first_name, token):
 <table cellpadding="0" cellspacing="0" style="margin: 0 0 28px 0;">
     <tr>
         <td style="background-color: #ED1C24; border-radius: 30px;">
-            <a href="{verify_url}" style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 500; color: #ffffff; text-decoration: none;">OPEN THE HUB</a>
+            <a href="{verify_url}" style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 500; color: #ffffff; letter-spacing: 0.1em; text-decoration: none;">OPEN THE HUB</a>
         </td>
     </tr>
 </table>
