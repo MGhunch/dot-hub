@@ -452,6 +452,46 @@ function applyAccessLevel() {
     } else {
         state.clientFilter = null;
     }
+    
+    // Update example buttons based on access level
+    updateExampleButtons();
+}
+
+function updateExampleButtons() {
+    const level = state.currentUser?.accessLevel || 'Client WIP';
+    
+    let buttons;
+    if (level === 'Full') {
+        buttons = [
+            { question: 'Find a job', label: 'Find a job' },
+            { question: 'Check the WIP', label: 'Check the WIP' },
+            { question: 'Meet Dot', label: 'Meet Dot' }
+        ];
+    } else if (level === 'Client Tracker') {
+        buttons = [
+            { question: 'Find a job', label: 'Find a job' },
+            { question: 'Track numbers', label: 'Track numbers' },
+            { question: 'Meet Dot', label: 'Meet Dot' }
+        ];
+    } else {
+        // Client WIP
+        buttons = [
+            { question: 'Find a job', label: 'Find a job' },
+            { question: "See what's due", label: "See what's due" },
+            { question: 'Meet Dot', label: 'Meet Dot' }
+        ];
+    }
+    
+    // Update all example button sets
+    $$('.examples').forEach(container => {
+        const btns = container.querySelectorAll('.example-btn');
+        btns.forEach((btn, i) => {
+            if (buttons[i]) {
+                btn.dataset.question = buttons[i].question;
+                btn.textContent = buttons[i].label;
+            }
+        });
+    });
 }
 
 async function signOut() {
