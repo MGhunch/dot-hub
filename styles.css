@@ -2532,6 +2532,11 @@ body.logged-out .view-tracker {
     overflow: visible;
 }
 
+.files-modal .job-modal-logo {
+    width: 48px;
+    height: 48px;
+}
+
 .job-modal-header {
     display: flex;
     justify-content: space-between;
