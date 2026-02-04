@@ -1660,19 +1660,15 @@ function renderWip() {
     const content = $('wip-content');
     if (!content) return;
     
-    // Show loading if jobs haven't loaded yet
+    // Show loading modal if jobs haven't loaded yet
     if (!state.jobsLoaded) {
-        content.innerHTML = `
-            <div class="loading-card">
-                <div class="dot-thinking">
-                    <img src="images/Robot_01.svg" alt="Dot" class="dot-robot">
-                    <img src="images/Heart_01.svg" alt="" class="dot-heart-svg">
-                </div>
-                <p>Grabbing all your jobs...</p>
-            </div>
-        `;
+        content.innerHTML = '';
+        showLoadingModal('Grabbing all your jobs...');
         return;
     }
+    
+    // Hide loading modal once data is ready
+    hideLoadingModal();
     
     const jobs = getWipFilteredJobs();
     const sections = groupByWip(jobs);
@@ -1778,17 +1774,13 @@ function renderPhoneWip() {
     if (!content) return;
     
     if (!state.jobsLoaded) {
-        content.innerHTML = `
-            <div class="loading-card">
-                <div class="dot-thinking">
-                    <img src="images/Robot_01.svg" alt="Dot" class="dot-robot">
-                    <img src="images/Heart_01.svg" alt="" class="dot-heart-svg">
-                </div>
-                <p>Grabbing all your jobs...</p>
-            </div>
-        `;
+        content.innerHTML = '';
+        showLoadingModal('Grabbing all your jobs...');
         return;
     }
+    
+    // Hide loading modal once data is ready
+    hideLoadingModal();
     
     const jobs = getWipFilteredJobs();
     const sections = groupByWip(jobs);
@@ -2160,15 +2152,9 @@ async function renderTracker() {
     const content = $('tracker-content');
     if (!content) return;
     
-    content.innerHTML = `
-        <div class="loading-card">
-            <div class="dot-thinking">
-                <img src="images/Robot_01.svg" alt="Dot" class="dot-robot">
-                <img src="images/Heart_01.svg" alt="" class="dot-heart-svg">
-            </div>
-            <p>Digging for the numbers...</p>
-        </div>
-    `;
+    // Show loading modal and clear content
+    content.innerHTML = '';
+    showLoadingModal('Digging for the numbers...');
     
     if (Object.keys(trackerClients).length === 0) {
         await loadTrackerClients();
@@ -2177,6 +2163,9 @@ async function renderTracker() {
     if (state.trackerClient) {
         await loadTrackerData(state.trackerClient);
     }
+    
+    // Hide loading modal once data is ready
+    hideLoadingModal();
     
     setupTrackerDropdowns();
     renderTrackerContent();
@@ -3124,6 +3113,40 @@ document.addEventListener('click', (e) => {
         closeComingSoonModal();
     }
 });
+
+// Make functions available globally
+window.showComingSoonModal = showComingSoonModal;
+window.closeComingSoonModal = closeComingSoonModal;
+
+// ===== LOADING MODAL =====
+function showLoadingModal(message = 'Loading...') {
+    let overlay = $('loading-modal');
+    
+    // Create modal HTML if it doesn't exist
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loading-modal';
+        overlay.className = 'loading-modal-overlay';
+        overlay.innerHTML = `
+            <div class="loading-modal">
+                <div class="dot-thinking">
+                    <img src="images/Robot_01.svg" alt="Dot" class="dot-robot">
+                    <img src="images/Heart_01.svg" alt="" class="dot-heart-svg">
+                </div>
+                <div class="loading-modal-text"></div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+    
+    // Set message and show
+    overlay.querySelector('.loading-modal-text').textContent = message;
+    overlay.classList.add('visible');
+}
+
+function hideLoadingModal() {
+    $('loading-modal')?.classList.remove('visible');
+}
 
 // Make functions available globally
 window.showComingSoonModal = showComingSoonModal;
