@@ -3209,7 +3209,7 @@ function openFilesModal() {
     $('files-client-trigger').querySelector('span').textContent = 'Select client...';
     $('files-job-trigger').querySelector('span').textContent = 'Select client first...';
     $('files-job-trigger').classList.add('disabled');
-    $('files-go-btn').classList.add('disabled');
+    $('files-modal-footer').style.display = 'none';
     
     // Populate clients from state.allClients
     const topClientCodes = ['ONE', 'ONS', 'ONB', 'SKY', 'TOW', 'FIS', 'HUN'];
@@ -3301,8 +3301,8 @@ function selectFilesClient(code, name) {
     $('files-job-trigger').querySelector('span').textContent = 'Select job...';
     $('files-job-trigger').classList.remove('disabled');
     
-    // Reset button
-    $('files-go-btn').classList.add('disabled');
+    // Hide button until job is selected
+    $('files-modal-footer').style.display = 'none';
 }
 
 function selectFilesJob(jobNumber, jobName, filesUrl) {
@@ -3314,8 +3314,8 @@ function selectFilesJob(jobNumber, jobName, filesUrl) {
     $('files-job-trigger').classList.remove('open');
     $('files-job-menu').classList.remove('open');
     
-    // Enable button
-    $('files-go-btn').classList.remove('disabled');
+    // Show button - the payoff moment
+    $('files-modal-footer').style.display = 'flex';
 }
 
 function goToFiles() {

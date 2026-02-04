@@ -2526,6 +2526,12 @@ body.logged-out .view-tracker {
     transform: translateY(0);
 }
 
+/* Files modal - compact, no scroll */
+.files-modal {
+    max-height: none;
+    overflow: visible;
+}
+
 .job-modal-header {
     display: flex;
     justify-content: space-between;
