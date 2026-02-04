@@ -448,6 +448,18 @@ function applyAccessLevel() {
         trackerNavDesktop?.classList.remove('hidden');
     }
     
+    // Hide New Job and Files from plus menus for non-Full users
+    const newJobItems = document.querySelectorAll('.plus-menu-item[data-action="new-job"]');
+    const filesItems = document.querySelectorAll('.plus-menu-item[data-action="files"]');
+    
+    if (level !== 'Full') {
+        newJobItems.forEach(item => item.classList.add('hidden'));
+        filesItems.forEach(item => item.classList.add('hidden'));
+    } else {
+        newJobItems.forEach(item => item.classList.remove('hidden'));
+        filesItems.forEach(item => item.classList.remove('hidden'));
+    }
+    
     // Store client filter for WIP/Tracker views
     if (level !== 'Full' && client && client !== 'ALL') {
         state.clientFilter = client;
