@@ -123,6 +123,34 @@ def lookup_person(email):
         return None
 
 
+def update_last_login(email):
+    """Update lastLogin timestamp for a person."""
+    if not AIRTABLE_API_KEY:
+        return
+    
+    url = get_airtable_url('People')
+    params = {
+        'filterByFormula': f'LOWER({{Email Address}}) = LOWER("{email}")',
+        'maxRecords': 1
+    }
+    
+    try:
+        response = requests.get(url, headers=HEADERS, params=params)
+        response.raise_for_status()
+        records = response.json().get('records', [])
+        
+        if records:
+            record_id = records[0]['id']
+            requests.patch(
+                f"{url}/{record_id}",
+                headers=HEADERS,
+                json={'fields': {'lastLogin': datetime.now().isoformat()}}
+            )
+            print(f"[Auth] Updated lastLogin for {email}")
+    except Exception as e:
+        print(f"[Auth] Failed to update lastLogin: {e}")
+
+
 def send_magic_link_email(email, first_name, token):
     """Send magic link email via Postman."""
     verify_url = f"{HUB_URL}/verify?token={token}"
@@ -298,6 +326,9 @@ def handle_verify():
         secure=True,
         samesite='Lax'
     )
+    
+    # Log the login
+    update_last_login(user['email'])
     
     return response
 
