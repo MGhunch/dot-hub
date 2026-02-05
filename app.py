@@ -578,7 +578,7 @@ def transform_project(record):
     job_number = fields.get('Job Number', '')
     
     # Parse update - get latest if pipe-separated
-    update_summary = fields.get('Update Summary', '') or fields.get('Update', '')
+    update_summary = fields.get('Update History', '') or fields.get('Update', '')
     latest_update = update_summary
     if '|' in update_summary:
         parts = update_summary.split('|')
