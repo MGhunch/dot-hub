@@ -578,7 +578,7 @@ def transform_project(record):
     job_number = fields.get('Job Number', '')
     
     # Parse update - get latest if pipe-separated
-    update_summary = fields.get('Update History', '') or fields.get('Update', '')
+    update_summary = fields.get('Update Summary', '') or fields.get('Update', '')
     latest_update = update_summary
     if '|' in update_summary:
         parts = update_summary.split('|')
@@ -1017,6 +1017,10 @@ def update_job(job_number):
                     airtable_fields[airtable_key] = bool(value)
                 else:
                     airtable_fields[airtable_key] = value
+        
+        # Also patch the Update field on Project so WIP cards stay current
+        if message:
+            airtable_fields['Update'] = message
         
         results = {
             'project_update': None,
