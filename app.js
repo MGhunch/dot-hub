@@ -3209,7 +3209,7 @@ window.closeComingSoonModal = closeComingSoonModal;
 // ===== FILES MODAL =====
 let filesState = { clientCode: null, jobNumber: null, filesUrl: null };
 
-function openFilesModal() {
+async function openFilesModal() {
     const modal = $('files-modal');
     if (!modal) return;
     
@@ -3222,6 +3222,11 @@ function openFilesModal() {
     $('files-job-trigger').querySelector('span').textContent = 'Select client first...';
     $('files-job-trigger').classList.add('disabled');
     $('files-modal-footer').style.display = 'none';
+    
+    // Wait for clients to load if not already
+    if (state.allClients.length === 0) {
+        await loadClients();
+    }
     
     // Populate clients from state.allClients
     const topClientCodes = ['ONE', 'ONS', 'ONB', 'SKY', 'TOW', 'FIS', 'HUN'];
