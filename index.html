@@ -98,6 +98,9 @@
                     <div class="plus-menu-item" data-action="upload">
                         <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Upload
                     </div>
+                    <div class="plus-menu-item" data-action="wip-email">
+                        <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Send WIP
+                    </div>
                 </div>
                 <input type="text" class="home-input" id="phone-home-input" placeholder="How can I help?">
                 <button class="input-send" id="phone-home-send">
@@ -134,6 +137,9 @@
                         </div>
                         <div class="plus-menu-item" data-action="upload">
                             <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Upload
+                        </div>
+                        <div class="plus-menu-item" data-action="wip-email">
+                            <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Send WIP
                         </div>
                     </div>
                     <input type="text" class="chat-input" id="phone-chat-input" placeholder="Ask a follow-up...">
@@ -257,6 +263,9 @@
                                 <div class="plus-menu-item" data-action="files">
                                     <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Files
                                 </div>
+                                <div class="plus-menu-item" data-action="wip-email">
+                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Send WIP
+                                </div>
                             </div>
                             <input type="text" class="home-input" id="desktop-home-input" placeholder="What's cooking?">
                             <button class="input-send" id="desktop-home-send">
@@ -294,6 +303,9 @@
                                 </div>
                                 <div class="plus-menu-item" data-action="files">
                                     <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Files
+                                </div>
+                                <div class="plus-menu-item" data-action="wip-email">
+                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Send WIP
                                 </div>
                             </div>
                             <input type="text" class="chat-input" id="desktop-chat-input" placeholder="Ask a follow-up...">
@@ -749,6 +761,46 @@
             </div>
             <div class="job-modal-footer" id="files-modal-footer" style="display: none;">
                 <button class="job-btn job-btn-primary" id="files-go-btn" onclick="goToFiles()">FIND FILES</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WIP Email Modal -->
+    <div class="job-modal-overlay" id="wip-email-modal">
+        <div class="job-modal files-modal">
+            <div class="job-modal-header">
+                <div class="job-modal-header-left">
+                    <img class="job-modal-logo" id="wip-email-modal-logo" src="images/logos/Unknown.png" alt="">
+                </div>
+                <button class="job-modal-close" onclick="closeWipEmailModal()">&times;</button>
+            </div>
+            <div class="job-modal-body">
+                <!-- Client dropdown -->
+                <div class="job-form-group">
+                    <label class="job-form-label">Client</label>
+                    <div class="custom-dropdown form-dropdown" id="wip-email-client-dropdown">
+                        <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="wip-email-client-trigger" onclick="toggleWipEmailDropdown()">
+                            <span>Select client...</span>
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="custom-dropdown-menu" id="wip-email-client-menu"></div>
+                    </div>
+                </div>
+
+                <!-- People checkboxes -->
+                <div class="job-form-group" id="wip-email-people-group" style="display: none;">
+                    <label class="job-form-label">Send to</label>
+                    <div id="wip-email-people-list"></div>
+                </div>
+
+                <!-- Custom note -->
+                <div class="job-form-group" id="wip-email-note-group" style="display: none;">
+                    <label class="job-form-label">Add a note (optional)</label>
+                    <textarea class="job-form-input job-form-textarea" id="wip-email-note" placeholder="That project with the chickens needs some eggs..." rows="2"></textarea>
+                </div>
+            </div>
+            <div class="job-modal-footer" id="wip-email-footer" style="display: none;">
+                <button class="job-btn job-btn-primary" id="wip-email-send-btn" onclick="sendWipEmail()">SEND WIP</button>
             </div>
         </div>
     </div>

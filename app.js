@@ -233,6 +233,8 @@ function setupEventListeners() {
                 openNewJobModal();
             } else if (action === 'files') {
                 openFilesModal();
+            } else if (action === 'wip-email') {
+                openWipEmailModal();
             } else {
                 showComingSoonModal(action);
             }
@@ -448,16 +450,19 @@ function applyAccessLevel() {
         trackerNavDesktop?.classList.remove('hidden');
     }
     
-    // Hide New Job and Files from plus menus for non-Full users
+    // Hide New Job, Files and Send WIP from plus menus for non-Full users
     const newJobItems = document.querySelectorAll('.plus-menu-item[data-action="new-job"]');
     const filesItems = document.querySelectorAll('.plus-menu-item[data-action="files"]');
+    const wipEmailItems = document.querySelectorAll('.plus-menu-item[data-action="wip-email"]');
     
     if (level !== 'Full') {
         newJobItems.forEach(item => item.classList.add('hidden'));
         filesItems.forEach(item => item.classList.add('hidden'));
+        wipEmailItems.forEach(item => item.classList.add('hidden'));
     } else {
         newJobItems.forEach(item => item.classList.remove('hidden'));
         filesItems.forEach(item => item.classList.remove('hidden'));
+        wipEmailItems.forEach(item => item.classList.remove('hidden'));
     }
     
     // Store client filter for WIP/Tracker views
@@ -3372,6 +3377,208 @@ window.toggleFilesDropdown = toggleFilesDropdown;
 window.selectFilesClient = selectFilesClient;
 window.selectFilesJob = selectFilesJob;
 window.goToFiles = goToFiles;
+
+
+// === WIP EMAIL MODAL ===
+
+let wipEmailState = { clientCode: null, recipients: [] };
+
+async function openWipEmailModal() {
+    const modal = $('wip-email-modal');
+    if (!modal) return;
+    
+    // Reset state
+    wipEmailState = { clientCode: null, recipients: [] };
+    
+    // Reset UI
+    $('wip-email-modal-logo').src = 'images/logos/Unknown.png';
+    $('wip-email-client-trigger').querySelector('span').textContent = 'Select client...';
+    $('wip-email-people-group').style.display = 'none';
+    $('wip-email-people-list').innerHTML = '';
+    $('wip-email-note-group').style.display = 'none';
+    $('wip-email-note').value = '';
+    $('wip-email-footer').style.display = 'none';
+    
+    // Wait for clients to load if not already
+    if (state.allClients.length === 0) {
+        await loadClients();
+    }
+    
+    // Populate clients dropdown (same pattern as Files modal)
+    const topClientCodes = ['ONE', 'ONS', 'ONB', 'SKY', 'TOW', 'FIS', 'HUN'];
+    const topClients = [];
+    const otherClients = [];
+    
+    state.allClients.forEach(c => {
+        if (topClientCodes.includes(c.code)) {
+            topClients.push(c);
+        } else {
+            otherClients.push(c);
+        }
+    });
+    
+    topClients.sort((a, b) => topClientCodes.indexOf(a.code) - topClientCodes.indexOf(b.code));
+    
+    let html = '';
+    topClients.forEach(c => {
+        html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectWipEmailClient('${c.code}', '${c.name.replace(/'/g, "\\'")}')">${c.name}</div>`;
+    });
+    
+    if (otherClients.length > 0) {
+        html += '<div class="custom-dropdown-option section-header">Other</div>';
+        otherClients.forEach(c => {
+            html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectWipEmailClient('${c.code}', '${c.name.replace(/'/g, "\\'")}')">${c.name}</div>`;
+        });
+    }
+    
+    $('wip-email-client-menu').innerHTML = html;
+    modal.classList.add('visible');
+}
+
+function closeWipEmailModal() {
+    $('wip-email-modal')?.classList.remove('visible');
+    wipEmailState = { clientCode: null, recipients: [] };
+}
+
+function toggleWipEmailDropdown() {
+    const trigger = $('wip-email-client-trigger');
+    const menu = $('wip-email-client-menu');
+    if (!trigger || !menu) return;
+    
+    const isOpen = menu.classList.contains('open');
+    menu.classList.toggle('open');
+    trigger.classList.toggle('open');
+}
+
+async function selectWipEmailClient(code, name) {
+    wipEmailState.clientCode = code;
+    wipEmailState.recipients = [];
+    
+    // Update UI
+    $('wip-email-client-trigger').querySelector('span').textContent = name;
+    $('wip-email-client-trigger').classList.remove('open');
+    $('wip-email-client-menu').classList.remove('open');
+    
+    // Update logo
+    const logo = $('wip-email-modal-logo');
+    logo.src = getLogoUrl(code);
+    logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
+    
+    // Fetch people for this client
+    $('wip-email-people-list').innerHTML = '<div style="color: #999; font-size: 14px;">Loading contacts...</div>';
+    $('wip-email-people-group').style.display = 'block';
+    
+    try {
+        const response = await fetch(`${API_BASE}/people/${code}`);
+        const people = await response.json();
+        
+        // Filter to people with email addresses
+        const withEmail = people.filter(p => p.email);
+        
+        if (withEmail.length === 0) {
+            $('wip-email-people-list').innerHTML = '<div style="color: #999; font-size: 14px;">No contacts with email addresses</div>';
+            $('wip-email-note-group').style.display = 'none';
+            $('wip-email-footer').style.display = 'none';
+            return;
+        }
+        
+        let peopleHtml = '';
+        withEmail.forEach(p => {
+            const escapedEmail = p.email.replace(/'/g, "\\'");
+            const escapedName = (p.firstName || p.name).replace(/'/g, "\\'");
+            const escapedAccess = (p.accessLevel || 'Client WIP').replace(/'/g, "\\'");
+            peopleHtml += `<label style="display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer;">
+                <input type="checkbox" style="margin-right: 12px; width: 18px; height: 18px; accent-color: #ED1C24;" onchange="toggleWipEmailRecipient('${escapedEmail}', '${escapedName}', '${escapedAccess}')">
+                <div>
+                    <div style="font-size: 15px; font-weight: 500; color: #333;">${p.name}</div>
+                    <div style="font-size: 13px; color: #999;">${p.email}</div>
+                </div>
+            </label>`;
+        });
+        
+        $('wip-email-people-list').innerHTML = peopleHtml;
+        $('wip-email-note-group').style.display = 'block';
+        $('wip-email-footer').style.display = 'none';
+        
+    } catch (e) {
+        console.error('Failed to load people:', e);
+        $('wip-email-people-list').innerHTML = '<div style="color: #999; font-size: 14px;">Failed to load contacts</div>';
+    }
+}
+
+function toggleWipEmailRecipient(email, firstName, accessLevel) {
+    const idx = wipEmailState.recipients.findIndex(r => r.email === email);
+    if (idx >= 0) {
+        wipEmailState.recipients.splice(idx, 1);
+    } else {
+        wipEmailState.recipients.push({ email, firstName, accessLevel });
+    }
+    
+    // Show/hide send button
+    $('wip-email-footer').style.display = wipEmailState.recipients.length > 0 ? 'flex' : 'none';
+}
+
+async function sendWipEmail() {
+    if (wipEmailState.recipients.length === 0) return;
+    
+    const sendBtn = $('wip-email-send-btn');
+    if (sendBtn.disabled) return;
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'SENDING...';
+    
+    const payload = {
+        clientCode: wipEmailState.clientCode,
+        recipients: wipEmailState.recipients,
+        customNote: $('wip-email-note').value.trim() || null
+    };
+    
+    try {
+        const response = await fetch('https://dot-workers.up.railway.app/wip/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const count = wipEmailState.recipients.length;
+            showToast(`WIP sent to ${count} ${count === 1 ? 'person' : 'people'}`, 'success');
+            closeWipEmailModal();
+        } else {
+            showToast(result.error || 'Failed to send', 'error');
+        }
+    } catch (e) {
+        console.error('Failed to send WIP email:', e);
+        showToast('Failed to send WIP email', 'error');
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'SEND WIP';
+    }
+}
+
+// Close WIP email modal on overlay click
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'wip-email-modal') {
+        closeWipEmailModal();
+    }
+});
+
+// Close WIP email dropdown on outside click
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#wip-email-client-dropdown')) {
+        $('wip-email-client-menu')?.classList.remove('open');
+        $('wip-email-client-trigger')?.classList.remove('open');
+    }
+});
+
+// Make WIP email functions globally available
+window.openWipEmailModal = openWipEmailModal;
+window.closeWipEmailModal = closeWipEmailModal;
+window.toggleWipEmailDropdown = toggleWipEmailDropdown;
+window.selectWipEmailClient = selectWipEmailClient;
+window.toggleWipEmailRecipient = toggleWipEmailRecipient;
+window.sendWipEmail = sendWipEmail;
 
 // Make functions available globally
 window.openTrackerEditModal = openTrackerEditModal;

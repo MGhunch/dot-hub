@@ -690,7 +690,9 @@ def get_people_for_client(client_code):
                 if name:
                     all_people.append({
                         'name': name,
+                        'firstName': fields.get('First Name', name.split()[0] if name else ''),
                         'email': fields.get('Email Address', ''),
+                        'accessLevel': fields.get('Access', 'Client WIP'),
                         'clientCode': fields.get('Client Link', '')
                     })
             
