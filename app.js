@@ -3498,6 +3498,7 @@ async function selectWipEmailClient(code, name) {
         
         $('wip-email-people-list').innerHTML = peopleHtml;
         $('wip-email-note-group').style.display = 'block';
+        $('wip-email-note').value = "Here's what's new, what's due and what's cooking.";
         $('wip-email-footer').style.display = 'none';
         
     } catch (e) {
