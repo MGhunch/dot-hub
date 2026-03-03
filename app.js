@@ -1432,7 +1432,6 @@ function closeJobBag() {
     currentBagJob = null;
     navigateTo('wip');
 }
-}
 
 function renderJobBagFiles(job) {
     const filesBody = $('jb-files-body');
