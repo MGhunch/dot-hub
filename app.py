@@ -1180,32 +1180,17 @@ def update_tracker():
 def get_job_updates(job_number):
     """Get all Updates records for a job, ordered by Created Time asc"""
     try:
-        # First find the project record ID
-        projects_url = get_airtable_url('Projects')
-        params = {
-            'filterByFormula': f"{{Job Number}} = '{job_number}'",
-            'maxRecords': 1
-        }
-        response = requests.get(projects_url, headers=HEADERS, params=params)
-        response.raise_for_status()
-        records = response.json().get('records', [])
-        if not records:
-            return jsonify({'error': 'Job not found'}), 404
-
-        project_record_id = records[0].get('id')
-
-        # Fetch updates linked to this project
         updates_url = get_airtable_url('Updates')
-        updates_params = {
-            'filterByFormula': f"FIND('{project_record_id}', ARRAYJOIN({{Project Link}}, ','))",
+        params = {
+            'filterByFormula': f"FIND('{job_number}', ARRAYJOIN({{Job Number}}, ','))",
             'sort[0][field]': 'Created Time',
             'sort[0][direction]': 'asc'
         }
-        updates_response = requests.get(updates_url, headers=HEADERS, params=updates_params)
-        updates_response.raise_for_status()
+        response = requests.get(updates_url, headers=HEADERS, params=params)
+        response.raise_for_status()
 
         updates = []
-        for record in updates_response.json().get('records', []):
+        for record in response.json().get('records', []):
             fields = record.get('fields', {})
             updates.append({
                 'id': record.get('id'),
