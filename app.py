@@ -1180,54 +1180,26 @@ def update_tracker():
 def get_job_updates(job_number):
     """Get all Updates records for a job, ordered by Created Time asc"""
     try:
-        # Get project record ID first
-        projects_url = get_airtable_url('Projects')
-        proj_response = requests.get(projects_url, headers=HEADERS, params={
-            'filterByFormula': f"{{Job Number}} = '{job_number}'",
-            'maxRecords': 1
-        })
-        proj_response.raise_for_status()
-        proj_records = proj_response.json().get('records', [])
-        if not proj_records:
-            return jsonify([])
-
-        project_record_id = proj_records[0].get('id')
-
-        # Fetch all updates and filter by project link in Python
-        # Airtable lookup field filtering is unreliable — fetch and filter server-side
         updates_url = get_airtable_url('Updates')
-        all_updates = []
-        offset = None
+        params = {
+            'filterByFormula': f"{{Job Number}} = '{job_number}'",
+            'sort[0][field]': 'Created Time',
+            'sort[0][direction]': 'asc'
+        }
+        response = requests.get(updates_url, headers=HEADERS, params=params)
+        response.raise_for_status()
 
-        while True:
-            params = {
-                'sort[0][field]': 'Created Time',
-                'sort[0][direction]': 'asc'
-            }
-            if offset:
-                params['offset'] = offset
+        updates = []
+        for record in response.json().get('records', []):
+            fields = record.get('fields', {})
+            updates.append({
+                'id': record.get('id'),
+                'update': fields.get('Update', ''),
+                'author': fields.get('Author', 'Dot'),
+                'created_time': fields.get('Created Time', '')
+            })
 
-            response = requests.get(updates_url, headers=HEADERS, params=params)
-            response.raise_for_status()
-            data = response.json()
-
-            for record in data.get('records', []):
-                fields = record.get('fields', {})
-                # Project Link is a linked record array of record IDs
-                project_links = fields.get('Project Link', [])
-                if project_record_id in project_links:
-                    all_updates.append({
-                        'id': record.get('id'),
-                        'update': fields.get('Update', ''),
-                        'author': fields.get('Author', 'Dot'),
-                        'created_time': fields.get('Created Time', '')
-                    })
-
-            offset = data.get('offset')
-            if not offset:
-                break
-
-        return jsonify(all_updates)
+        return jsonify(updates)
 
     except Exception as e:
         print(f'[Hub API] Error fetching updates for {job_number}: {e}')
