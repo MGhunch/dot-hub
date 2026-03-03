@@ -1342,34 +1342,25 @@ async function openJobBag(jobNumber) {
 
     currentBagJob = job;
 
-    // Update breadcrumb
-    const clientName = job.clientCode || '';
-    $('jb-bc-client').textContent = clientName;
-    $('jb-bc-client').onclick = (e) => { e.preventDefault(); closeJobBag(); };
-    $('jb-bc-wip').onclick = (e) => { e.preventDefault(); closeJobBag(); };
-    $('jb-bc-job').textContent = `${job.jobNumber} — ${job.jobName || 'Untitled'}`;
-
-    // Job header
-    $('jb-job-number').textContent = job.jobNumber;
-    $('jb-job-name').textContent = job.jobName || 'Untitled';
+    // Job header — combined title
+    $('jb-job-title').textContent = `${job.jobNumber} — ${job.jobName || 'Untitled'}`;
 
     const logo = $('jb-logo');
     logo.src = getLogoUrl(job.clientCode);
     logo.alt = job.clientCode;
     logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
 
-    // Status chip
-    const chip = $('jb-status-chip');
-    const { label, cls } = getJobChip(job);
-    chip.textContent = label;
-    chip.className = `jb-chip ${cls}`;
+    // With client toggle in header
+    const toggle = $('jb-with-client-toggle');
+    toggle.className = job.withClient ? 'jb-toggle' : 'jb-toggle off';
+    toggle.onclick = () => toggleWithClient();
+    $('jb-toggle-label').textContent = job.withClient ? 'With client' : 'With us';
 
     // Story
-    const storyEl = $('jb-story-text');
-    storyEl.textContent = job.theStory || 'Watch this space. Currently working on a tight two sentence story that shows what we\'re trying to do and why anyone will care. This will get replaced when the thinking is done.';
+    $('jb-story-text').textContent = job.theStory || 'Watch this space. Currently working on a tight two sentence story that shows what we\'re trying to do and why anyone will care. This will get replaced when the thinking is done.';
 
-    // Summary fields
-    $('jb-client-name').textContent = job.clientCode || '—';
+    // Summary — client name fetched from API below
+    $('jb-client-name').textContent = '…';
     $('jb-status').textContent = job.status || '—';
 
     const dueEl = $('jb-update-due');
@@ -1396,11 +1387,6 @@ async function openJobBag(jobNumber) {
     }
 
     $('jb-live').textContent = job.liveDate || 'Tbc';
-
-    // With client toggle
-    const toggle = $('jb-with-client-toggle');
-    toggle.className = job.withClient ? 'jb-toggle' : 'jb-toggle off';
-    toggle.onclick = () => toggleWithClient();
 
     // Edit link
     $('jb-edit-link').onclick = (e) => {
@@ -1429,20 +1415,23 @@ async function openJobBag(jobNumber) {
     // Load updates + budget in parallel
     loadJobBagUpdates(jobNumber);
     loadJobBagBudget(jobNumber);
+
+    // Fetch full client name from API
+    try {
+        const res = await fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.clientName) $('jb-client-name').textContent = data.clientName;
+        }
+    } catch(e) {
+        $('jb-client-name').textContent = job.clientCode || '—';
+    }
 }
 
 function closeJobBag() {
     currentBagJob = null;
     navigateTo('wip');
 }
-
-function getJobChip(job) {
-    if (job.withClient) return { label: 'With Client', cls: 'jb-chip-amber' };
-    if (job.status === 'In Progress') return { label: 'In Progress', cls: 'jb-chip-green' };
-    if (job.status === 'On Hold') return { label: 'On Hold', cls: 'jb-chip-grey' };
-    if (job.status === 'Completed') return { label: 'Completed', cls: 'jb-chip-grey' };
-    if (job.status === 'Always on') return { label: 'Always on', cls: 'jb-chip-green' };
-    return { label: job.status || 'Incoming', cls: 'jb-chip-grey' };
 }
 
 function renderJobBagFiles(job) {
@@ -1607,13 +1596,8 @@ async function toggleWithClient() {
     // Optimistic UI
     const toggle = $('jb-with-client-toggle');
     toggle.className = newVal ? 'jb-toggle' : 'jb-toggle off';
+    $('jb-toggle-label').textContent = newVal ? 'With client' : 'With us';
     currentBagJob.withClient = newVal;
-
-    // Update chip
-    const chip = $('jb-status-chip');
-    const { label, cls } = getJobChip(currentBagJob);
-    chip.textContent = label;
-    chip.className = `jb-chip ${cls}`;
 
     try {
         const response = await fetch(`${API_BASE}/job/${encodeURIComponent(currentBagJob.jobNumber)}/update`, {

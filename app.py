@@ -883,7 +883,24 @@ def get_job(job_number):
         if not records:
             return jsonify({'error': 'Job not found'}), 404
         
-        return jsonify(transform_project(records[0]))
+        job = transform_project(records[0])
+        
+        # Fetch full client name from Clients table
+        client_links = records[0].get('fields', {}).get('Client', [])
+        if client_links:
+            client_record_id = client_links[0]
+            try:
+                client_url = f"{get_airtable_url('Clients')}/{client_record_id}"
+                client_response = requests.get(client_url, headers=HEADERS)
+                if client_response.ok:
+                    client_fields = client_response.json().get('fields', {})
+                    job['clientName'] = client_fields.get('Clients', job['clientCode'])
+            except Exception:
+                job['clientName'] = job['clientCode']
+        else:
+            job['clientName'] = job['clientCode']
+        
+        return jsonify(job)
     
     except Exception as e:
         print(f'[Hub API] Error fetching job: {e}')
