@@ -534,7 +534,9 @@ async function signOut() {
 // ===== NAVIGATION =====
 function navigateTo(view) {
     state.currentView = view;
-    $$('.nav-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === view));
+    // Job Bag is a sub-view of WIP — keep WIP tab highlighted
+    const tabView = view === 'job-bag' ? 'wip' : view;
+    $$('.nav-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === tabView));
     $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
     
     // Footer: only show on home view when NOT in conversation
@@ -1321,12 +1323,390 @@ function closeJobSummary() {
     $('job-summary-modal')?.classList.remove('visible');
 }
 
-// Helper: open the right modal based on access level
+// Helper: open the right view based on access level
 function openJobDetail(jobNumber) {
     if (state.currentUser?.accessLevel === 'Full') {
-        openJobModal(jobNumber);
+        openJobBag(jobNumber);
     } else {
         openJobSummary(jobNumber);
+    }
+}
+
+// ===== JOB BAG =====
+
+let currentBagJob = null;
+
+async function openJobBag(jobNumber) {
+    const job = state.allJobs.find(j => j.jobNumber === jobNumber);
+    if (!job) return;
+
+    currentBagJob = job;
+
+    // Update breadcrumb
+    const clientName = job.clientCode || '';
+    $('jb-bc-client').textContent = clientName;
+    $('jb-bc-client').onclick = (e) => { e.preventDefault(); closeJobBag(); };
+    $('jb-bc-wip').onclick = (e) => { e.preventDefault(); closeJobBag(); };
+    $('jb-bc-job').textContent = `${job.jobNumber} — ${job.jobName || 'Untitled'}`;
+
+    // Job header
+    $('jb-job-number').textContent = job.jobNumber;
+    $('jb-job-name').textContent = job.jobName || 'Untitled';
+
+    const logo = $('jb-logo');
+    logo.src = getLogoUrl(job.clientCode);
+    logo.alt = job.clientCode;
+    logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
+
+    // Status chip
+    const chip = $('jb-status-chip');
+    const { label, cls } = getJobChip(job);
+    chip.textContent = label;
+    chip.className = `jb-chip ${cls}`;
+
+    // Story
+    const storyEl = $('jb-story-text');
+    storyEl.textContent = job.theStory || 'Watch this space. Currently working on a tight two sentence story that shows what we\'re trying to do and why anyone will care. This will get replaced when the thinking is done.';
+
+    // Summary fields
+    $('jb-client-name').textContent = job.clientCode || '—';
+    $('jb-status').textContent = job.status || '—';
+
+    const dueEl = $('jb-update-due');
+    if (job.updateDue) {
+        const due = new Date(job.updateDue);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const dueDay = new Date(due);
+        dueDay.setHours(0,0,0,0);
+        const diffDays = Math.round((dueDay - today) / 86400000);
+
+        let dueText;
+        if (diffDays === 0) dueText = 'Today';
+        else if (diffDays === 1) dueText = 'Tomorrow';
+        else if (diffDays === -1) dueText = 'Yesterday';
+        else if (diffDays < 0) dueText = `${Math.abs(diffDays)} days overdue`;
+        else dueText = due.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+        dueEl.textContent = dueText;
+        dueEl.className = diffDays < 0 ? 'jb-meta-val overdue' : 'jb-meta-val';
+    } else {
+        dueEl.textContent = 'Not set';
+        dueEl.className = 'jb-meta-val';
+    }
+
+    $('jb-live').textContent = job.liveDate || 'Tbc';
+
+    // With client toggle
+    const toggle = $('jb-with-client-toggle');
+    toggle.className = job.withClient ? 'jb-toggle' : 'jb-toggle off';
+    toggle.onclick = () => toggleWithClient();
+
+    // Edit link
+    $('jb-edit-link').onclick = (e) => {
+        e.preventDefault();
+        openJobModal(jobNumber);
+    };
+
+    // Tracker link
+    $('jb-tracker-link').onclick = (e) => {
+        e.preventDefault();
+        const month = new Date().toLocaleString('en-US', { month: 'long' });
+        closeJobBag();
+        window.location.href = `?view=tracker&client=${job.clientCode}&month=${month}`;
+    };
+
+    // Files
+    renderJobBagFiles(job);
+
+    // Compose hint
+    const authorName = state.currentUser?.firstName || state.currentUser?.name || 'You';
+    $('jb-compose-hint').textContent = `Posts as ${authorName} · visible to Hunch team`;
+
+    // Navigate to Job Bag view
+    navigateTo('job-bag');
+
+    // Load updates + budget in parallel
+    loadJobBagUpdates(jobNumber);
+    loadJobBagBudget(jobNumber);
+}
+
+function closeJobBag() {
+    currentBagJob = null;
+    navigateTo('wip');
+}
+
+function getJobChip(job) {
+    if (job.withClient) return { label: 'With Client', cls: 'jb-chip-amber' };
+    if (job.status === 'In Progress') return { label: 'In Progress', cls: 'jb-chip-green' };
+    if (job.status === 'On Hold') return { label: 'On Hold', cls: 'jb-chip-grey' };
+    if (job.status === 'Completed') return { label: 'Completed', cls: 'jb-chip-grey' };
+    if (job.status === 'Always on') return { label: 'Always on', cls: 'jb-chip-green' };
+    return { label: job.status || 'Incoming', cls: 'jb-chip-grey' };
+}
+
+function renderJobBagFiles(job) {
+    const filesBody = $('jb-files-body');
+    if (!job.filesUrl) {
+        filesBody.innerHTML = '<span class="jb-files-empty">No files URL set</span>';
+        return;
+    }
+
+    const base = job.filesUrl.replace(/\/$/, '');
+    const folders = [
+        { name: 'Briefs', path: `${base}/Briefs` },
+        { name: 'Finals', path: `${base}/Finals` },
+        { name: 'Working', path: `${base}/Working` },
+    ];
+
+    filesBody.innerHTML = folders.map(f => `
+        <a class="jb-file-row" href="${f.path}" target="_blank" rel="noopener">
+            <div class="jb-file-left">
+                <span class="jb-file-icon">📁</span>
+                <span class="jb-file-name">${f.name}</span>
+            </div>
+            <span class="jb-file-arrow">↗</span>
+        </a>
+    `).join('');
+}
+
+async function loadJobBagUpdates(jobNumber) {
+    const threadBody = $('jb-thread-body');
+    threadBody.innerHTML = '<div class="jb-thread-loading">Loading updates...</div>';
+
+    try {
+        const response = await fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}/updates`);
+        if (!response.ok) throw new Error('Failed to load updates');
+        const updates = await response.json();
+
+        $('jb-thread-count').textContent = updates.length > 0 ? `${updates.length} ${updates.length === 1 ? 'entry' : 'entries'}` : '';
+
+        if (updates.length === 0) {
+            threadBody.innerHTML = '<div class="jb-empty-thread">No updates yet. Add the first one below.</div>';
+            return;
+        }
+
+        threadBody.innerHTML = renderThreadEntries(updates);
+        threadBody.scrollTop = threadBody.scrollHeight;
+
+    } catch (e) {
+        console.error('[Job Bag] Failed to load updates:', e);
+        threadBody.innerHTML = '<div class="jb-empty-thread">Couldn\'t load updates.</div>';
+    }
+}
+
+function renderThreadEntries(updates) {
+    let html = '';
+    let lastDateKey = null;
+
+    updates.forEach(entry => {
+        const dt = entry.created_time ? new Date(entry.created_time) : null;
+        const dateKey = dt ? dt.toDateString() : null;
+
+        if (dateKey && dateKey !== lastDateKey) {
+            const today = new Date().toDateString();
+            const yesterday = new Date(Date.now() - 86400000).toDateString();
+            let label;
+            if (dateKey === today) label = 'Today';
+            else if (dateKey === yesterday) label = 'Yesterday';
+            else label = dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+            html += `
+                <div class="jb-date-sep">
+                    <div class="jb-date-line"></div>
+                    <div class="jb-date-label">${label}</div>
+                    <div class="jb-date-line"></div>
+                </div>`;
+            lastDateKey = dateKey;
+        }
+
+        const author = entry.author || 'Dot';
+        const timeStr = dt ? dt.toLocaleTimeString('en-NZ', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase() : '';
+        const avatarClass = getAvatarClass(author);
+        const initials = getInitials(author);
+
+        html += `
+            <div class="jb-entry">
+                <div class="jb-avatar ${avatarClass}">${initials}</div>
+                <div class="jb-entry-content">
+                    <div class="jb-entry-header">
+                        <span class="jb-entry-author">${escapeHtml(author)}</span>
+                        <span class="jb-entry-time">${timeStr}</span>
+                    </div>
+                    <div class="jb-entry-text">${escapeHtml(entry.update || '')}</div>
+                </div>
+            </div>`;
+    });
+
+    return html;
+}
+
+function getAvatarClass(author) {
+    const lower = (author || '').toLowerCase();
+    if (lower === 'dot') return 'jb-av-dot';
+    if (lower.includes('michael') || lower.startsWith('mg')) return 'jb-av-michael';
+    if (lower.includes('stu') || lower.startsWith('sj')) return 'jb-av-stu';
+    return 'jb-av-client';
+}
+
+function getInitials(name) {
+    if (!name) return '?';
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
+
+async function loadJobBagBudget(jobNumber) {
+    const budgetBody = $('jb-budget-body');
+    budgetBody.innerHTML = '<div class="jb-thread-loading">Loading...</div>';
+
+    try {
+        const response = await fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}/budget`);
+        if (!response.ok) throw new Error('Failed to load budget');
+        const data = await response.json();
+
+        const total = data.total || 0;
+        const entries = data.entries || [];
+
+        let html = `
+            <div class="jb-spend-total">$${Math.round(total).toLocaleString()}</div>
+            <div class="jb-spend-label">spent on this job</div>`;
+
+        if (entries.length > 0) {
+            html += '<div class="jb-spend-entries">';
+            entries.forEach(e => {
+                html += `
+                    <div class="jb-spend-entry">
+                        <span class="jb-spend-month">${escapeHtml(e.month || '—')}</span>
+                        <span class="jb-spend-amount">$${Math.round(e.spend).toLocaleString()}${e.ballpark ? '<span class="jb-spend-ballpark">~</span>' : ''}</span>
+                    </div>`;
+            });
+            html += '</div>';
+        } else {
+            html += '<div style="font-size:12px;color:#999;margin-top:8px;">No tracker entries yet</div>';
+        }
+
+        budgetBody.innerHTML = html;
+
+    } catch (e) {
+        console.error('[Job Bag] Failed to load budget:', e);
+        budgetBody.innerHTML = '<div style="font-size:12px;color:#999;">Couldn\'t load budget</div>';
+    }
+}
+
+async function toggleWithClient() {
+    if (!currentBagJob) return;
+    const newVal = !currentBagJob.withClient;
+
+    // Optimistic UI
+    const toggle = $('jb-with-client-toggle');
+    toggle.className = newVal ? 'jb-toggle' : 'jb-toggle off';
+    currentBagJob.withClient = newVal;
+
+    // Update chip
+    const chip = $('jb-status-chip');
+    const { label, cls } = getJobChip(currentBagJob);
+    chip.textContent = label;
+    chip.className = `jb-chip ${cls}`;
+
+    try {
+        const response = await fetch(`${API_BASE}/job/${encodeURIComponent(currentBagJob.jobNumber)}/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ withClient: newVal })
+        });
+        if (!response.ok) throw new Error('Failed to update');
+
+        // Update state
+        const stateJob = state.allJobs.find(j => j.jobNumber === currentBagJob.jobNumber);
+        if (stateJob) stateJob.withClient = newVal;
+
+    } catch (e) {
+        // Revert on failure
+        currentBagJob.withClient = !newVal;
+        toggle.className = currentBagJob.withClient ? 'jb-toggle' : 'jb-toggle off';
+        console.error('[Job Bag] Toggle failed:', e);
+    }
+}
+
+// Compose bar — post update
+document.addEventListener('DOMContentLoaded', () => {
+    const input = $('jb-compose-input');
+    const btn = $('jb-post-btn');
+
+    if (input) {
+        input.addEventListener('input', () => {
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 80) + 'px';
+        });
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                postJobBagUpdate();
+            }
+        });
+    }
+
+    if (btn) btn.addEventListener('click', postJobBagUpdate);
+});
+
+async function postJobBagUpdate() {
+    if (!currentBagJob) return;
+
+    const input = $('jb-compose-input');
+    const btn = $('jb-post-btn');
+    const text = input?.value.trim();
+    if (!text) return;
+
+    const authorName = state.currentUser?.firstName || state.currentUser?.name || 'Dot';
+
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+        const response = await fetch(`${API_BASE}/job/${encodeURIComponent(currentBagJob.jobNumber)}/updates`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, author: authorName })
+        });
+
+        if (!response.ok) throw new Error('Post failed');
+        const newEntry = await response.json();
+
+        // Clear input
+        input.value = '';
+        input.style.height = 'auto';
+
+        // Append to thread
+        const threadBody = $('jb-thread-body');
+        const entryHtml = renderThreadEntries([newEntry]);
+
+        // Remove empty state if present
+        const emptyEl = threadBody.querySelector('.jb-empty-thread');
+        if (emptyEl) emptyEl.remove();
+
+        threadBody.insertAdjacentHTML('beforeend', entryHtml);
+        threadBody.scrollTop = threadBody.scrollHeight;
+
+        // Update count
+        const countEl = $('jb-thread-count');
+        const current = parseInt(countEl.textContent) || 0;
+        const newCount = current + 1;
+        countEl.textContent = `${newCount} ${newCount === 1 ? 'entry' : 'entries'}`;
+
+    } catch (e) {
+        console.error('[Job Bag] Post failed:', e);
+        showToast('Couldn\'t post update. Try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Post';
     }
 }
 
@@ -1422,6 +1802,8 @@ window.closeJobModal = closeJobModal;
 window.openJobSummary = openJobSummary;
 window.closeJobSummary = closeJobSummary;
 window.openJobDetail = openJobDetail;
+window.openJobBag = openJobBag;
+window.closeJobBag = closeJobBag;
 window.saveJobUpdate = saveJobUpdate;
 window.openJobNameModal = openJobNameModal;
 window.closeJobNameModal = closeJobNameModal;

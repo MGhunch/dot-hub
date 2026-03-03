@@ -391,6 +391,120 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ===== JOB BAG VIEW ===== -->
+            <section class="view view-job-bag" id="view-job-bag">
+
+                <!-- Breadcrumb -->
+                <div class="jb-breadcrumb">
+                    <a id="jb-bc-wip">WIP</a>
+                    <span class="bc-sep">›</span>
+                    <a id="jb-bc-client"></a>
+                    <span class="bc-sep">›</span>
+                    <strong id="jb-bc-job"></strong>
+                </div>
+
+                <!-- Job Header -->
+                <div class="jb-header">
+                    <div class="jb-header-left">
+                        <img id="jb-logo" class="jb-logo" src="" alt="">
+                        <div class="jb-meta">
+                            <div class="jb-job-number" id="jb-job-number"></div>
+                            <div class="jb-job-name" id="jb-job-name"></div>
+                        </div>
+                    </div>
+                    <div class="jb-header-right">
+                        <span class="jb-bag-label">Job Bag</span>
+                        <span class="jb-chip" id="jb-status-chip"></span>
+                    </div>
+                </div>
+
+                <!-- Story Band -->
+                <div class="jb-story">
+                    <span class="jb-story-eyebrow">Story</span>
+                    <span class="jb-story-text" id="jb-story-text"></span>
+                </div>
+
+                <!-- Grid -->
+                <div class="jb-grid">
+
+                    <!-- Left column -->
+                    <div class="jb-left">
+
+                        <!-- Summary Card -->
+                        <div class="jb-card">
+                            <div class="jb-card-header">
+                                <span class="jb-card-title">Summary</span>
+                                <a class="jb-card-action" id="jb-edit-link">Edit →</a>
+                            </div>
+                            <div class="jb-summary-body">
+                                <div class="jb-meta-row">
+                                    <span class="jb-meta-key">Client</span>
+                                    <span class="jb-meta-val" id="jb-client-name"></span>
+                                </div>
+                                <div class="jb-meta-row">
+                                    <span class="jb-meta-key">Status</span>
+                                    <span class="jb-meta-val" id="jb-status"></span>
+                                </div>
+                                <div class="jb-meta-row">
+                                    <span class="jb-meta-key">Update due</span>
+                                    <span class="jb-meta-val" id="jb-update-due"></span>
+                                </div>
+                                <div class="jb-meta-row">
+                                    <span class="jb-meta-key">Live</span>
+                                    <span class="jb-meta-val" id="jb-live"></span>
+                                </div>
+                                <div class="jb-toggle-row">
+                                    <span class="jb-toggle-key">With client</span>
+                                    <div class="jb-toggle off" id="jb-with-client-toggle"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Budget Card -->
+                        <div class="jb-card">
+                            <div class="jb-card-header">
+                                <span class="jb-card-title">Budget</span>
+                                <a class="jb-card-action" id="jb-tracker-link">View tracker →</a>
+                            </div>
+                            <div class="jb-budget-body" id="jb-budget-body">
+                                <div class="jb-thread-loading">Loading...</div>
+                            </div>
+                        </div>
+
+                        <!-- Files Card -->
+                        <div class="jb-card">
+                            <div class="jb-card-header">
+                                <span class="jb-card-title">Files</span>
+                            </div>
+                            <div class="jb-files-body" id="jb-files-body">
+                                <span class="jb-files-empty">No files URL set</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Thread -->
+                    <div class="jb-thread">
+                        <div class="jb-card-header">
+                            <span class="jb-card-title">Updates</span>
+                            <span class="jb-thread-count" id="jb-thread-count"></span>
+                        </div>
+                        <div class="jb-thread-body" id="jb-thread-body">
+                            <div class="jb-thread-loading">Loading updates...</div>
+                        </div>
+                        <div class="jb-compose">
+                            <div class="jb-compose-row">
+                                <textarea class="jb-compose-input" id="jb-compose-input" placeholder="What's the latest on this job…" rows="1"></textarea>
+                                <button class="jb-post-btn" id="jb-post-btn">Post</button>
+                            </div>
+                            <div class="jb-compose-hint" id="jb-compose-hint"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
         </main>
 
         <!-- Desktop Footer (home view only) -->

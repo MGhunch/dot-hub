@@ -1157,6 +1157,154 @@ def update_tracker():
         return jsonify({'error': str(e)}), 500
 
 
+# ===== JOB BAG =====
+
+@app.route('/api/job/<job_number>/updates', methods=['GET'])
+def get_job_updates(job_number):
+    """Get all Updates records for a job, ordered by Created Time asc"""
+    try:
+        # First find the project record ID
+        projects_url = get_airtable_url('Projects')
+        params = {
+            'filterByFormula': f"{{Job Number}} = '{job_number}'",
+            'maxRecords': 1
+        }
+        response = requests.get(projects_url, headers=HEADERS, params=params)
+        response.raise_for_status()
+        records = response.json().get('records', [])
+        if not records:
+            return jsonify({'error': 'Job not found'}), 404
+
+        project_record_id = records[0].get('id')
+
+        # Fetch updates linked to this project
+        updates_url = get_airtable_url('Updates')
+        updates_params = {
+            'filterByFormula': f"FIND('{project_record_id}', ARRAYJOIN({{Project Link}}, ','))",
+            'sort[0][field]': 'Created Time',
+            'sort[0][direction]': 'asc'
+        }
+        updates_response = requests.get(updates_url, headers=HEADERS, params=updates_params)
+        updates_response.raise_for_status()
+
+        updates = []
+        for record in updates_response.json().get('records', []):
+            fields = record.get('fields', {})
+            updates.append({
+                'id': record.get('id'),
+                'update': fields.get('Update', ''),
+                'author': fields.get('Author', 'Dot'),
+                'created_time': fields.get('Created Time', '')
+            })
+
+        return jsonify(updates)
+
+    except Exception as e:
+        print(f'[Hub API] Error fetching updates for {job_number}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/job/<job_number>/updates', methods=['POST'])
+def post_job_update(job_number):
+    """Create a new update record for a job"""
+    try:
+        data = request.get_json()
+        text = (data.get('text') or '').strip()
+        author = (data.get('author') or 'Dot').strip()
+
+        if not text:
+            return jsonify({'error': 'Update text required'}), 400
+
+        # Find project record
+        projects_url = get_airtable_url('Projects')
+        params = {
+            'filterByFormula': f"{{Job Number}} = '{job_number}'",
+            'maxRecords': 1
+        }
+        response = requests.get(projects_url, headers=HEADERS, params=params)
+        response.raise_for_status()
+        records = response.json().get('records', [])
+        if not records:
+            return jsonify({'error': 'Job not found'}), 404
+
+        project_record_id = records[0].get('id')
+
+        # Create the update record
+        updates_url = get_airtable_url('Updates')
+        new_record = {
+            'fields': {
+                'Update': text,
+                'Author': author,
+                'Project Link': [project_record_id]
+            }
+        }
+        create_response = requests.post(updates_url, headers=HEADERS, json=new_record)
+        create_response.raise_for_status()
+
+        created = create_response.json()
+        fields = created.get('fields', {})
+
+        return jsonify({
+            'id': created.get('id'),
+            'update': fields.get('Update', ''),
+            'author': fields.get('Author', author),
+            'created_time': fields.get('Created Time', '')
+        })
+
+    except Exception as e:
+        print(f'[Hub API] Error posting update for {job_number}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/job/<job_number>/budget')
+def get_job_budget(job_number):
+    """Get total spend for a job from Tracker table"""
+    try:
+        url = get_airtable_url('Tracker')
+        params = {
+            'filterByFormula': f"{{Job Number}} = '{job_number}'"
+        }
+
+        all_records = []
+        offset = None
+
+        while True:
+            if offset:
+                params['offset'] = offset
+            response = requests.get(url, headers=HEADERS, params=params)
+            response.raise_for_status()
+            data = response.json()
+
+            for record in data.get('records', []):
+                fields = record.get('fields', {})
+                spend = fields.get('This month', 0) or fields.get('Spend', 0)
+                if isinstance(spend, str):
+                    spend = float(spend.replace('$', '').replace(',', '') or 0)
+                all_records.append({
+                    'id': record.get('id'),
+                    'month': fields.get('Month', ''),
+                    'spendType': fields.get('Spend type', ''),
+                    'notes': fields.get('Tracker notes', ''),
+                    'spend': float(spend),
+                    'ballpark': bool(fields.get('Ballpark', False))
+                })
+
+            offset = data.get('offset')
+            if not offset:
+                break
+
+        total = sum(r['spend'] for r in all_records)
+
+        return jsonify({
+            'total': total,
+            'entries': all_records
+        })
+
+    except Exception as e:
+        print(f'[Hub API] Error fetching budget for {job_number}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
 # ===== STATIC FILES CATCH-ALL (must be last) =====
 @app.route('/<path:path>')
 def serve_static(path):
