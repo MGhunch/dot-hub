@@ -28,7 +28,7 @@ const state = {
     wipMode: 'desktop',
     wipClient: 'all',
     trackerClient: null,
-    trackerQuarter: 'Q4',
+    trackerQuarter: (() => { const m = new Date().getMonth(); return m <= 2 ? 'Q1' : m <= 5 ? 'Q2' : m <= 8 ? 'Q3' : 'Q4'; })(),
     trackerMode: 'spend',
     lastActivity: Date.now(),
     conversationHistory: []
@@ -281,27 +281,7 @@ function clearSessionSilently() {
 
 // ===== AUTH HANDLING =====
 async function checkSession() {
-    // Check for URL error params first
-    const params = new URLSearchParams(window.location.search);
-    const error = params.get('error');
-    
-    if (error) {
-        // Clear the URL param
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Show appropriate error (both mobile and desktop)
-        const errorEl = $('login-error');
-        const phoneErrorEl = $('phone-login-error');
-        const errorMsg = error === 'expired' 
-            ? "Sorry, that link's run out of juice. Try again?"
-            : "That link didn't work. Try again?";
-        
-        if (errorEl) errorEl.textContent = errorMsg;
-        if (phoneErrorEl) phoneErrorEl.textContent = errorMsg;
-        return;
-    }
-    
-    // Check for existing session
+    // Check for existing session first - valid cookie always wins
     try {
         const response = await fetch('/api/check-session');
         const data = await response.json();
@@ -315,9 +295,27 @@ async function checkSession() {
                 accessLevel: data.user.accessLevel
             };
             unlockApp();
+            return;
         }
     } catch (e) {
         console.error('Session check failed:', e);
+    }
+    
+    // No valid session - check for URL error params from magic link
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    
+    if (error) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        const errorMsg = error === 'expired' 
+            ? "Sorry, that link's run out of juice. Try again?"
+            : "That link didn't work. Try again?";
+        
+        const errorEl = $('login-error');
+        const phoneErrorEl = $('phone-login-error');
+        if (errorEl) errorEl.textContent = errorMsg;
+        if (phoneErrorEl) phoneErrorEl.textContent = errorMsg;
     }
 }
 
@@ -1454,17 +1452,17 @@ async function saveJobName() {
     }
     
     try {
+        const jobNumber = currentEditJob.jobNumber;
         const payload = {
-            jobNumber: currentEditJob.jobNumber,
             projectName: newJobName
         };
         
         // Only include job number change if it's different
-        if (newJobNumber !== currentEditJob.jobNumber) {
+        if (newJobNumber !== jobNumber) {
             payload.newJobNumber = newJobNumber;
         }
         
-        const response = await fetch(`https://dot-traffic-2.up.railway.app/card-update`, {
+        const response = await fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1959,7 +1957,13 @@ const calendarQuarters = {
     'Q4-cal': { months: ['October', 'November', 'December'], label: 'Oct > Dec' }
 };
 
-const currentCalendarQuarter = 'Q1-cal';
+const currentCalendarQuarter = (() => {
+    const month = new Date().getMonth(); // 0-11
+    if (month <= 2) return 'Q1-cal';
+    if (month <= 5) return 'Q2-cal';
+    if (month <= 8) return 'Q3-cal';
+    return 'Q4-cal';
+})();
 
 const clientQuarterLabels = {
     'ONE': 'Q4', 'ONS': 'Q4', 'ONB': 'Q4',

@@ -124,31 +124,8 @@ def lookup_person(email):
 
 
 def update_last_login(email):
-    """Update lastLogin timestamp for a person."""
-    if not AIRTABLE_API_KEY:
-        return
-    
-    url = get_airtable_url('People')
-    params = {
-        'filterByFormula': f'LOWER({{Email Address}}) = LOWER("{email}")',
-        'maxRecords': 1
-    }
-    
-    try:
-        response = requests.get(url, headers=HEADERS, params=params)
-        response.raise_for_status()
-        records = response.json().get('records', [])
-        
-        if records:
-            record_id = records[0]['id']
-            requests.patch(
-                f"{url}/{record_id}",
-                headers=HEADERS,
-                json={'fields': {'lastLogin': datetime.now().isoformat()}}
-            )
-            print(f"[Auth] Updated lastLogin for {email}")
-    except Exception as e:
-        print(f"[Auth] Failed to update lastLogin: {e}")
+    """Placeholder - lastLogin field not in Airtable schema."""
+    print(f"[Auth] Login: {email}")
 
 
 def send_magic_link_email(email, first_name, token):
@@ -275,25 +252,6 @@ def handle_request_login():
 def handle_verify():
     """Verify a magic link token and set session cookie."""
     
-    # Backdoor for Michael - bookmark hub.hunch.co.nz/verify?pin=9871
-    if request.args.get('pin') == '9871':
-        response = make_response(redirect('/'))
-        session_token = generate_token(
-            email='michael@hunch.co.nz',
-            client_code='ALL',
-            first_name='Michael',
-            access_level='Full'
-        )
-        response.set_cookie(
-            'dot_session',
-            session_token,
-            max_age=TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
-            httponly=True,
-            secure=True,
-            samesite='Lax'
-        )
-        return response
-    
     token = request.args.get('token', '')
     
     if not token:
@@ -406,38 +364,6 @@ def handle_logout():
     response = make_response(jsonify({'success': True}))
     response.delete_cookie('dot_session')
     return response
-
-
-# ===== AUTH TEST ROUTES (NEW - Remove before production) =====
-
-@app.route('/test/auth/token')
-def test_auth_token():
-    """Test token generation and verification."""
-    token = generate_token(
-        email='test@example.com',
-        client_code='TEST',
-        first_name='Tester',
-        access_level='Client WIP'
-    )
-    user, error = verify_token(token)
-    
-    return jsonify({
-        'token': token,
-        'token_length': len(token),
-        'verified': user,
-        'error': error
-    })
-
-
-@app.route('/test/auth/lookup/<email>')
-def test_auth_lookup(email):
-    """Test Airtable People lookup."""
-    person = lookup_person(email)
-    return jsonify({
-        'email': email,
-        'found': person is not None,
-        'person': person
-    })
 
 
 # ===== HEALTH CHECK =====
@@ -1006,7 +932,8 @@ def update_job(job_number):
             'withClient': 'With Client?',
             'description': 'Description',
             'projectOwner': 'Project Owner',
-            'projectName': 'Project Name'
+            'projectName': 'Project Name',
+            'newJobNumber': 'Job Number'
         }
         
         airtable_fields = {}
@@ -1104,7 +1031,7 @@ def get_tracker_clients():
                     'name': fields.get('Clients', ''),
                     'committed': monthly,
                     'rollover': rollover,
-                    'rolloverUseIn': 'JAN-MAR' if rollover > 0 else '',  # Current quarter
+                    'rolloverUseIn': fields.get('Current Quarter', '') if rollover > 0 else '',
                     'yearEnd': fields.get('Year end', ''),
                     'currentQuarter': fields.get('Current Quarter', '')
                 })
