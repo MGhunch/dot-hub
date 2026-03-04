@@ -4,8 +4,7 @@ Flask server serving static frontend + API routes for Airtable data.
 Ask Dot brain lives in Traffic - this is just data.
 """
 
-from dotenv import load_dotenv
-load_dotenv()
+# load_dotenv() — local only, Railway uses env vars directly
 
 from flask import Flask, jsonify, request, send_from_directory, make_response, redirect
 from flask_cors import CORS
