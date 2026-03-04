@@ -1344,6 +1344,7 @@ async function openJobBag(jobNumber) {
 
     // Job header — combined title
     $('jb-job-title').textContent = `${job.jobNumber} — ${job.jobName || 'Untitled'}`;
+    $('jb-job-desc').textContent = job.description || '';
 
     const logo = $('jb-logo');
     logo.src = getLogoUrl(job.clientCode);
@@ -1351,13 +1352,22 @@ async function openJobBag(jobNumber) {
     logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
 
     // With client toggle in header
-    const toggle = $('jb-with-client-toggle');
-    toggle.className = job.withClient ? 'jb-toggle' : 'jb-toggle off';
-    toggle.onclick = () => toggleWithClient();
-    $('jb-toggle-label').textContent = job.withClient ? 'With client' : 'With us';
+    const checkbox = $('jb-with-client-checkbox');
+    if (checkbox) checkbox.checked = !!job.withClient;
+    updateWithClientLabels(!!job.withClient);
 
     // Story
-    $('jb-story-text').textContent = job.theStory || 'Watch this space. Currently working on a tight two sentence story that shows what we\'re trying to do and why anyone will care. This will get replaced when the thinking is done.';
+    const storyEl = $('jb-story-text');
+    const storyMore = $('jb-story-more');
+    storyEl.textContent = job.theStory || 'Watch this space. Currently working on a tight two sentence story that shows what we\'re trying to do and why anyone will care. This will get replaced when the thinking is done.';
+    storyExpanded = false;
+    if ($('jb-story-card')) $('jb-story-card').classList.remove('expanded');
+    // Show Read more only if text is actually clamped
+    requestAnimationFrame(() => {
+        if (storyMore && storyEl) {
+            storyMore.style.display = storyEl.scrollHeight > storyEl.clientHeight ? 'block' : 'none';
+        }
+    });
 
     // Summary — client name fetched from API below
     $('jb-client-name').textContent = '…';
@@ -1405,10 +1415,6 @@ async function openJobBag(jobNumber) {
     // Files
     renderJobBagFiles(job);
 
-    // Compose hint
-    const authorName = state.currentUser?.firstName || state.currentUser?.name || 'You';
-    $('jb-compose-hint').textContent = `Posts as ${authorName} · visible to Hunch team`;
-
     // Navigate to Job Bag view
     navigateTo('job-bag');
 
@@ -1416,16 +1422,21 @@ async function openJobBag(jobNumber) {
     loadJobBagUpdates(jobNumber);
     loadJobBagBudget(jobNumber);
 
-    // Fetch full client name from API
-    try {
-        const res = await fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}`);
-        if (res.ok) {
-            const data = await res.json();
-            if (data.clientName) $('jb-client-name').textContent = data.clientName;
+    // Client field shows project owner
+    $('jb-client-name').textContent = job.projectOwner || '—';
+
+    // Fix thread height to match left column, then scroll to bottom
+    requestAnimationFrame(() => {
+        const left = document.querySelector('.jb-left');
+        const thread = document.querySelector('.jb-thread');
+        const threadBody = $('jb-thread-body');
+        if (left && thread) {
+            thread.style.height = left.offsetHeight + 'px';
+            thread.style.minHeight = 'unset';
+            thread.style.flex = 'none';
         }
-    } catch(e) {
-        $('jb-client-name').textContent = job.clientCode || '—';
-    }
+        if (threadBody) threadBody.scrollTop = threadBody.scrollHeight;
+    });
 }
 
 function closeJobBag() {
@@ -1447,13 +1458,14 @@ function renderJobBagFiles(job) {
         { name: 'Working', path: `${base}/Working` },
     ];
 
+    const folderIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8291C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+
     filesBody.innerHTML = folders.map(f => `
         <a class="jb-file-row" href="${f.path}" target="_blank" rel="noopener">
             <div class="jb-file-left">
-                <span class="jb-file-icon">📁</span>
+                <span class="jb-file-icon">${folderIcon}</span>
                 <span class="jb-file-name">${f.name}</span>
             </div>
-            <span class="jb-file-arrow">↗</span>
         </a>
     `).join('');
 }
@@ -1467,7 +1479,8 @@ async function loadJobBagUpdates(jobNumber) {
         if (!response.ok) throw new Error('Failed to load updates');
         const updates = await response.json();
 
-        $('jb-thread-count').textContent = updates.length > 0 ? `${updates.length} ${updates.length === 1 ? 'entry' : 'entries'}` : '';
+        const countEl = $('jb-thread-count');
+        if (countEl) countEl.textContent = '';
 
         if (updates.length === 0) {
             threadBody.innerHTML = '<div class="jb-empty-thread">No updates yet. Add the first one below.</div>';
@@ -1520,8 +1533,17 @@ function renderThreadEntries(updates) {
                     <div class="jb-entry-header">
                         <span class="jb-entry-author">${escapeHtml(author)}</span>
                         <span class="jb-entry-time">${timeStr}</span>
+                        <button class="jb-entry-edit" onclick="editEntry(${JSON.stringify(entry.update || '')})" title="Edit">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
                     </div>
-                    <div class="jb-entry-text">${escapeHtml(entry.update || '')}</div>
+                    <div class="jb-entry-body">
+                        <div class="jb-entry-text">${escapeHtml(entry.update || '')}</div>
+                        <div class="jb-entry-actions">
+                            <button class="jb-entry-pill">✗ Email</button>
+                            <button class="jb-entry-pill">✗ Files</button>
+                        </div>
+                    </div>
                 </div>
             </div>`;
     });
@@ -1533,7 +1555,7 @@ function getAvatarClass(author) {
     const lower = (author || '').toLowerCase();
     if (lower === 'dot') return 'jb-av-dot';
     if (lower.includes('michael') || lower.startsWith('mg')) return 'jb-av-michael';
-    if (lower.includes('stu') || lower.startsWith('sj')) return 'jb-av-stu';
+    if (lower.includes('stu') || lower.startsWith('sh')) return 'jb-av-stu';
     return 'jb-av-client';
 }
 
@@ -1564,21 +1586,7 @@ async function loadJobBagBudget(jobNumber) {
 
         let html = `
             <div class="jb-spend-total">$${Math.round(total).toLocaleString()}</div>
-            <div class="jb-spend-label">spent on this job</div>`;
-
-        if (entries.length > 0) {
-            html += '<div class="jb-spend-entries">';
-            entries.forEach(e => {
-                html += `
-                    <div class="jb-spend-entry">
-                        <span class="jb-spend-month">${escapeHtml(e.month || '—')}</span>
-                        <span class="jb-spend-amount">$${Math.round(e.spend).toLocaleString()}${e.ballpark ? '<span class="jb-spend-ballpark">~</span>' : ''}</span>
-                    </div>`;
-            });
-            html += '</div>';
-        } else {
-            html += '<div style="font-size:12px;color:#999;margin-top:8px;">No tracker entries yet</div>';
-        }
+            <div class="jb-progress-bar"><div class="jb-progress-fill" style="width: 50%"></div></div>`;
 
         budgetBody.innerHTML = html;
 
@@ -1593,9 +1601,9 @@ async function toggleWithClient() {
     const newVal = !currentBagJob.withClient;
 
     // Optimistic UI
-    const toggle = $('jb-with-client-toggle');
-    toggle.className = newVal ? 'jb-toggle' : 'jb-toggle off';
-    $('jb-toggle-label').textContent = newVal ? 'With client' : 'With us';
+    const checkbox = $('jb-with-client-checkbox');
+    if (checkbox) checkbox.checked = newVal;
+    updateWithClientLabels(newVal);
     currentBagJob.withClient = newVal;
 
     try {
@@ -1613,7 +1621,8 @@ async function toggleWithClient() {
     } catch (e) {
         // Revert on failure
         currentBagJob.withClient = !newVal;
-        toggle.className = currentBagJob.withClient ? 'jb-toggle' : 'jb-toggle off';
+        if (checkbox) checkbox.checked = !newVal;
+        updateWithClientLabels(!newVal);
         console.error('[Job Bag] Toggle failed:', e);
     }
 }
@@ -1638,7 +1647,102 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (btn) btn.addEventListener('click', postJobBagUpdate);
+
+    // Paperclip button → open file picker
+    const attachBtn = $('jb-attach-btn');
+    const fileInput = $('jb-file-input');
+    if (attachBtn && fileInput) {
+        attachBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) setAttachedFile(fileInput.files[0]);
+        });
+    }
+
+    // Remove attachment
+    const removeBtn = $('jb-attach-remove');
+    if (removeBtn) removeBtn.addEventListener('click', clearAttachedFile);
+
+    // Subfolder picker
+    document.querySelectorAll('.jb-subfolder-btn').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('.jb-subfolder-btn').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+        });
+    });
+
+    // Drag and drop on thread
+    const thread = document.querySelector('.jb-thread');
+    if (thread) {
+        thread.addEventListener('dragover', (e) => { e.preventDefault(); thread.classList.add('jb-drag-over'); });
+        thread.addEventListener('dragleave', () => thread.classList.remove('jb-drag-over'));
+        thread.addEventListener('drop', (e) => {
+            e.preventDefault();
+            thread.classList.remove('jb-drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) setAttachedFile(file);
+        });
+    }
 });
+
+// Attached file state
+let attachedFile = null;
+
+function setAttachedFile(file) {
+    attachedFile = file;
+    $('jb-attach-name').textContent = file.name;
+    $('jb-attach-preview').style.display = 'block';
+    $('jb-attach-btn').classList.add('active');
+}
+
+function clearAttachedFile() {
+    attachedFile = null;
+    $('jb-attach-preview').style.display = 'none';
+    $('jb-attach-btn').classList.remove('active');
+    const fileInput = $('jb-file-input');
+    if (fileInput) fileInput.value = '';
+}
+
+function getSelectedSubfolder() {
+    const active = document.querySelector('.jb-subfolder-btn.active');
+    return active ? active.dataset.folder : 'Workings';
+}
+
+function updateWithClientLabels(isWithClient) {
+    const left = $('jb-wc-label-left');
+    const right = $('jb-wc-label-right');
+    if (!left || !right) return;
+    left.className = isWithClient ? 'jb-wc-label jb-wc-left inactive' : 'jb-wc-label jb-wc-left active';
+    right.className = isWithClient ? 'jb-wc-label jb-wc-right active' : 'jb-wc-label jb-wc-right inactive';
+}
+
+let storyExpanded = false;
+function toggleStory() {
+    storyExpanded = !storyExpanded;
+    const card = $('jb-story-card');
+    const btn = $('jb-story-more');
+    if (!card || !btn) return;
+    card.classList.toggle('expanded', storyExpanded);
+    btn.textContent = storyExpanded ? 'Show less' : 'Read more';
+
+    // Recalculate thread height after story expands
+    requestAnimationFrame(() => {
+        const left = document.querySelector('.jb-left');
+        const thread = document.querySelector('.jb-thread');
+        if (left && thread) {
+            thread.style.height = left.offsetHeight + 'px';
+        }
+    });
+}
+
+function editEntry(text) {
+    const input = $('jb-compose-input');
+    if (!input) return;
+    input.value = text;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 80) + 'px';
+    input.focus();
+    input.setSelectionRange(text.length, text.length);
+}
 
 async function postJobBagUpdate() {
     if (!currentBagJob) return;
@@ -1646,7 +1750,9 @@ async function postJobBagUpdate() {
     const input = $('jb-compose-input');
     const btn = $('jb-post-btn');
     const text = input?.value.trim();
-    if (!text) return;
+
+    // Need text or a file (or both)
+    if (!text && !attachedFile) return;
 
     const authorName = state.currentUser?.firstName || state.currentUser?.name || 'Dot';
 
@@ -1654,42 +1760,74 @@ async function postJobBagUpdate() {
     btn.textContent = '...';
 
     try {
-        const response = await fetch(`${API_BASE}/job/${encodeURIComponent(currentBagJob.jobNumber)}/updates`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, author: authorName })
-        });
+        // If there's a file, upload it first
+        if (attachedFile) {
+            const subfolder = getSelectedSubfolder();
+            const formData = new FormData();
+            formData.append('file', attachedFile);
+            formData.append('jobNumber', currentBagJob.jobNumber);
+            formData.append('jobName', currentBagJob.jobName || '');
+            formData.append('clientCode', currentBagJob.clientCode || '');
+            formData.append('subfolder', subfolder);
 
-        if (!response.ok) throw new Error('Post failed');
-        const newEntry = await response.json();
+            const uploadRes = await fetch('https://dot-workers.up.railway.app/upload', {
+                method: 'POST',
+                body: formData
+            });
 
-        // Clear input
-        input.value = '';
-        input.style.height = 'auto';
+            const uploadData = await uploadRes.json();
 
-        // Append to thread
-        const threadBody = $('jb-thread-body');
-        const entryHtml = renderThreadEntries([newEntry]);
+            if (!uploadData.success) {
+                throw new Error(uploadData.error || 'Upload failed');
+            }
 
-        // Remove empty state if present
-        const emptyEl = threadBody.querySelector('.jb-empty-thread');
-        if (emptyEl) emptyEl.remove();
+            // Show success tick on the attach preview
+            $('jb-attach-name').textContent = `✓ ${attachedFile.name} → ${subfolder}`;
+            setTimeout(clearAttachedFile, 2000);
+        }
 
-        threadBody.insertAdjacentHTML('beforeend', entryHtml);
-        threadBody.scrollTop = threadBody.scrollHeight;
+        // If there's text, post the update entry
+        if (text) {
+            const response = await fetch(`${API_BASE}/job/${encodeURIComponent(currentBagJob.jobNumber)}/updates`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, author: authorName })
+            });
 
-        // Update count
-        const countEl = $('jb-thread-count');
-        const current = parseInt(countEl.textContent) || 0;
-        const newCount = current + 1;
-        countEl.textContent = `${newCount} ${newCount === 1 ? 'entry' : 'entries'}`;
+            if (!response.ok) throw new Error('Post failed');
+            const newEntry = await response.json();
+
+            // Clear input
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Append to thread
+            const threadBody = $('jb-thread-body');
+            const entryHtml = renderThreadEntries([newEntry]);
+            const emptyEl = threadBody.querySelector('.jb-empty-thread');
+            if (emptyEl) emptyEl.remove();
+            threadBody.insertAdjacentHTML('beforeend', entryHtml);
+            threadBody.scrollTop = threadBody.scrollHeight;
+
+            // Update count (element may not exist)
+            const countEl = $('jb-thread-count');
+            if (countEl) {
+                const current = parseInt(countEl.textContent) || 0;
+                const newCount = current + 1;
+                countEl.textContent = `${newCount} ${newCount === 1 ? 'entry' : 'entries'}`;
+            }
+        } else {
+            // File only — clear text input just in case
+            input.value = '';
+            input.style.height = 'auto';
+        }
 
     } catch (e) {
         console.error('[Job Bag] Post failed:', e);
         showToast('Couldn\'t post update. Try again.', 'error');
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Post';
+        btn.textContent = 'Update';
     }
 }
 

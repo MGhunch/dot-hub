@@ -404,18 +404,21 @@
                 <div class="jb-header">
                     <div class="jb-header-left">
                         <img id="jb-logo" class="jb-logo" src="" alt="">
-                        <div class="jb-job-title" id="jb-job-title"></div>
+                        <div class="jb-title-block">
+                            <div class="jb-job-title" id="jb-job-title"></div>
+                            <div class="jb-job-desc" id="jb-job-desc"></div>
+                        </div>
                     </div>
                     <div class="jb-header-right">
-                        <div class="jb-toggle off" id="jb-with-client-toggle"></div>
-                        <span class="jb-toggle-label" id="jb-toggle-label">With client</span>
+                        <div class="jb-wc-toggle-wrap">
+                            <span class="jb-wc-label jb-wc-left" id="jb-wc-label-left">With us</span>
+                            <label class="toggle" id="jb-with-client-toggle" onclick="toggleWithClient()">
+                                <input type="checkbox" id="jb-with-client-checkbox">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="jb-wc-label jb-wc-right" id="jb-wc-label-right">With client</span>
+                        </div>
                     </div>
-                </div>
-
-                <!-- Story Band -->
-                <div class="jb-story">
-                    <span class="jb-story-eyebrow">Story</span>
-                    <span class="jb-story-text" id="jb-story-text"></span>
                 </div>
 
                 <!-- Grid -->
@@ -424,12 +427,23 @@
                     <!-- Left column -->
                     <div class="jb-left">
 
+                        <!-- Story -->
+                        <div class="jb-section-label-row">
+                            <span class="jb-section-label">Story</span>
+                        </div>
+                        <div class="jb-story" id="jb-story-card">
+                            <span class="jb-story-text" id="jb-story-text"></span>
+                            <button class="jb-story-more" id="jb-story-more" onclick="toggleStory()">Read more</button>
+                        </div>
+
                         <!-- Summary -->
                         <div class="jb-section-label-row">
                             <span class="jb-section-label">Summary</span>
-                            <a class="jb-section-action" id="jb-edit-link">Edit →</a>
                         </div>
-                        <div class="jb-card">
+                        <div class="jb-card jb-card-action">
+                            <a class="jb-card-pencil" id="jb-edit-link" title="Edit job">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </a>
                             <div class="jb-summary-body">
                                 <div class="jb-meta-row">
                                     <span class="jb-meta-key">Client</span>
@@ -453,9 +467,11 @@
                         <!-- Budget -->
                         <div class="jb-section-label-row">
                             <span class="jb-section-label">Budget</span>
-                            <a class="jb-section-action" id="jb-tracker-link">View tracker →</a>
                         </div>
-                        <div class="jb-card">
+                        <div class="jb-card jb-card-action">
+                            <a class="jb-card-pencil" id="jb-tracker-link" title="View tracker">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </a>
                             <div class="jb-budget-body" id="jb-budget-body">
                                 <div class="jb-loading">Loading...</div>
                             </div>
@@ -475,20 +491,39 @@
 
                     <!-- Thread -->
                     <div class="jb-thread-wrap">
+
+                        <!-- Updates label -->
                         <div class="jb-section-label-row">
                             <span class="jb-section-label">Updates</span>
-                            <span class="jb-thread-count" id="jb-thread-count"></span>
+
                         </div>
+
                         <div class="jb-thread">
                             <div class="jb-thread-body" id="jb-thread-body">
                                 <div class="jb-loading">Loading updates...</div>
                             </div>
                             <div class="jb-compose">
-                                <div class="jb-compose-row">
-                                    <textarea class="jb-compose-input" id="jb-compose-input" placeholder="What's the latest on this job…" rows="1"></textarea>
-                                    <button class="jb-post-btn" id="jb-post-btn">Post</button>
+                                <div class="jb-attach-preview" id="jb-attach-preview">
+                                    <div class="jb-attach-info">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                        <span class="jb-attach-name" id="jb-attach-name"></span>
+                                        <button class="jb-attach-remove" id="jb-attach-remove">✕</button>
+                                    </div>
+                                    <div class="jb-subfolder-picker">
+                                        <span class="jb-subfolder-label">Save to</span>
+                                        <button class="jb-subfolder-btn active" data-folder="Workings">Workings</button>
+                                        <button class="jb-subfolder-btn" data-folder="Briefs">Briefs</button>
+                                        <button class="jb-subfolder-btn" data-folder="Finals">Finals</button>
+                                    </div>
                                 </div>
-                                <div class="jb-compose-hint" id="jb-compose-hint"></div>
+                                <div class="jb-compose-row">
+                                    <input type="file" id="jb-file-input" style="display:none">
+                                    <button class="jb-attach-btn" id="jb-attach-btn" title="Attach file">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                    </button>
+                                    <textarea class="jb-compose-input" id="jb-compose-input" placeholder="What's the latest on this job…" rows="1"></textarea>
+                                    <button class="jb-post-btn" id="jb-post-btn">Update</button>
+                                </div>
                             </div>
                         </div>
                     </div>

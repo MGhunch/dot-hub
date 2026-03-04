@@ -4,6 +4,9 @@ Flask server serving static frontend + API routes for Airtable data.
 Ask Dot brain lives in Traffic - this is just data.
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, jsonify, request, send_from_directory, make_response, redirect
 from flask_cors import CORS
 import requests
@@ -331,6 +334,27 @@ def handle_job_link(job_number):
         samesite='Lax'
     )
     
+    return response
+
+
+@app.route('/dev-login')
+def dev_login():
+    """Local dev only — instant login as Michael, no magic link needed."""
+    session_token = generate_token(
+        email='michael@hunch.co.nz',
+        client_code='ALL',
+        first_name='Michael',
+        access_level='Full'
+    )
+    response = make_response(redirect('/'))
+    response.set_cookie(
+        'dot_session',
+        session_token,
+        max_age=TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
+        httponly=True,
+        secure=False,
+        samesite='Lax'
+    )
     return response
 
 

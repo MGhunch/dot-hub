@@ -3555,12 +3555,27 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     flex-shrink: 0;
 }
 
+.jb-title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
 .jb-job-title {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 700;
     color: #111;
     letter-spacing: -0.02em;
     font-family: 'DM Sans', sans-serif;
+    line-height: 1.2;
+}
+
+.jb-job-desc {
+    font-size: 12px;
+    color: #999;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    line-height: 1.4;
 }
 
 .jb-header-right {
@@ -3569,11 +3584,24 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     gap: 10px;
 }
 
-.jb-toggle-label {
-    font-size: 12px;
-    color: #999;
-    font-family: 'DM Sans', sans-serif;
+.jb-wc-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
+
+.jb-wc-label {
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+    white-space: nowrap;
+}
+
+.jb-wc-label.active { color: #111; }
+.jb-wc-label.inactive { color: #CCC; }
 
 /* With client toggle */
 .jb-toggle {
@@ -3614,38 +3642,52 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     border: 1px solid var(--border, #E5E5E5);
     border-radius: 12px;
     padding: 14px 20px;
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
-    margin-bottom: 16px;
+    margin-bottom: 0;
 }
 
 .jb-story-eyebrow {
-    font-size: 10px;
-    font-weight: 600;
-    color: #999;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    flex-shrink: 0;
-    font-family: 'DM Sans', sans-serif;
+    display: none;
 }
 
 .jb-story-text {
     font-size: 13px;
-    font-style: italic;
     color: #666;
     line-height: 1.6;
     font-weight: 400;
     font-family: 'DM Sans', sans-serif;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
+
+.jb-story.expanded .jb-story-text {
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+}
+
+.jb-story-more {
+    background: none;
+    border: none;
+    color: var(--red, #E8291C);
+    font-size: 11px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    padding: 4px 0 0;
+    display: block;
+    transition: opacity 0.15s;
+}
+
+.jb-story-more:hover { opacity: 0.7; }
 
 /* Page Grid */
 .jb-grid {
     display: grid;
     grid-template-columns: 280px 1fr;
     gap: 0 20px;
-    align-items: start;
+    align-items: stretch;
 }
 
 .jb-left {
@@ -3692,9 +3734,27 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     margin-bottom: 4px;
 }
 
+.jb-card-action {
+    position: relative;
+}
+
+.jb-card-pencil {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    color: #CCC;
+    cursor: pointer;
+    transition: color 0.15s;
+    line-height: 0;
+}
+
+.jb-card-pencil:hover {
+    color: var(--red, #E8291C);
+}
+
 /* Summary */
 .jb-summary-body {
-    padding: 12px 18px;
+    padding: 26px 18px 12px;
 }
 
 .jb-meta-row {
@@ -3741,6 +3801,20 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     margin-bottom: 10px;
 }
 
+.jb-progress-bar {
+    height: 5px;
+    background: #F0F0F0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.jb-progress-fill {
+    height: 100%;
+    background: var(--red, #E8291C);
+    border-radius: 3px;
+}
+
 .jb-spend-entries {
     margin-top: 8px;
     border-top: 1px solid #F7F7F7;
@@ -3761,7 +3835,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 
 /* Files */
 .jb-files-body {
-    padding: 6px 18px 12px;
+    padding: 6px 18px 6px;
     font-family: 'DM Sans', sans-serif;
 }
 
@@ -3797,6 +3871,34 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     flex-direction: column;
 }
 
+/* Tabs — sit in the RH side of the Updates section-label-row */
+.jb-tabs {
+    display: flex;
+    gap: 0;
+}
+
+.jb-tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 2px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    color: #999;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.jb-tab.active {
+    color: var(--red, #E8291C);
+    border-bottom-color: var(--red, #E8291C);
+}
+
+.jb-tab:hover:not(.active) {
+    color: #555;
+}
+
 /* Thread */
 .jb-thread {
     background: white;
@@ -3804,7 +3906,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     border-radius: 12px;
     display: flex;
     flex-direction: column;
-    height: 600px;
+    overflow: hidden;
 }
 
 .jb-thread-body {
@@ -3847,10 +3949,10 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     font-family: 'DM Sans', sans-serif;
 }
 
-.jb-av-michael { background: var(--red, #E8291C); color: white; }
-.jb-av-stu { background: #0A1E3D; color: white; }
-.jb-av-dot { background: #F0F4FF; color: #3B5BDB; }
-.jb-av-client { background: #F7F7F7; color: #666; }
+.jb-av-michael,
+.jb-av-stu,
+.jb-av-dot,
+.jb-av-client { background: var(--red, #E8291C); color: white; }
 
 .jb-entry-content { flex: 1; }
 
@@ -3859,11 +3961,64 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     align-items: baseline;
     gap: 8px;
     margin-bottom: 3px;
+    position: relative;
 }
 
 .jb-entry-author { font-size: 13px; font-weight: 600; color: #111; }
 .jb-entry-time { font-size: 11px; color: #999; }
-.jb-entry-text { font-size: 13px; color: #666; line-height: 1.55; }
+
+.jb-entry-edit {
+    display: none;
+    background: none;
+    border: none;
+    color: #CCC;
+    cursor: pointer;
+    padding: 0;
+    margin-left: auto;
+    transition: color 0.15s;
+    line-height: 0;
+}
+
+.jb-entry:hover .jb-entry-edit { display: block; }
+.jb-entry-edit:hover { color: var(--red, #E8291C); }
+
+.jb-entry-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.jb-entry-text {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.55;
+    flex: 2;
+}
+
+.jb-entry-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    align-items: flex-start;
+    padding-top: 1px;
+}
+
+.jb-entry-pill {
+    background: #F5F5F5;
+    border: 1px solid #E5E5E5;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    color: #999;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.jb-entry-pill:hover {
+    background: #EDEDED;
+    color: #555;
+}
 
 .jb-date-sep {
     display: flex;
@@ -3895,15 +4050,115 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 /* Compose */
 .jb-compose {
     border-top: 1px solid var(--border, #E5E5E5);
-    padding: 12px 16px;
+    padding: 10px 16px 12px;
     background: #F7F7F7;
     border-radius: 0 0 12px 12px;
 }
 
+/* Attachment preview — hidden until file attached */
+.jb-attach-preview {
+    display: none;
+    margin-bottom: 8px;
+    background: white;
+    border: 1px solid var(--border, #E5E5E5);
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.jb-attach-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.jb-attach-name {
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    color: #333;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.jb-attach-remove {
+    background: none;
+    border: none;
+    color: #BBB;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0 2px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+
+.jb-attach-remove:hover { color: var(--red, #E8291C); }
+
+/* Subfolder picker */
+.jb-subfolder-picker {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.jb-subfolder-label {
+    font-size: 11px;
+    color: #999;
+    font-family: 'DM Sans', sans-serif;
+    flex-shrink: 0;
+}
+
+.jb-subfolder-btn {
+    background: #F0F0F0;
+    border: 1px solid #E0E0E0;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.jb-subfolder-btn.active {
+    background: #111;
+    border-color: #111;
+    color: white;
+}
+
+/* Compose row */
 .jb-compose-row {
     display: flex;
     gap: 8px;
     align-items: flex-end;
+}
+
+/* Paperclip button */
+.jb-attach-btn {
+    background: none;
+    border: none;
+    color: #CCC;
+    cursor: pointer;
+    padding: 0 4px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+    flex-shrink: 0;
+}
+
+.jb-attach-btn:hover,
+.jb-attach-btn.active {
+    color: var(--red, #E8291C);
+}
+
+/* Drag over state */
+.jb-thread.jb-drag-over {
+    border-color: var(--red, #E8291C);
+    background: #FFF8F8;
 }
 
 .jb-compose-input {
