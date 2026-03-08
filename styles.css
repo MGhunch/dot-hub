@@ -2396,6 +2396,10 @@ body.logged-out .view-tracker {
     color: var(--grey-800);
 }
 
+.tracker-form-input:is(select) {
+    padding-right: 32px;
+}
+
 .tracker-form-input:focus {
     outline: none;
     border-color: var(--red);
