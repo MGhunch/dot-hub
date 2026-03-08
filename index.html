@@ -431,9 +431,14 @@
                         <div class="jb-section-label-row">
                             <span class="jb-section-label">Story</span>
                         </div>
-                        <div class="jb-story" id="jb-story-card">
-                            <span class="jb-story-text" id="jb-story-text"></span>
-                            <button class="jb-story-more" id="jb-story-more" onclick="toggleStory()">Read more</button>
+                        <div class="jb-card jb-card-action" style="padding:0">
+                            <a class="jb-card-pencil" id="jb-story-edit-link" title="Edit story">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </a>
+                            <div class="jb-story" id="jb-story-card">
+                                <span class="jb-story-text" id="jb-story-text"></span>
+                                <button class="jb-story-more" id="jb-story-more" onclick="toggleStory()">Read more</button>
+                            </div>
                         </div>
 
                         <!-- Summary -->
@@ -952,5 +957,20 @@
     </div>
 
     <script src="app.js"></script>
+    <!-- Story Edit Modal -->
+    <div class="job-modal-overlay" id="story-edit-modal">
+        <div class="job-name-modal" style="max-width:400px">
+            <h3 class="job-name-modal-title">Edit story</h3>
+            <div class="job-form-group">
+                <textarea class="job-form-input jb-story-textarea" id="story-edit-input" maxlength="250" rows="4" placeholder="Two sentences. Who we're talking to and why they'll care."></textarea>
+                <div class="jb-story-char-count"><span id="story-char-count">0</span> / 250</div>
+            </div>
+            <div class="job-name-modal-buttons">
+                <button class="job-btn job-btn-secondary" onclick="closeStoryModal()">Cancel</button>
+                <button class="job-btn job-btn-primary" id="story-save-btn" onclick="saveStory()">Save</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

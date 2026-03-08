@@ -1404,6 +1404,12 @@ async function openJobBag(jobNumber) {
         openJobModal(jobNumber);
     };
 
+    // Story edit link
+    $('jb-story-edit-link').onclick = (e) => {
+        e.preventDefault();
+        openStoryModal(currentBagJob);
+    };
+
     // Tracker link — load data then open modal
     $('jb-tracker-link').onclick = async (e) => {
         e.preventDefault();
@@ -1460,6 +1466,80 @@ function closeJobBag() {
     currentBagJob = null;
     navigateTo('wip');
 }
+
+// ===== STORY EDITOR =====
+
+function openStoryModal(job) {
+    const modal = $('story-edit-modal');
+    const input = $('story-edit-input');
+    const counter = $('story-char-count');
+    if (!modal || !input) return;
+
+    input.value = job.theStory || '';
+    counter.textContent = input.value.length;
+
+    input.oninput = () => {
+        counter.textContent = input.value.length;
+    };
+
+    modal.classList.add('visible');
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+}
+
+function closeStoryModal() {
+    $('story-edit-modal')?.classList.remove('visible');
+}
+
+async function saveStory() {
+    if (!currentBagJob) return;
+    const input = $('story-edit-input');
+    const btn = $('story-save-btn');
+    const text = input.value.trim();
+
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+        const response = await fetch(`${API_BASE}/job/${encodeURIComponent(currentBagJob.jobNumber)}/story`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ story: text })
+        });
+
+        if (!response.ok) throw new Error('Save failed');
+
+        // Update in place
+        currentBagJob.theStory = text;
+        const storyEl = $('jb-story-text');
+        const storyMore = $('jb-story-more');
+        if (storyEl) storyEl.textContent = text || 'Watch this space.';
+
+        // Re-check if Read more is needed
+        requestAnimationFrame(() => {
+            if (storyMore && storyEl) {
+                storyMore.style.display = storyEl.scrollHeight > storyEl.clientHeight ? 'block' : 'none';
+            }
+        });
+
+        // Update allJobs state
+        const stateJob = state.allJobs.find(j => j.jobNumber === currentBagJob.jobNumber);
+        if (stateJob) stateJob.theStory = text;
+
+        closeStoryModal();
+        showToast('Story updated.', 'success');
+
+    } catch (e) {
+        console.error('[Story] Save failed:', e);
+        showToast("Couldn't save story.", 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save';
+    }
+}
+
+window.closeStoryModal = closeStoryModal;
+window.saveStory = saveStory;
 
 function renderJobBagFiles(job) {
     const filesBody = $('jb-files-body');

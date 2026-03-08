@@ -1039,6 +1039,41 @@ def update_job(job_number):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/job/<job_number>/story', methods=['PATCH'])
+def update_job_story(job_number):
+    """Update The Story field on a Project record"""
+    try:
+        data = request.get_json()
+        story = data.get('story', '').strip()
+
+        url = get_airtable_url('Projects')
+        params = {
+            'filterByFormula': f"{{Job Number}} = '{job_number}'",
+            'maxRecords': 1
+        }
+        response = requests.get(url, headers=HEADERS, params=params)
+        response.raise_for_status()
+
+        records = response.json().get('records', [])
+        if not records:
+            return jsonify({'error': 'Job not found'}), 404
+
+        record_id = records[0].get('id')
+
+        patch_response = requests.patch(
+            f"{url}/{record_id}",
+            headers=HEADERS,
+            json={'fields': {'The Story': story}}
+        )
+        patch_response.raise_for_status()
+
+        return jsonify({'success': True, 'story': story})
+
+    except Exception as e:
+        print(f'[Hub API] Error updating story for {job_number}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
 # ===== TRACKER =====
 @app.route('/api/tracker/clients')
 def get_tracker_clients():
