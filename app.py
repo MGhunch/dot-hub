@@ -1193,16 +1193,16 @@ def get_tracker_data():
 
 @app.route('/api/tracker/update', methods=['POST'])
 def update_tracker():
-    """Update a tracker record"""
+    """Update a tracker record, and optionally Stage on the linked Project"""
     try:
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
-        
+
         record_id = data.get('id')
         if not record_id:
             return jsonify({'error': 'Record ID required'}), 400
-        
+
         field_mapping = {
             'description': 'Tracker notes',
             'spend': 'Spend',
@@ -1210,15 +1210,15 @@ def update_tracker():
             'spendType': 'Spend type',
             'ballpark': 'Ballpark'
         }
-        
+
         airtable_fields = {}
         for key, value in data.items():
             if key in field_mapping:
                 airtable_fields[field_mapping[key]] = value
-        
+
         if not airtable_fields:
             return jsonify({'error': 'No valid fields to update'}), 400
-        
+
         url = get_airtable_url('Tracker')
         response = requests.patch(
             f"{url}/{record_id}",
@@ -1226,9 +1226,30 @@ def update_tracker():
             json={'fields': airtable_fields}
         )
         response.raise_for_status()
-        
+
+        # If stage provided, also patch the Projects record
+        stage = data.get('stage')
+        job_number = data.get('jobNumber')
+        if stage and job_number:
+            projects_url = get_airtable_url('Projects')
+            params = {
+                'filterByFormula': f"{{Job Number}} = '{job_number}'",
+                'maxRecords': 1
+            }
+            proj_response = requests.get(projects_url, headers=HEADERS, params=params)
+            proj_response.raise_for_status()
+            records = proj_response.json().get('records', [])
+            if records:
+                proj_id = records[0].get('id')
+                requests.patch(
+                    f"{projects_url}/{proj_id}",
+                    headers=HEADERS,
+                    json={'fields': {'Stage': stage}}
+                )
+                print(f'[Hub API] Updated Stage to {stage} for {job_number}')
+
         return jsonify({'success': True})
-    
+
     except Exception as e:
         print(f'[Hub API] Error updating tracker: {e}')
         return jsonify({'error': str(e)}), 500

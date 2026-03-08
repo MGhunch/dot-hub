@@ -977,5 +977,78 @@
         </div>
     </div>
 
+    <!-- Tracker Edit Modal -->
+    <div class="tracker-modal-overlay" id="tracker-edit-modal">
+        <div class="tracker-modal">
+            <div class="tracker-modal-header">
+                <span class="tracker-modal-title" id="tracker-modal-title">Update Project</span>
+                <div class="tracker-modal-header-right">
+                    <div class="ballpark-toggle">
+                        <span class="ballpark-label" id="tracker-ballpark-label">Ballpark</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="tracker-edit-ballpark">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <button class="tracker-modal-close" onclick="closeTrackerModal()">x</button>
+                </div>
+            </div>
+            <div class="tracker-modal-body">
+                <div class="tracker-form-group">
+                    <label class="tracker-form-label">Project Name</label>
+                    <input type="text" class="tracker-form-input" id="tracker-edit-name" readonly>
+                </div>
+                <div class="tracker-form-group">
+                    <label class="tracker-form-label">Description</label>
+                    <input type="text" class="tracker-form-input" id="tracker-edit-description">
+                </div>
+                <div class="tracker-form-group">
+                    <label class="tracker-form-label">Stage</label>
+                    <select class="tracker-form-input" id="tracker-edit-stage">
+                        <option value="Triage">Triage</option>
+                        <option value="Simplify">Simplify</option>
+                        <option value="Craft">Craft</option>
+                        <option value="Deliver">Deliver</option>
+                    </select>
+                </div>
+                <div class="tracker-form-row">
+                    <div class="tracker-form-group">
+                        <label class="tracker-form-label">Spend</label>
+                        <input type="number" class="tracker-form-input" id="tracker-edit-spend">
+                    </div>
+                    <div class="tracker-form-group">
+                        <label class="tracker-form-label">Month</label>
+                        <select class="tracker-form-input" id="tracker-edit-month">
+                            <option value="January">January</option>
+                            <option value="February">February</option>
+                            <option value="March">March</option>
+                            <option value="April">April</option>
+                            <option value="May">May</option>
+                            <option value="June">June</option>
+                            <option value="July">July</option>
+                            <option value="August">August</option>
+                            <option value="September">September</option>
+                            <option value="October">October</option>
+                            <option value="November">November</option>
+                            <option value="December">December</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="tracker-form-group">
+                    <label class="tracker-form-label">Spend Type</label>
+                    <select class="tracker-form-input" id="tracker-edit-spendtype">
+                        <option value="Project budget">Project budget</option>
+                        <option value="Extra budget">Extra budget</option>
+                        <option value="Project on us">Project on us</option>
+                    </select>
+                </div>
+            </div>
+            <div class="tracker-modal-footer">
+                <button class="tracker-btn tracker-btn-secondary" onclick="closeTrackerModal()">Cancel</button>
+                <button class="tracker-btn tracker-btn-primary" id="tracker-save-btn" onclick="saveTrackerProject()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

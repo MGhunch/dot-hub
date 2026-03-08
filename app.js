@@ -3054,65 +3054,8 @@ function renderTrackerContent() {
                 </div>
             </div>
         </div>
-        
-        <div class="tracker-modal-overlay" id="tracker-edit-modal">
-            <div class="tracker-modal">
-                <div class="tracker-modal-header">
-                    <span class="tracker-modal-title" id="tracker-modal-title">Update Project</span>
-                    <div class="tracker-modal-header-right">
-                        <div class="ballpark-toggle">
-                            <span class="ballpark-label" id="tracker-ballpark-label">Ballpark</span>
-                            <label class="toggle">
-                                <input type="checkbox" id="tracker-edit-ballpark">
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <button class="tracker-modal-close" onclick="closeTrackerModal()">x</button>
-                    </div>
-                </div>
-                <div class="tracker-modal-body">
-                    <div class="tracker-form-group">
-                        <label class="tracker-form-label">Project Name</label>
-                        <input type="text" class="tracker-form-input" id="tracker-edit-name" readonly>
-                    </div>
-                    <div class="tracker-form-group">
-                        <label class="tracker-form-label">Description</label>
-                        <input type="text" class="tracker-form-input" id="tracker-edit-description">
-                    </div>
-                    <div class="tracker-form-row">
-                        <div class="tracker-form-group">
-                            <label class="tracker-form-label">Spend</label>
-                            <input type="number" class="tracker-form-input" id="tracker-edit-spend">
-                        </div>
-                        <div class="tracker-form-group">
-                            <label class="tracker-form-label">Month</label>
-                            <select class="tracker-form-input" id="tracker-edit-month">
-                                <option value="January">January</option>
-                                <option value="February">February</option>
-                                <option value="March">March</option>
-                                <option value="October">October</option>
-                                <option value="November">November</option>
-                                <option value="December">December</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="tracker-form-group">
-                        <label class="tracker-form-label">Spend Type</label>
-                        <select class="tracker-form-input" id="tracker-edit-spendtype">
-                            <option value="Project budget">Project budget</option>
-                            <option value="Extra budget">Extra budget</option>
-                            <option value="Project on us">Project on us</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="tracker-modal-footer">
-                    <button class="tracker-btn tracker-btn-secondary" onclick="closeTrackerModal()">Cancel</button>
-                    <button class="tracker-btn tracker-btn-primary" id="tracker-save-btn" onclick="saveTrackerProject()">Save Changes</button>
-                </div>
-            </div>
-        </div>
     `;
-    
+
     setTimeout(renderTrackerChart, 0);
     setupTrackerModalListeners();
 }
@@ -3269,21 +3212,30 @@ function updateTrackerBallparkUI(isBallpark) {
 function openTrackerEditModal(jobNumber, month) {
     const project = trackerData.find(p => p.jobNumber === jobNumber && p.month === month) ||
                     trackerData.find(p => p.jobNumber === jobNumber);
-    if (!project) return;
-    
+
+    if (!project) {
+        showToast('No tracker entry found for this job.', 'error');
+        return;
+    }
+
     trackerCurrentEditData = project;
-    
+
     $('tracker-modal-title').textContent = 'Update ' + jobNumber;
     $('tracker-edit-name').value = project.projectName;
     $('tracker-edit-description').value = project.description || '';
     $('tracker-edit-spend').value = project.spend;
     $('tracker-edit-month').value = project.month;
     $('tracker-edit-spendtype').value = project.spendType;
-    
+
+    // Stage — read from allJobs state
+    const job = state.allJobs?.find(j => j.jobNumber === jobNumber);
+    const stageEl = $('tracker-edit-stage');
+    if (stageEl) stageEl.value = job?.stage || 'Triage';
+
     const isBallpark = project.ballpark || false;
     $('tracker-edit-ballpark').checked = isBallpark;
     updateTrackerBallparkUI(isBallpark);
-    
+
     $('tracker-edit-modal')?.classList.add('visible');
 }
 
@@ -3309,11 +3261,13 @@ async function saveTrackerProject() {
     
     const updates = {
         id: trackerCurrentEditData.id,
+        jobNumber: trackerCurrentEditData.jobNumber,
         description: $('tracker-edit-description').value,
         spend: parseFloat($('tracker-edit-spend').value) || 0,
         month: $('tracker-edit-month').value,
         spendType: $('tracker-edit-spendtype').value,
-        ballpark: $('tracker-edit-ballpark').checked
+        ballpark: $('tracker-edit-ballpark').checked,
+        stage: $('tracker-edit-stage')?.value || 'Triage'
     };
     
     const saveBtn = $('tracker-save-btn');
