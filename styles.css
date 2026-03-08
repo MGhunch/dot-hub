@@ -3652,10 +3652,22 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     border-radius: 12px;
     padding: 14px 20px;
     margin-bottom: 0;
+    position: relative;
 }
 
 .jb-story-eyebrow {
     display: none;
+}
+
+.jb-story-wrap {
+    position: relative;
+    height: calc(13px * 1.6 * 3);
+    overflow: hidden;
+}
+
+.jb-story.expanded .jb-story-wrap {
+    height: auto;
+    overflow: visible;
 }
 
 .jb-story-text {
@@ -3664,16 +3676,40 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     line-height: 1.6;
     font-weight: 400;
     font-family: 'DM Sans', sans-serif;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
 }
 
-.jb-story.expanded .jb-story-text {
-    display: block;
-    overflow: visible;
-    -webkit-line-clamp: unset;
+.jb-story-fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 28px;
+    background: linear-gradient(to bottom, transparent, white);
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding-right: 2px;
+    pointer-events: none;
+}
+
+.jb-story-fade-btn {
+    pointer-events: all;
+    background: none;
+    border: none;
+    color: var(--red, #E8291C);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: opacity 0.15s;
+}
+
+.jb-story-fade-btn:hover { opacity: 0.7; }
+
+.jb-story.expanded .jb-story-fade {
+    display: none;
 }
 
 .jb-story-more {

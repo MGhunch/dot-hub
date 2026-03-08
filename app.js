@@ -1362,10 +1362,13 @@ async function openJobBag(jobNumber) {
     storyEl.textContent = job.theStory || 'Watch this space. Currently working on a tight two sentence story that shows what we\'re trying to do and why anyone will care. This will get replaced when the thinking is done.';
     storyExpanded = false;
     if ($('jb-story-card')) $('jb-story-card').classList.remove('expanded');
-    // Show Read more only if text is actually clamped
+    if ($('jb-story-more')) $('jb-story-more').style.display = 'none';
+    // Show fade+more only if text overflows 3 lines
     requestAnimationFrame(() => {
-        if (storyMore && storyEl) {
-            storyMore.style.display = storyEl.scrollHeight > storyEl.clientHeight ? 'block' : 'none';
+        const wrap = $('jb-story-wrap');
+        const fade = $('jb-story-fade');
+        if (wrap && fade) {
+            fade.style.display = wrap.scrollHeight > wrap.clientHeight ? 'flex' : 'none';
         }
     });
 
@@ -1515,10 +1518,15 @@ async function saveStory() {
         const storyMore = $('jb-story-more');
         if (storyEl) storyEl.textContent = text || 'Watch this space.';
 
-        // Re-check if Read more is needed
+        // Re-check if fade is needed
         requestAnimationFrame(() => {
-            if (storyMore && storyEl) {
-                storyMore.style.display = storyEl.scrollHeight > storyEl.clientHeight ? 'block' : 'none';
+            const wrap = $('jb-story-wrap');
+            const fade = $('jb-story-fade');
+            const btn = $('jb-story-more');
+            if (wrap && fade) {
+                const overflows = wrap.scrollHeight > wrap.clientHeight;
+                fade.style.display = overflows ? 'flex' : 'none';
+                if (btn) btn.style.display = 'none';
             }
         });
 
@@ -1813,9 +1821,9 @@ function toggleStory() {
     storyExpanded = !storyExpanded;
     const card = $('jb-story-card');
     const btn = $('jb-story-more');
-    if (!card || !btn) return;
+    if (!card) return;
     card.classList.toggle('expanded', storyExpanded);
-    btn.textContent = storyExpanded ? 'Show less' : 'Read more';
+    if (btn) btn.style.display = storyExpanded ? 'block' : 'none';
 
     // Recalculate thread height after story expands
     requestAnimationFrame(() => {
