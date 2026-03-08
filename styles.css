@@ -3796,27 +3796,21 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     margin-bottom: 4px;
 }
 
-.jb-card-action {
-    position: relative;
-}
-
-.jb-card-pencil {
-    position: absolute;
-    top: 12px;
-    right: 14px;
+.jb-label-pencil {
     color: #CCC;
     cursor: pointer;
     transition: color 0.15s;
     line-height: 0;
+    margin-left: auto;
 }
 
-.jb-card-pencil:hover {
+.jb-label-pencil:hover {
     color: var(--red, #E8291C);
 }
 
 /* Summary */
 .jb-summary-body {
-    padding: 26px 18px 12px;
+    padding: 14px 18px 12px;
 }
 
 .jb-meta-row {
