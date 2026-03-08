@@ -1404,16 +1404,43 @@ async function openJobBag(jobNumber) {
         openJobModal(jobNumber);
     };
 
-    // Tracker link
-    $('jb-tracker-link').onclick = (e) => {
+    // Tracker link — load data then open modal
+    $('jb-tracker-link').onclick = async (e) => {
         e.preventDefault();
+        const pencil = $('jb-tracker-link');
+        const budgetBody = $('jb-budget-body');
+        const originalTitle = pencil.title;
+
+        pencil.style.opacity = '0.4';
+        pencil.style.pointerEvents = 'none';
+        if (budgetBody) budgetBody.innerHTML = '<div style="font-size:12px;color:#999;">Loading…</div>';
+
+        await loadTrackerData(job.clientCode);
+
+        pencil.style.opacity = '';
+        pencil.style.pointerEvents = '';
+        pencil.title = originalTitle;
+
+        loadJobBagBudget(jobNumber);
+
         const month = new Date().toLocaleString('en-US', { month: 'long' });
-        closeJobBag();
-        window.location.href = `?view=tracker&client=${job.clientCode}&month=${month}`;
+        openTrackerEditModal(jobNumber, month);
     };
 
     // Files
     renderJobBagFiles(job);
+
+    // Files pill — show only when filesUrl exists
+    const filesPillRow = $('jb-files-pill-row');
+    const filesPillLink = $('jb-files-pill-link');
+    if (filesPillRow && filesPillLink) {
+        if (job.filesUrl) {
+            filesPillLink.href = job.filesUrl;
+            filesPillRow.style.display = 'flex';
+        } else {
+            filesPillRow.style.display = 'none';
+        }
+    }
 
     // Navigate to Job Bag view
     navigateTo('job-bag');
@@ -1427,15 +1454,17 @@ async function openJobBag(jobNumber) {
 
     // Fix thread height to match left column, then scroll to bottom
     requestAnimationFrame(() => {
-        const left = document.querySelector('.jb-left');
-        const thread = document.querySelector('.jb-thread');
-        const threadBody = $('jb-thread-body');
-        if (left && thread) {
-            thread.style.height = left.offsetHeight + 'px';
-            thread.style.minHeight = 'unset';
-            thread.style.flex = 'none';
-        }
-        if (threadBody) threadBody.scrollTop = threadBody.scrollHeight;
+        requestAnimationFrame(() => {
+            const left = document.querySelector('.jb-left');
+            const thread = document.querySelector('.jb-thread');
+            const threadBody = $('jb-thread-body');
+            if (left && thread) {
+                thread.style.height = left.offsetHeight + 'px';
+                thread.style.minHeight = 'unset';
+                thread.style.flex = 'none';
+            }
+            if (threadBody) threadBody.scrollTop = threadBody.scrollHeight;
+        });
     });
 }
 
@@ -1539,10 +1568,6 @@ function renderThreadEntries(updates) {
                     </div>
                     <div class="jb-entry-body">
                         <div class="jb-entry-text">${escapeHtml(entry.update || '')}</div>
-                        <div class="jb-entry-actions">
-                            <button class="jb-entry-pill">✗ Email</button>
-                            <button class="jb-entry-pill">✗ Files</button>
-                        </div>
                     </div>
                 </div>
             </div>`;

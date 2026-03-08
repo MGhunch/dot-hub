@@ -3615,6 +3615,15 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     flex-shrink: 0;
 }
 
+.jb-toggle::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+}
+
 .jb-toggle::after {
     content: '';
     position: absolute;
@@ -4018,6 +4027,33 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 .jb-entry-pill:hover {
     background: #EDEDED;
     color: #555;
+}
+
+.jb-files-pill-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    border-top: 1px solid #F0F0F0;
+}
+
+.jb-files-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #F5F5F5;
+    border: 1px solid #E5E5E5;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    color: #666;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+
+.jb-files-pill:hover {
+    background: #EDEDED;
+    color: #333;
 }
 
 .jb-date-sep {
