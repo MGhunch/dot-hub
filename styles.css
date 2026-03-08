@@ -3657,6 +3657,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     padding: 14px 20px;
     margin-bottom: 0;
     position: relative;
+    box-shadow: var(--shadow-sm);
 }
 
 .jb-story-eyebrow {
@@ -3759,13 +3760,14 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 .jb-left {
     display: flex;
     flex-direction: column;
+    min-height: 600px;
 }
 
 /* Section labels — matches .section-title pattern */
 .jb-section-label-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     padding: 10px 0 8px;
 }
 
@@ -3798,6 +3800,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     border-radius: 12px;
     overflow: hidden;
     margin-bottom: 4px;
+    box-shadow: var(--shadow-sm);
 }
 
 .jb-label-pencil {
@@ -3967,6 +3970,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    box-shadow: var(--shadow-sm);
 }
 
 .jb-thread-body {
