@@ -1430,18 +1430,6 @@ async function openJobBag(jobNumber) {
     // Files
     renderJobBagFiles(job);
 
-    // Files pill — show only when filesUrl exists
-    const filesPillRow = $('jb-files-pill-row');
-    const filesPillLink = $('jb-files-pill-link');
-    if (filesPillRow && filesPillLink) {
-        if (job.filesUrl) {
-            filesPillLink.href = job.filesUrl;
-            filesPillRow.style.display = 'flex';
-        } else {
-            filesPillRow.style.display = 'none';
-        }
-    }
-
     // Navigate to Job Bag view
     navigateTo('job-bag');
 
@@ -1882,7 +1870,8 @@ async function saveJobUpdate() {
     btn.textContent = 'Updating...';
     
     // Build payload for Hub's unified update endpoint
-    const payload = { status, withClient };
+    const authorName = state.currentUser?.firstName || state.currentUser?.name || 'Dot';
+    const payload = { status, withClient, author: authorName };
     if (updateDue) payload.updateDue = updateDue;
     if (liveDate) payload.liveDate = liveDate;
     if (message && message !== currentEditJob.update) payload.message = message;
@@ -1928,7 +1917,12 @@ async function saveJobUpdate() {
         btn.textContent = 'UPDATE';
         btn.disabled = false;
         closeJobModal();
-        
+
+        // Refresh thread if we're in the Job Bag and a message was posted
+        if (message && message !== currentEditJob.update && currentBagJob?.jobNumber === jobNumber) {
+            loadJobBagUpdates(jobNumber);
+        }
+
         // Refresh WIP if visible
         if (state.currentView === 'wip') {
             renderWip();

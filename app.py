@@ -962,6 +962,7 @@ def update_job(job_number):
         # Extract message for Updates table (separate from Projects fields)
         message = data.get('message', '').strip()
         update_due = data.get('updateDue')
+        author = data.get('author', 'Dot').strip() or 'Dot'
         
         # Map frontend field names to Airtable field names
         field_mapping = {
@@ -1013,7 +1014,8 @@ def update_job(job_number):
             
             update_fields = {
                 'Update': message,
-                'Project Link': [record_id]  # Linked record field
+                'Author': author,
+                'Project Link': [record_id]
             }
             
             if update_due:
