@@ -1119,21 +1119,12 @@ function createUniversalCard(job, id) {
                 <div class="job-main">
                     <div class="job-title-row">
                         <span class="job-title">${job.jobNumber} | ${job.jobName}</span>
-                        <span class="expand-icon">${ICON_CHEVRON}</span>
+                        <span class="bag-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span>
                     </div>
                     <div class="job-update-preview">${job.update || 'No updates yet'}</div>
                     <div class="job-meta-compact">
                         ${ICON_CLOCK} ${dueDate}
                     </div>
-                </div>
-            </div>
-            <div class="job-expanded">
-                <div class="section-label">The Project</div>
-                <div class="job-description">${job.description || 'No description'}</div>
-                <div class="section-label" style="margin-top:14px">Recent Activity</div>
-                ${recentActivity}
-                <div class="job-expanded-footer">
-                    <button class="pill-btn update-btn" onclick="event.stopPropagation(); openJobDetail('${job.jobNumber}')">More →</button>
                 </div>
             </div>
         </div>
@@ -2521,7 +2512,7 @@ function renderWip() {
         });
     } else {
         content.querySelectorAll('.job-card').forEach(card => {
-            card.addEventListener('click', () => card.classList.toggle('expanded'));
+            card.addEventListener('click', () => openJobDetail(card.dataset.job));
         });
     }
 }

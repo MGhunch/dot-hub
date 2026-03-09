@@ -1356,9 +1356,19 @@ body.logged-out .view-tracker {
     box-shadow: var(--shadow-sm);
     cursor: pointer;
     transition: all 0.2s ease;
+    max-width: 480px;
 }
 .job-card:hover { box-shadow: var(--shadow-md); }
-.job-card.expanded { cursor: default; }
+
+.bag-icon {
+    color: var(--red);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+.job-card:hover .bag-icon { opacity: 1; }
 
 .job-header {
     display: flex;
@@ -1393,25 +1403,16 @@ body.logged-out .view-tracker {
     font-weight: 600;
     color: var(--grey-800);
 }
-.expand-icon {
-    color: var(--red);
-    transition: transform 0.2s ease;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-}
-.expand-icon .chevron-icon {
-    transition: transform 0.2s ease;
-}
-.job-card.expanded .expand-icon .chevron-icon { 
-    transform: rotate(180deg); 
-}
 
 .job-update-preview {
     font-size: 13px;
     color: var(--grey-600);
     margin-top: 4px;
     line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 .job-meta-compact {
     font-size: 12px;
