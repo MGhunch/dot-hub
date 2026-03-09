@@ -9,7 +9,7 @@
     --grey-600: #666;
     --grey-400: #999;
     --grey-200: #e5e5e5;
-    --grey-100: #f5f5f5;
+    --grey-100: #f0eeeb;
     --grey-50: #fafafa;
     --white: #ffffff;
     --green: #22a822;
@@ -3545,7 +3545,6 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 /* Job Header */
 .jb-header {
     background: white;
-    border: 1px solid var(--border, #E5E5E5);
     border-radius: 12px;
     padding: 16px 20px;
     display: flex;
@@ -3694,8 +3693,8 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     background: linear-gradient(to bottom, transparent, white);
     display: flex;
     align-items: flex-end;
-    justify-content: flex-end;
-    padding-right: 2px;
+    justify-content: flex-start;
+    padding-left: 2px;
     pointer-events: none;
 }
 
@@ -3774,7 +3773,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 .jb-section-label {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1.5px;
@@ -3917,8 +3916,8 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 .jb-file-row:last-child { border-bottom: none; }
 .jb-file-row:hover .jb-file-name { color: var(--red, #E8291C); }
 
-.jb-file-left { display: flex; align-items: center; gap: 8px; }
-.jb-file-icon { font-size: 14px; width: 22px; text-align: center; }
+.jb-file-left { display: flex; align-items: center; gap: 10px; }
+.jb-file-icon { font-size: 16px; width: 22px; text-align: center; line-height: 1; display: flex; align-items: center; justify-content: center; }
 .jb-file-name { font-size: 13px; font-weight: 500; color: #222; transition: color 0.15s; }
 .jb-file-arrow { font-size: 11px; color: #CCC; }
 .jb-files-empty { font-size: 12px; color: #999; padding: 8px 0; display: block; }

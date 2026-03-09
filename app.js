@@ -1334,7 +1334,8 @@ async function openJobBag(jobNumber) {
     currentBagJob = job;
 
     // Job header — combined title
-    $('jb-job-title').textContent = `${job.jobNumber} — ${job.jobName || 'Untitled'}`;
+    const jobNameParts = `<span style="font-weight:700">${job.jobNumber}</span> <span style="font-weight:300">— ${job.jobName || 'Untitled'}</span>`;
+    $('jb-job-title').innerHTML = jobNameParts;
     $('jb-job-desc').textContent = job.description || '';
 
     const logo = $('jb-logo');
