@@ -1434,6 +1434,10 @@ async function openJobBag(jobNumber) {
     // Navigate to Job Bag view
     navigateTo('job-bag');
 
+    // Update URL so refresh returns to this job
+    const compactJob = jobNumber.replace(/\s+/g, '');
+    window.history.replaceState({}, '', `?job=${compactJob}`);
+
     // Load updates + budget in parallel
     loadJobBagUpdates(jobNumber);
     loadJobBagBudget(jobNumber);
@@ -1459,6 +1463,7 @@ async function openJobBag(jobNumber) {
 
 function closeJobBag() {
     currentBagJob = null;
+    window.history.replaceState({}, '', window.location.pathname);
     navigateTo('wip');
 }
 
