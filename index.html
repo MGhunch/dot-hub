@@ -517,6 +517,11 @@
                                 </a>
                             </div>
                             <div class="jb-compose">
+                                <div class="jb-backdate-pill" id="jb-backdate-pill" style="display:none">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <span id="jb-backdate-label"></span>
+                                    <button class="jb-attach-remove" id="jb-backdate-clear">✕</button>
+                                </div>
                                 <div class="jb-attach-preview" id="jb-attach-preview">
                                     <div class="jb-attach-info">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -532,8 +537,12 @@
                                 </div>
                                 <div class="jb-compose-row">
                                     <input type="file" id="jb-file-input" style="display:none">
+                                    <input type="date" id="jb-backdate-input" style="display:none">
                                     <button class="jb-attach-btn" id="jb-attach-btn" title="Attach file">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                    </button>
+                                    <button class="jb-attach-btn" id="jb-calendar-btn" title="Backdate update">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                     </button>
                                     <textarea class="jb-compose-input" id="jb-compose-input" placeholder="What's the latest on this job…" rows="1"></textarea>
                                     <button class="jb-post-btn" id="jb-post-btn">Update</button>
@@ -960,6 +969,31 @@
     </div>
 
     <script src="app.js"></script>
+    <!-- Story Edit Modal -->
+    <!-- Update Edit Modal -->
+    <div class="job-modal-overlay" id="update-edit-modal">
+        <div class="job-name-modal" style="max-width:420px">
+            <h3 class="job-name-modal-title">Edit update</h3>
+            <div class="job-form-group">
+                <textarea class="job-form-input jb-story-textarea" id="update-edit-input" rows="4" placeholder="What happened?"></textarea>
+            </div>
+            <div class="job-name-modal-buttons" id="update-edit-footer" style="justify-content:space-between">
+                <button class="job-btn job-btn-secondary" style="color:var(--red)" onclick="confirmDeleteUpdate()">Delete</button>
+                <div style="display:flex;gap:8px">
+                    <button class="job-btn job-btn-secondary" onclick="closeUpdateEditModal()">Cancel</button>
+                    <button class="job-btn job-btn-primary" id="update-save-btn" onclick="saveUpdateEdit()">Save</button>
+                </div>
+            </div>
+            <div class="job-name-modal-buttons" id="update-delete-confirm" style="display:none;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:#666">Delete this update?</span>
+                <div style="display:flex;gap:8px">
+                    <button class="job-btn job-btn-secondary" onclick="cancelDeleteUpdate()">Cancel</button>
+                    <button class="job-btn job-btn-primary" id="update-delete-confirm-btn" onclick="executeDeleteUpdate()">Yes, delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Story Edit Modal -->
     <div class="job-modal-overlay" id="story-edit-modal">
         <div class="job-name-modal" style="max-width:400px">

@@ -1277,7 +1277,8 @@ def get_job_updates(job_number):
                 'id': record.get('id'),
                 'update': fields.get('Update', ''),
                 'author': fields.get('Author', 'Dot'),
-                'created_time': fields.get('Created Time', '')
+                'created_time': fields.get('Created Time', ''),
+                'backdate': fields.get('Backdate', '')
             })
 
         return jsonify(updates)
@@ -1294,6 +1295,7 @@ def post_job_update(job_number):
         data = request.get_json()
         text = (data.get('text') or '').strip()
         author = (data.get('author') or 'Dot').strip()
+        backdate = (data.get('date') or '').strip()
 
         if not text:
             return jsonify({'error': 'Update text required'}), 400
@@ -1314,13 +1316,15 @@ def post_job_update(job_number):
 
         # Create the update record
         updates_url = get_airtable_url('Updates')
-        new_record = {
-            'fields': {
-                'Update': text,
-                'Author': author,
-                'Project Link': [project_record_id]
-            }
+        new_fields = {
+            'Update': text,
+            'Author': author,
+            'Project Link': [project_record_id]
         }
+        if backdate:
+            new_fields['Backdate'] = backdate
+
+        new_record = {'fields': new_fields}
         create_response = requests.post(updates_url, headers=HEADERS, json=new_record)
         create_response.raise_for_status()
 
@@ -1331,11 +1335,52 @@ def post_job_update(job_number):
             'id': created.get('id'),
             'update': fields.get('Update', ''),
             'author': fields.get('Author', author),
-            'created_time': fields.get('Created Time', '')
+            'created_time': fields.get('Created Time', ''),
+            'backdate': fields.get('Backdate', '')
         })
 
     except Exception as e:
         print(f'[Hub API] Error posting update for {job_number}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/job/<job_number>/updates/<record_id>', methods=['PATCH'])
+def patch_job_update(job_number, record_id):
+    """Edit the text of an existing update record"""
+    try:
+        data = request.get_json()
+        text = (data.get('text') or '').strip()
+        if not text:
+            return jsonify({'error': 'Update text required'}), 400
+
+        updates_url = get_airtable_url('Updates')
+        patch_response = requests.patch(
+            f"{updates_url}/{record_id}",
+            headers=HEADERS,
+            json={'fields': {'Update': text}}
+        )
+        patch_response.raise_for_status()
+        return jsonify({'success': True})
+
+    except Exception as e:
+        print(f'[Hub API] Error patching update {record_id}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/job/<job_number>/updates/<record_id>', methods=['DELETE'])
+def delete_job_update(job_number, record_id):
+    """Delete an update record"""
+    try:
+        updates_url = get_airtable_url('Updates')
+        del_response = requests.delete(
+            f"{updates_url}/{record_id}",
+            headers=HEADERS
+        )
+        del_response.raise_for_status()
+        return jsonify({'success': True})
+
+    except Exception as e:
+        print(f'[Hub API] Error deleting update {record_id}: {e}')
         return jsonify({'error': str(e)}), 500
 
 

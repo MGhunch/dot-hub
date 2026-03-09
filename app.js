@@ -1605,8 +1605,17 @@ function renderThreadEntries(updates) {
     let html = '';
     let lastDateKey = null;
 
-    updates.forEach(entry => {
-        const dt = entry.created_time ? new Date(entry.created_time) : null;
+    // Sort by effective date (backdate takes priority over created_time)
+    const sorted = [...updates].sort((a, b) => {
+        const dateA = new Date(a.backdate ? a.backdate + 'T12:00:00' : a.created_time);
+        const dateB = new Date(b.backdate ? b.backdate + 'T12:00:00' : b.created_time);
+        return dateA - dateB;
+    });
+
+    sorted.forEach(entry => {
+        // Use backdate if present, otherwise created_time
+        const effectiveDate = entry.backdate ? entry.backdate + 'T12:00:00' : entry.created_time;
+        const dt = effectiveDate ? new Date(effectiveDate) : null;
         const dateKey = dt ? dt.toDateString() : null;
 
         if (dateKey && dateKey !== lastDateKey) {
@@ -1627,9 +1636,11 @@ function renderThreadEntries(updates) {
         }
 
         const author = entry.author || 'Dot';
-        const timeStr = dt ? dt.toLocaleTimeString('en-NZ', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase() : '';
+        // Show time only for non-backdated entries
+        const timeStr = (!entry.backdate && dt) ? dt.toLocaleTimeString('en-NZ', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase() : '';
         const avatarClass = getAvatarClass(author);
         const initials = getInitials(author);
+        const entryData = JSON.stringify(entry).replace(/'/g, '&#39;');
 
         html += `
             <div class="jb-entry">
@@ -1638,7 +1649,7 @@ function renderThreadEntries(updates) {
                     <div class="jb-entry-header">
                         <span class="jb-entry-author">${escapeHtml(author)}</span>
                         <span class="jb-entry-time">${timeStr}</span>
-                        <button class="jb-entry-edit" onclick="editEntry(${JSON.stringify(entry.update || '')})" title="Edit">
+                        <button class="jb-entry-edit" onclick="editEntry(${entryData})" title="Edit">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>
                     </div>
@@ -1759,6 +1770,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Calendar button → date picker for backdating
+    const calendarBtn = $('jb-calendar-btn');
+    const backdateInput = $('jb-backdate-input');
+    if (calendarBtn && backdateInput) {
+        backdateInput.max = new Date().toISOString().split('T')[0];
+        calendarBtn.addEventListener('click', () => backdateInput.click());
+        backdateInput.addEventListener('change', () => {
+            const val = backdateInput.value;
+            const today = new Date().toISOString().split('T')[0];
+            if (!val || val === today) {
+                clearBackdate();
+            } else {
+                const d = new Date(val + 'T12:00:00');
+                const label = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                $('jb-backdate-label').textContent = label;
+                $('jb-backdate-pill').style.display = 'flex';
+                calendarBtn.classList.add('active');
+            }
+        });
+    }
+
+    const backdateClearBtn = $('jb-backdate-clear');
+    if (backdateClearBtn) backdateClearBtn.addEventListener('click', clearBackdate);
+
     // Remove attachment
     const removeBtn = $('jb-attach-remove');
     if (removeBtn) removeBtn.addEventListener('click', clearAttachedFile);
@@ -1803,6 +1838,20 @@ function clearAttachedFile() {
     if (fileInput) fileInput.value = '';
 }
 
+function clearBackdate() {
+    const backdateInput = $('jb-backdate-input');
+    const calendarBtn = $('jb-calendar-btn');
+    if (backdateInput) backdateInput.value = '';
+    if ($('jb-backdate-pill')) $('jb-backdate-pill').style.display = 'none';
+    if (calendarBtn) calendarBtn.classList.remove('active');
+}
+
+function getBackdateValue() {
+    const val = $('jb-backdate-input')?.value;
+    const today = new Date().toISOString().split('T')[0];
+    return (val && val !== today) ? val : null;
+}
+
 function getSelectedSubfolder() {
     const active = document.querySelector('.jb-subfolder-btn.active');
     return active ? active.dataset.folder : 'Workings';
@@ -1835,15 +1884,101 @@ function toggleStory() {
     });
 }
 
-function editEntry(text) {
-    const input = $('jb-compose-input');
-    if (!input) return;
-    input.value = text;
-    input.style.height = 'auto';
-    input.style.height = Math.min(input.scrollHeight, 80) + 'px';
+// ===== UPDATE EDIT MODAL =====
+
+let currentEditEntry = null;
+
+function editEntry(entry) {
+    currentEditEntry = entry;
+    const modal = $('update-edit-modal');
+    const input = $('update-edit-input');
+    if (!modal || !input) return;
+    input.value = entry.update || '';
+    // Reset confirm state
+    const footer = $('update-edit-footer');
+    const confirm = $('update-delete-confirm');
+    if (footer) footer.style.display = 'flex';
+    if (confirm) confirm.style.display = 'none';
+    modal.classList.add('visible');
     input.focus();
-    input.setSelectionRange(text.length, text.length);
+    input.setSelectionRange(input.value.length, input.value.length);
 }
+
+function closeUpdateEditModal() {
+    $('update-edit-modal')?.classList.remove('visible');
+    currentEditEntry = null;
+}
+
+function confirmDeleteUpdate() {
+    $('update-edit-footer').style.display = 'none';
+    $('update-delete-confirm').style.display = 'flex';
+}
+
+function cancelDeleteUpdate() {
+    $('update-edit-footer').style.display = 'flex';
+    $('update-delete-confirm').style.display = 'none';
+}
+
+async function saveUpdateEdit() {
+    if (!currentEditEntry || !currentBagJob) return;
+    const input = $('update-edit-input');
+    const btn = $('update-save-btn');
+    const text = input.value.trim();
+    if (!text) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+        const response = await fetch(`${API_BASE}/job/${encodeURIComponent(currentBagJob.jobNumber)}/updates/${currentEditEntry.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+        if (!response.ok) throw new Error('Save failed');
+        closeUpdateEditModal();
+        loadJobBagUpdates(currentBagJob.jobNumber);
+        showToast('Update saved.', 'success');
+    } catch (e) {
+        console.error('[Job Bag] Edit save failed:', e);
+        showToast("Couldn't save update.", 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save';
+    }
+}
+
+async function executeDeleteUpdate() {
+    if (!currentEditEntry || !currentBagJob) return;
+    const btn = $('update-delete-confirm-btn');
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+
+    try {
+        const response = await fetch(`${API_BASE}/job/${encodeURIComponent(currentBagJob.jobNumber)}/updates/${currentEditEntry.id}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) throw new Error('Delete failed');
+        closeUpdateEditModal();
+        loadJobBagUpdates(currentBagJob.jobNumber);
+        showToast('Update deleted.', 'success');
+    } catch (e) {
+        console.error('[Job Bag] Delete failed:', e);
+        showToast("Couldn't delete update.", 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Yes, delete';
+    }
+}
+
+window.editEntry = editEntry;
+window.closeUpdateEditModal = closeUpdateEditModal;
+window.confirmDeleteUpdate = confirmDeleteUpdate;
+window.cancelDeleteUpdate = cancelDeleteUpdate;
+window.saveUpdateEdit = saveUpdateEdit;
+window.executeDeleteUpdate = executeDeleteUpdate;
+
+
 
 async function postJobBagUpdate() {
     if (!currentBagJob) return;
@@ -1889,18 +2024,23 @@ async function postJobBagUpdate() {
 
         // If there's text, post the update entry
         if (text) {
+            const backdateVal = getBackdateValue();
+            const body = { text, author: authorName };
+            if (backdateVal) body.date = backdateVal;
+
             const response = await fetch(`${API_BASE}/job/${encodeURIComponent(currentBagJob.jobNumber)}/updates`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, author: authorName })
+                body: JSON.stringify(body)
             });
 
             if (!response.ok) throw new Error('Post failed');
             const newEntry = await response.json();
 
-            // Clear input
+            // Clear input and backdate
             input.value = '';
             input.style.height = 'auto';
+            clearBackdate();
 
             // Append to thread
             const threadBody = $('jb-thread-body');
