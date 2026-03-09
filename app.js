@@ -1601,6 +1601,9 @@ async function loadJobBagUpdates(jobNumber) {
     }
 }
 
+// Registry for thread entries — keyed by record ID for safe onclick access
+const threadEntryRegistry = {};
+
 function renderThreadEntries(updates) {
     let html = '';
     let lastDateKey = null;
@@ -1640,7 +1643,8 @@ function renderThreadEntries(updates) {
         const timeStr = (!entry.backdate && dt) ? dt.toLocaleTimeString('en-NZ', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase() : '';
         const avatarClass = getAvatarClass(author);
         const initials = getInitials(author);
-        const entryData = JSON.stringify(entry).replace(/'/g, '&#39;');
+        // Store in registry so onclick can look it up safely
+        threadEntryRegistry[entry.id] = entry;
 
         html += `
             <div class="jb-entry">
@@ -1649,7 +1653,7 @@ function renderThreadEntries(updates) {
                     <div class="jb-entry-header">
                         <span class="jb-entry-author">${escapeHtml(author)}</span>
                         <span class="jb-entry-time">${timeStr}</span>
-                        <button class="jb-entry-edit" onclick="editEntry(${entryData})" title="Edit">
+                        <button class="jb-entry-edit" onclick="editEntry('${entry.id}')" title="Edit">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>
                     </div>
@@ -1888,7 +1892,9 @@ function toggleStory() {
 
 let currentEditEntry = null;
 
-function editEntry(entry) {
+function editEntry(entryId) {
+    const entry = threadEntryRegistry[entryId];
+    if (!entry) return;
     currentEditEntry = entry;
     const modal = $('update-edit-modal');
     const input = $('update-edit-input');
