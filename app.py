@@ -1346,18 +1346,23 @@ def post_job_update(job_number):
 
 @app.route('/api/job/<job_number>/updates/<record_id>', methods=['PATCH'])
 def patch_job_update(job_number, record_id):
-    """Edit the text of an existing update record"""
+    """Edit the text and optional backdate of an existing update record"""
     try:
         data = request.get_json()
         text = (data.get('text') or '').strip()
         if not text:
             return jsonify({'error': 'Update text required'}), 400
 
+        fields = {'Update': text}
+        backdate = (data.get('backdate') or '').strip()
+        if backdate:
+            fields['Backdate'] = backdate
+
         updates_url = get_airtable_url('Updates')
         patch_response = requests.patch(
             f"{updates_url}/{record_id}",
             headers=HEADERS,
-            json={'fields': {'Update': text}}
+            json={'fields': fields}
         )
         patch_response.raise_for_status()
         return jsonify({'success': True})

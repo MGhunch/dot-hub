@@ -1771,30 +1771,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Calendar button → date picker for backdating
-    const calendarBtn = $('jb-calendar-btn');
-    const backdateInput = $('jb-backdate-input');
-    if (calendarBtn && backdateInput) {
-        backdateInput.max = new Date().toISOString().split('T')[0];
-        calendarBtn.addEventListener('click', () => backdateInput.click());
-        backdateInput.addEventListener('change', () => {
-            const val = backdateInput.value;
-            const today = new Date().toISOString().split('T')[0];
-            if (!val || val === today) {
-                clearBackdate();
-            } else {
-                const d = new Date(val + 'T12:00:00');
-                const label = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-                $('jb-backdate-label').textContent = label;
-                $('jb-backdate-pill').style.display = 'flex';
-                calendarBtn.classList.add('active');
-            }
-        });
-    }
-
-    const backdateClearBtn = $('jb-backdate-clear');
-    if (backdateClearBtn) backdateClearBtn.addEventListener('click', clearBackdate);
-
     // Remove attachment
     const removeBtn = $('jb-attach-remove');
     if (removeBtn) removeBtn.addEventListener('click', clearAttachedFile);
@@ -1837,20 +1813,6 @@ function clearAttachedFile() {
     $('jb-attach-btn').classList.remove('active');
     const fileInput = $('jb-file-input');
     if (fileInput) fileInput.value = '';
-}
-
-function clearBackdate() {
-    const backdateInput = $('jb-backdate-input');
-    const calendarBtn = $('jb-calendar-btn');
-    if (backdateInput) backdateInput.value = '';
-    if ($('jb-backdate-pill')) $('jb-backdate-pill').style.display = 'none';
-    if (calendarBtn) calendarBtn.classList.remove('active');
-}
-
-function getBackdateValue() {
-    const val = $('jb-backdate-input')?.value;
-    const today = new Date().toISOString().split('T')[0];
-    return (val && val !== today) ? val : null;
 }
 
 function getSelectedSubfolder() {
@@ -1897,6 +1859,9 @@ function editEntry(entryId) {
     const input = $('update-edit-input');
     if (!modal || !input) return;
     input.value = entry.update || '';
+    // Pre-fill date if backdated
+    const dateInput = $('update-edit-date');
+    if (dateInput) dateInput.value = entry.backdate || '';
     // Reset confirm state
     const footer = $('update-edit-footer');
     const confirm = $('update-delete-confirm');
@@ -1925,9 +1890,14 @@ function cancelDeleteUpdate() {
 async function saveUpdateEdit() {
     if (!currentEditEntry || !currentBagJob) return;
     const input = $('update-edit-input');
+    const dateInput = $('update-edit-date');
     const btn = $('update-save-btn');
     const text = input.value.trim();
     if (!text) return;
+
+    const body = { text };
+    const dateVal = dateInput?.value || '';
+    if (dateVal) body.backdate = dateVal;
 
     btn.disabled = true;
     btn.textContent = 'Saving…';
@@ -1936,7 +1906,7 @@ async function saveUpdateEdit() {
         const response = await fetch(`${API_BASE}/job/${encodeURIComponent(currentBagJob.jobNumber)}/updates/${currentEditEntry.id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
+            body: JSON.stringify(body)
         });
         if (!response.ok) throw new Error('Save failed');
         closeUpdateEditModal();
@@ -2027,9 +1997,7 @@ async function postJobBagUpdate() {
 
         // If there's text, post the update entry
         if (text) {
-            const backdateVal = getBackdateValue();
             const body = { text, author: authorName };
-            if (backdateVal) body.date = backdateVal;
 
             const response = await fetch(`${API_BASE}/job/${encodeURIComponent(currentBagJob.jobNumber)}/updates`, {
                 method: 'POST',
@@ -2040,10 +2008,9 @@ async function postJobBagUpdate() {
             if (!response.ok) throw new Error('Post failed');
             const newEntry = await response.json();
 
-            // Clear input and backdate
+            // Clear input
             input.value = '';
             input.style.height = 'auto';
-            clearBackdate();
 
             // Append to thread
             const threadBody = $('jb-thread-body');

@@ -4296,17 +4296,3 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 /* Backdate pill — shown when a past date is selected */
-.jb-backdate-pill {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
-    padding: 4px 10px 4px 8px;
-    background: #FFF3F3;
-    border: 1px solid #F5C0BC;
-    border-radius: 6px;
-    font-size: 12px;
-    font-family: 'DM Sans', sans-serif;
-    color: var(--red, #E8291C);
-    font-weight: 500;
-}
