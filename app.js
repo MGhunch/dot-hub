@@ -1459,6 +1459,9 @@ async function openJobBag(jobNumber) {
             if (threadBody) threadBody.scrollTop = threadBody.scrollHeight;
         });
     });
+    
+    // Render nav footer
+    renderJobBagNav();
 }
 
 function closeJobBag() {
@@ -1466,6 +1469,182 @@ function closeJobBag() {
     window.history.replaceState({}, '', window.location.pathname);
     navigateTo('wip');
 }
+
+// ===== JOB BAG NAV =====
+
+function getClientActiveJobs(clientCode) {
+    const activeStatuses = ['In Progress', 'On Hold', 'Always on'];
+    return state.allJobs
+        .filter(j => j.clientCode === clientCode && activeStatuses.includes(j.status))
+        .sort((a, b) => {
+            // Sort by job number (extract numeric part)
+            const numA = parseInt(a.jobNumber.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.jobNumber.replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
+}
+
+function getClientsWithActiveJobs() {
+    const activeStatuses = ['In Progress', 'On Hold', 'Always on'];
+    const clientCodes = new Set();
+    state.allJobs.forEach(j => {
+        if (activeStatuses.includes(j.status)) {
+            clientCodes.add(j.clientCode);
+        }
+    });
+    // Return clients that have active jobs
+    return state.allClients.filter(c => clientCodes.has(c.code));
+}
+
+function renderJobBagNav() {
+    if (!currentBagJob) return;
+    
+    const clientCode = currentBagJob.clientCode;
+    const jobs = getClientActiveJobs(clientCode);
+    const currentIndex = jobs.findIndex(j => j.jobNumber === currentBagJob.jobNumber);
+    
+    // Prev/next with wrap-around
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : jobs.length - 1;
+    const nextIndex = currentIndex < jobs.length - 1 ? currentIndex + 1 : 0;
+    const prevJob = jobs[prevIndex];
+    const nextJob = jobs[nextIndex];
+    
+    // Update prev button
+    const prevLabel = $('jb-nav-prev-label');
+    const prevBtn = $('jb-nav-prev');
+    if (prevLabel && prevBtn) {
+        if (jobs.length > 1) {
+            prevLabel.textContent = prevJob.jobNumber;
+            prevBtn.disabled = false;
+        } else {
+            prevLabel.textContent = '';
+            prevBtn.disabled = true;
+        }
+    }
+    
+    // Update next button
+    const nextLabel = $('jb-nav-next-label');
+    const nextBtn = $('jb-nav-next');
+    if (nextLabel && nextBtn) {
+        if (jobs.length > 1) {
+            nextLabel.textContent = nextJob.jobNumber;
+            nextBtn.disabled = false;
+        } else {
+            nextLabel.textContent = '';
+            nextBtn.disabled = true;
+        }
+    }
+    
+    // Update center - logo + client name
+    const logo = $('jb-nav-logo');
+    const clientName = $('jb-nav-client');
+    const center = $('jb-nav-center');
+    
+    if (logo) {
+        logo.src = getLogoUrl(clientCode);
+        logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
+    }
+    
+    if (clientName) {
+        const client = state.allClients.find(c => c.code === clientCode);
+        clientName.textContent = client?.name || clientCode;
+    }
+    
+    // Dropdown: only for Full access with multiple clients
+    const canSwitch = state.currentUser?.accessLevel === 'Full';
+    const clientsWithJobs = getClientsWithActiveJobs();
+    
+    if (center) {
+        if (canSwitch && clientsWithJobs.length > 1) {
+            center.classList.remove('no-dropdown');
+            center.onclick = toggleJobBagClientDropdown;
+            renderJobBagClientDropdown(clientsWithJobs, clientCode);
+        } else {
+            center.classList.add('no-dropdown');
+            center.onclick = null;
+        }
+    }
+}
+
+function renderJobBagClientDropdown(clients, currentCode) {
+    const dropdown = $('jb-nav-dropdown');
+    if (!dropdown) return;
+    
+    // Sort: key clients first, then alphabetical
+    const keyClients = ['ONE', 'ONS', 'ONB', 'SKY', 'TOW', 'FIS'];
+    clients.sort((a, b) => {
+        const aKey = keyClients.indexOf(a.code);
+        const bKey = keyClients.indexOf(b.code);
+        if (aKey !== -1 && bKey !== -1) return aKey - bKey;
+        if (aKey !== -1) return -1;
+        if (bKey !== -1) return 1;
+        return a.name.localeCompare(b.name);
+    });
+    
+    let html = '';
+    clients.forEach(c => {
+        const isActive = c.code === currentCode ? ' active' : '';
+        html += `<div class="jb-nav-dropdown-item${isActive}" onclick="switchJobBagClient('${c.code}')">
+            <img src="${getLogoUrl(c.code)}" onerror="this.src='images/logos/Unknown.png'" alt="">
+            <span>${c.name}</span>
+        </div>`;
+    });
+    
+    dropdown.innerHTML = html;
+}
+
+function toggleJobBagClientDropdown(e) {
+    e.stopPropagation();
+    const center = $('jb-nav-center');
+    if (center) {
+        center.classList.toggle('open');
+    }
+}
+
+function switchJobBagClient(clientCode) {
+    // Close dropdown
+    $('jb-nav-center')?.classList.remove('open');
+    
+    // Find most recent active job for this client (by last update)
+    const jobs = getClientActiveJobs(clientCode);
+    if (jobs.length === 0) return;
+    
+    // Sort by last update date, most recent first
+    const sorted = [...jobs].sort((a, b) => {
+        const dateA = a.lastUpdate ? new Date(a.lastUpdate) : new Date(0);
+        const dateB = b.lastUpdate ? new Date(b.lastUpdate) : new Date(0);
+        return dateB - dateA;
+    });
+    
+    openJobBag(sorted[0].jobNumber);
+}
+
+function navigateJobBag(direction) {
+    if (!currentBagJob) return;
+    
+    const jobs = getClientActiveJobs(currentBagJob.clientCode);
+    const currentIndex = jobs.findIndex(j => j.jobNumber === currentBagJob.jobNumber);
+    
+    let newIndex;
+    if (direction === 'prev') {
+        newIndex = currentIndex > 0 ? currentIndex - 1 : jobs.length - 1;
+    } else {
+        newIndex = currentIndex < jobs.length - 1 ? currentIndex + 1 : 0;
+    }
+    
+    openJobBag(jobs[newIndex].jobNumber);
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.jb-nav-center')) {
+        $('jb-nav-center')?.classList.remove('open');
+    }
+});
+
+// Make nav functions globally available
+window.navigateJobBag = navigateJobBag;
+window.switchJobBagClient = switchJobBagClient;
 
 // ===== STORY EDITOR =====
 
