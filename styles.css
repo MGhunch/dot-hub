@@ -4279,7 +4279,9 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     height: 38px;
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     cursor: pointer;
     transition: background 0.15s;
     flex-shrink: 0;
