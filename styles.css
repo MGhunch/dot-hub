@@ -3655,6 +3655,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     margin-bottom: 0;
     position: relative;
     box-shadow: var(--shadow-sm);
+    cursor: pointer;
 }
 
 .jb-story-eyebrow {
@@ -3815,6 +3816,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 /* Summary */
 .jb-summary-body {
     padding: 14px 18px 12px;
+    cursor: pointer;
 }
 
 .jb-meta-row {
@@ -3845,6 +3847,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 .jb-budget-body {
     padding: 14px 18px;
     font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
 }
 
 .jb-spend-total {
@@ -3995,6 +3998,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 .jb-entry:hover { background: #FAFAFA; }
+.jb-entry { cursor: pointer; }
 
 .jb-avatar {
     width: 28px;

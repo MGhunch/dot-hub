@@ -1428,6 +1428,25 @@ async function openJobBag(jobNumber) {
         openTrackerEditModal(jobNumber, month);
     };
 
+    // Card click-to-edit handlers
+    const storyCard = $('jb-story-card');
+    if (storyCard) {
+        storyCard.onclick = (e) => {
+            if (e.target.tagName === 'BUTTON') return; // Let toggle buttons work
+            openStoryModal(currentBagJob);
+        };
+    }
+
+    const summaryBody = $('jb-summary-body');
+    if (summaryBody) {
+        summaryBody.onclick = () => openJobModal(jobNumber);
+    }
+
+    const budgetBody = $('jb-budget-body');
+    if (budgetBody) {
+        budgetBody.onclick = $('jb-tracker-link').onclick;
+    }
+
     // Files
     renderJobBagFiles(job);
 
@@ -1449,10 +1468,12 @@ async function openJobBag(jobNumber) {
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             const left = document.querySelector('.jb-left');
+            const threadWrap = document.querySelector('.jb-thread-wrap');
             const thread = document.querySelector('.jb-thread');
             const threadBody = $('jb-thread-body');
-            if (left && thread) {
-                thread.style.height = left.offsetHeight + 'px';
+            const labelRow = threadWrap?.querySelector('.jb-section-label-row');
+            if (left && thread && labelRow) {
+                thread.style.height = (left.offsetHeight - labelRow.offsetHeight) + 'px';
                 thread.style.minHeight = 'unset';
                 thread.style.flex = 'none';
             }
@@ -1823,13 +1844,13 @@ function renderThreadEntries(updates) {
         threadEntryRegistry[entry.id] = entry;
 
         html += `
-            <div class="jb-entry">
+            <div class="jb-entry" onclick="editEntry('${entry.id}')">
                 <div class="jb-avatar ${avatarClass}">${initials}</div>
                 <div class="jb-entry-content">
                     <div class="jb-entry-header">
                         <span class="jb-entry-author">${escapeHtml(author)}</span>
                         <span class="jb-entry-time">${timeStr}</span>
-                        <button class="jb-entry-edit" onclick="editEntry('${entry.id}')" title="Edit">
+                        <button class="jb-entry-edit" onclick="event.stopPropagation(); editEntry('${entry.id}')" title="Edit">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>
                     </div>
