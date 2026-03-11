@@ -3986,6 +3986,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 
 .jb-left > .jb-card:last-of-type {
     flex: 1;
+    margin-bottom: 0;
 }
 
 .jb-label-pencil {
