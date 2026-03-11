@@ -4473,7 +4473,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 .jb-compose-input:focus { border-color: var(--red, #E8291C); }
-.jb-compose-input::placeholder { color: #CCC; }
+.jb-compose-input::placeholder { color: #999; }
 
 .jb-post-btn {
     background: var(--red, #E8291C);
