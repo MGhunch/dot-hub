@@ -1347,10 +1347,11 @@ body.logged-out .view-tracker {
 /* Empty Section */
 .empty-section {
     color: var(--grey-400);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     padding: 16px 18px;
-    min-height: 90px;
+    min-height: 100px;
+    max-width: 480px;
     text-align: center;
     background: var(--white);
     border-radius: 12px;
