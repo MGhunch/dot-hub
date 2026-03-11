@@ -4546,7 +4546,7 @@ async function openWipEmailModal() {
     $('wip-email-people-group').style.display = 'none';
     $('wip-email-people-list').innerHTML = '';
     $('wip-email-intro-group').style.display = 'none';
-    $('wip-email-intro').value = '';
+    $('wip-email-intro').value = "Here's what's new, what's due and what needs a nudge.";
     $('wip-email-footer').style.display = 'none';
     
     // Wait for clients to load if not already
