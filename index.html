@@ -1084,13 +1084,12 @@
                 <h2 class="job-finder-title">Find a Job</h2>
                 <button class="job-finder-close" onclick="closeJobFinder()">&times;</button>
             </div>
-            <div class="job-finder-logos" id="job-finder-logos"></div>
             <div class="job-finder-search">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-                <input type="text" id="job-finder-search-input" placeholder="Search jobs..." oninput="filterJobFinder()">
+                <input type="text" id="job-finder-search-input" placeholder="Search jobs..." oninput="debouncedFilterJobFinder()">
             </div>
             <div class="job-finder-list" id="job-finder-list"></div>
         </div>

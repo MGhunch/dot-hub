@@ -1670,9 +1670,8 @@ function goToAllJobs() {
     $('jb-job-chevron')?.classList.remove('open');
     $('jb-job-dropdown')?.classList.remove('open');
     
-    // Open Job Finder with current client pre-selected
-    const preselect = currentBagJob?.clientCode || null;
-    openJobFinder(preselect);
+    // Open Job Finder
+    openJobFinder();
 }
 
 // Close dropdown on outside click
@@ -1693,18 +1692,14 @@ window.goToAllJobs = goToAllJobs;
 const RECENT_JOBS_KEY = 'dot_recent_jobs';
 const MAX_RECENT_JOBS = 10;
 
-let jobFinderSelectedClient = null;
-
-function openJobFinder(preselectClient = null) {
+function openJobFinder() {
     const modal = $('job-finder-modal');
     if (!modal) return;
     
     // Reset state
-    jobFinderSelectedClient = preselectClient;
     $('job-finder-search-input').value = '';
     
     // Render and show
-    renderJobFinderLogos();
     renderJobFinderList();
     modal.classList.add('visible');
     
@@ -1717,60 +1712,27 @@ function closeJobFinder() {
     if (modal) modal.classList.remove('visible');
 }
 
-function renderJobFinderLogos() {
-    const container = $('job-finder-logos');
-    if (!container) return;
-    
-    // If user has client filter (client access), hide logos entirely
-    if (state.clientFilter) {
-        container.innerHTML = '';
-        return;
-    }
-    
-    // Get unique clients from active jobs, group ONE/ONS/ONB under ONE
-    const clientMap = new Map();
-    state.allJobs.forEach(job => {
-        if (job.status === 'Completed') return;
-        let displayCode = job.clientCode;
-        // Group One NZ divisions under ONE
-        if (['ONE', 'ONS', 'ONB'].includes(job.clientCode)) {
-            displayCode = 'ONE';
-        }
-        if (!clientMap.has(displayCode)) {
-            clientMap.set(displayCode, displayCode);
-        }
-    });
-    
-    const clients = Array.from(clientMap.keys()).sort();
-    
-    let html = '';
-    clients.forEach(code => {
-        const isSelected = jobFinderSelectedClient === code || 
-            (jobFinderSelectedClient && ['ONE', 'ONS', 'ONB'].includes(jobFinderSelectedClient) && code === 'ONE');
-        html += `
-            <button class="job-finder-logo ${isSelected ? 'selected' : ''}" onclick="toggleJobFinderClient('${code}')">
-                <img src="${getLogoUrl(code)}" alt="${code}" onerror="this.src='images/logos/Unknown.png'">
-            </button>
-        `;
-    });
-    
-    container.innerHTML = html;
-}
+// Client name to code mapping for search
+const CLIENT_NAME_MAP = {
+    'tower': ['TOW'],
+    'sky': ['SKY'],
+    'fisher': ['FIS'],
+    'fisher funds': ['FIS'],
+    'one': ['ONE', 'ONS', 'ONB'],
+    'one nz': ['ONE', 'ONS', 'ONB'],
+    'hunch': ['HUN'],
+    'labour': ['LAB'],
+    'labor': ['LAB']
+};
 
-function toggleJobFinderClient(code) {
-    // Toggle selection
-    if (jobFinderSelectedClient === code) {
-        jobFinderSelectedClient = null;
-    } else {
-        jobFinderSelectedClient = code;
-    }
-    
-    renderJobFinderLogos();
-    renderJobFinderList();
-}
+// Debounce for search
+let jobFinderDebounceTimer = null;
 
-function filterJobFinder() {
-    renderJobFinderList();
+function debouncedFilterJobFinder() {
+    clearTimeout(jobFinderDebounceTimer);
+    jobFinderDebounceTimer = setTimeout(() => {
+        renderJobFinderList();
+    }, 150);
 }
 
 function renderJobFinderList() {
@@ -1783,23 +1745,28 @@ function renderJobFinderList() {
     // Get active jobs
     let jobs = state.allJobs.filter(job => job.status !== 'Completed');
     
-    // Filter by client (for client access users, use their filter)
-    const clientFilter = state.clientFilter || jobFinderSelectedClient;
-    if (clientFilter) {
-        // Handle ONE grouping
-        if (clientFilter === 'ONE') {
-            jobs = jobs.filter(job => ['ONE', 'ONS', 'ONB'].includes(job.clientCode));
-        } else {
-            jobs = jobs.filter(job => job.clientCode === clientFilter);
-        }
+    // Filter by client (for client access users)
+    if (state.clientFilter) {
+        jobs = jobs.filter(job => job.clientCode === state.clientFilter);
     }
     
     // Filter by search term
     if (searchTerm) {
+        // Check if search matches a client name
+        let matchingClientCodes = [];
+        for (const [name, codes] of Object.entries(CLIENT_NAME_MAP)) {
+            if (name.includes(searchTerm)) {
+                matchingClientCodes = matchingClientCodes.concat(codes);
+            }
+        }
+        
         jobs = jobs.filter(job => {
             const jobNum = (job.jobNumber || '').toLowerCase();
             const jobName = (job.jobName || '').toLowerCase();
-            return jobNum.includes(searchTerm) || jobName.includes(searchTerm);
+            const matchesJobNum = jobNum.includes(searchTerm);
+            const matchesJobName = jobName.includes(searchTerm);
+            const matchesClientName = matchingClientCodes.includes(job.clientCode);
+            return matchesJobNum || matchesJobName || matchesClientName;
         });
     }
     
@@ -1889,8 +1856,7 @@ function trackRecentJob(jobNumber) {
 // Make functions globally available
 window.openJobFinder = openJobFinder;
 window.closeJobFinder = closeJobFinder;
-window.toggleJobFinderClient = toggleJobFinderClient;
-window.filterJobFinder = filterJobFinder;
+window.debouncedFilterJobFinder = debouncedFilterJobFinder;
 window.selectJobFromFinder = selectJobFromFinder;
 
 // Close on overlay click
