@@ -2194,7 +2194,8 @@ async function saveJobUpdate() {
     
     // Validation: if posting an update, must set next update due date
     const originalDue = formatDateForInput(currentEditJob.updateDue);
-    if (message && message !== currentEditJob.update && (!updateDue || updateDue === originalDue)) {
+    const originalUpdate = currentEditJob.update || '';
+    if (message && message !== originalUpdate && (!updateDue || updateDue === originalDue)) {
         showToast("When's the update due?", 'error');
         $('job-edit-update-due').focus();
         return;
@@ -2208,7 +2209,7 @@ async function saveJobUpdate() {
     const payload = { status, withClient, author: authorName };
     if (updateDue) payload.updateDue = updateDue;
     if (liveDate) payload.liveDate = liveDate;
-    if (message && message !== currentEditJob.update) payload.message = message;
+    if (message && message !== originalUpdate) payload.message = message;
     if (description !== currentEditJob.description) payload.description = description;
     if (projectOwner !== currentEditJob.projectOwner) payload.projectOwner = projectOwner;
     
@@ -2223,7 +2224,7 @@ async function saveJobUpdate() {
         if (!response.ok) throw new Error('Update failed');
         
         // Also post to Teams if there's a new message
-        if (message && message !== currentEditJob.update) {
+        if (message && message !== originalUpdate) {
             fetch(`${PROXY_BASE}/proxy/update`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2253,7 +2254,7 @@ async function saveJobUpdate() {
         closeJobModal();
 
         // Refresh thread if we're in the Job Bag and a message was posted
-        if (message && message !== currentEditJob.update && currentBagJob?.jobNumber === jobNumber) {
+        if (message && message !== originalUpdate && currentBagJob?.jobNumber === jobNumber) {
             loadJobBagUpdates(jobNumber);
         }
 
