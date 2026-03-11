@@ -1325,13 +1325,9 @@ function closeJobSummary() {
     $('job-summary-modal')?.classList.remove('visible');
 }
 
-// Helper: open the right view based on access level
+// Helper: open Job Bag for any user
 function openJobDetail(jobNumber) {
-    if (state.currentUser?.accessLevel === 'Full') {
-        openJobBag(jobNumber);
-    } else {
-        openJobSummary(jobNumber);
-    }
+    openJobBag(jobNumber);
 }
 
 // ===== JOB BAG =====
@@ -1450,6 +1446,20 @@ async function openJobBag(jobNumber) {
 
     // Navigate to Job Bag view
     navigateTo('job-bag');
+
+    // Hide interactive elements for non-Full users (read-only mode)
+    const isFullAccess = state.currentUser?.accessLevel === 'Full';
+    const toggleWrap = document.querySelector('.jb-wc-toggle-wrap');
+    const compose = document.querySelector('.jb-compose');
+    const editLink = $('jb-edit-link');
+    const storyEditLink = $('jb-story-edit-link');
+    const trackerLink = $('jb-tracker-link');
+    
+    if (toggleWrap) toggleWrap.style.display = isFullAccess ? '' : 'none';
+    if (compose) compose.style.display = isFullAccess ? '' : 'none';
+    if (editLink) editLink.style.display = isFullAccess ? '' : 'none';
+    if (storyEditLink) storyEditLink.style.display = isFullAccess ? '' : 'none';
+    if (trackerLink) trackerLink.style.display = isFullAccess ? '' : 'none';
 
     // Update URL so refresh returns to this job
     const compactJob = jobNumber.replace(/\s+/g, '');
