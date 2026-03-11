@@ -272,7 +272,7 @@ body:not(.loading) .desktop-main {
 
 .login-right {
     flex: 1;
-    max-width: 480px;
+    max-width: 576px;
 }
 
 /* Login States */
@@ -359,14 +359,6 @@ body:not(.loading) .desktop-main {
     background: var(--grey-400);
     cursor: not-allowed;
     transform: none;
-}
-
-.login-helper {
-    font-family: var(--font-body);
-    font-size: 13px;
-    color: var(--grey-400);
-    margin: 8px 0 0 0;
-    text-align: center;
 }
 
 .login-error {

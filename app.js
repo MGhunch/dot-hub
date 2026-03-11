@@ -370,7 +370,7 @@ async function requestLogin(source = 'desktop') {
             if (errorEl) errorEl.textContent = data.message || "Something went wrong. Try again?";
             if (btn) {
                 btn.disabled = false;
-                btn.textContent = 'Send me a link';
+                btn.textContent = 'Get a magic link';
             }
         }
     } catch (e) {
@@ -378,7 +378,7 @@ async function requestLogin(source = 'desktop') {
         if (errorEl) errorEl.textContent = "Couldn't connect. Try again?";
         if (btn) {
             btn.disabled = false;
-            btn.textContent = 'Send me a link';
+            btn.textContent = 'Get a magic link';
         }
     }
 }
@@ -408,7 +408,7 @@ function resetLoginForm() {
     const phoneLoginSend = $('phone-login-send');
     if (loginSend) {
         loginSend.disabled = false;
-        loginSend.textContent = 'Send me a link';
+        loginSend.textContent = 'Get a magic link';
     }
     if (phoneLoginSend) {
         phoneLoginSend.disabled = false;
