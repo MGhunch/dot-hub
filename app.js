@@ -2127,15 +2127,9 @@ function cancelDeleteUpdate() {
 }
 
 function handleUpdateModalBackdrop(event) {
-    // If clicking the overlay background, close modal
+    // Clicking the overlay background closes modal
     if (event.target.id === 'update-edit-modal') {
         closeUpdateEditModal();
-        return;
-    }
-    // If clicking inside modal but not on delete button, reset confirm state
-    const btn = $('update-delete-confirm-btn');
-    if (btn && btn.style.display !== 'none' && !event.target.closest('.update-delete-confirm-btn')) {
-        resetDeleteConfirmState();
     }
 }
 
@@ -2200,6 +2194,7 @@ window.editEntry = editEntry;
 window.closeUpdateEditModal = closeUpdateEditModal;
 window.confirmDeleteUpdate = confirmDeleteUpdate;
 window.cancelDeleteUpdate = cancelDeleteUpdate;
+window.resetDeleteConfirmState = resetDeleteConfirmState;
 window.saveUpdateEdit = saveUpdateEdit;
 window.executeDeleteUpdate = executeDeleteUpdate;
 window.handleUpdateModalBackdrop = handleUpdateModalBackdrop;

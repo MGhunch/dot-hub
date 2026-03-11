@@ -2863,6 +2863,11 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     outline: none;
 }
 
+/* Hide native browser date picker icon */
+.update-edit-date-input::-webkit-calendar-picker-indicator {
+    display: none;
+}
+
 .job-btn-secondary {
     padding: 10px 20px;
     border: none;
