@@ -4330,23 +4330,28 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 /* Attachment preview — hidden until file attached */
 .jb-attach-preview {
     display: none;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     background: white;
-    border: 1px solid var(--border, #E5E5E5);
-    border-radius: 8px;
-    padding: 6px 10px;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .jb-attach-info {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
-    color: #555;
+    gap: 10px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--grey-200, #e5e5e5);
+}
+
+.jb-attach-icon {
+    color: var(--red, #d63939);
+    flex-shrink: 0;
 }
 
 .jb-attach-name {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     font-family: 'DM Sans', sans-serif;
     color: #333;
@@ -4359,45 +4364,62 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 .jb-attach-remove {
     background: none;
     border: none;
-    color: #BBB;
+    color: #bbb;
     cursor: pointer;
-    font-size: 11px;
-    padding: 0 2px;
+    padding: 4px;
+    border-radius: 4px;
     flex-shrink: 0;
-    transition: color 0.15s;
-}
-
-.jb-attach-remove:hover { color: var(--red, #E8291C); }
-
-/* Subfolder picker */
-.jb-subfolder-picker {
+    transition: all 0.15s;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+}
+
+.jb-attach-remove:hover { 
+    color: #999;
+    background: #f5f5f5;
+}
+
+/* Subfolder picker */
+.jb-subfolder-section {
+    padding-top: 14px;
 }
 
 .jb-subfolder-label {
     font-size: 11px;
-    color: #999;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--red, #d63939);
     font-family: 'DM Sans', sans-serif;
-    flex-shrink: 0;
+    margin-bottom: 10px;
+}
+
+.jb-subfolder-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .jb-subfolder-btn {
-    background: #F0F0F0;
-    border: 1px solid #E0E0E0;
-    border-radius: 20px;
-    padding: 3px 10px;
-    font-size: 11px;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
     font-family: 'DM Sans', sans-serif;
-    color: #888;
+    color: #666;
     cursor: pointer;
     transition: all 0.15s;
 }
 
+.jb-subfolder-btn:hover {
+    background: #eee;
+}
+
 .jb-subfolder-btn.active {
-    background: #111;
-    border-color: #111;
+    background: var(--red, #d63939);
     color: white;
 }
 

@@ -2024,6 +2024,11 @@ function setAttachedFile(file) {
     $('jb-attach-name').textContent = file.name;
     $('jb-attach-preview').style.display = 'block';
     $('jb-attach-btn').classList.add('active');
+    // Update label with job number
+    const label = $('jb-subfolder-label');
+    if (label && currentBagJob) {
+        label.textContent = `SAVE IN ${currentBagJob.jobNumber}`;
+    }
 }
 
 function clearAttachedFile() {
