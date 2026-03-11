@@ -1089,10 +1089,8 @@ function renderResponse({ message, jobs = [], nextPrompt = null }) {
         });
     });
     
-    response.querySelectorAll('.job-header[data-job-id]').forEach(header => {
-        header.addEventListener('click', () => {
-            document.getElementById(header.dataset.jobId)?.classList.toggle('expanded');
-        });
+    response.querySelectorAll('.job-card').forEach(card => {
+        card.addEventListener('click', () => openJobDetail(card.dataset.job));
     });
     
     if (area) area.scrollTop = area.scrollHeight;
