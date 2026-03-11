@@ -1328,6 +1328,15 @@ def post_job_update(job_number):
         create_response = requests.post(updates_url, headers=HEADERS, json=new_record)
         create_response.raise_for_status()
 
+        # Also patch the Project's Update field so WIP cards stay current
+        patch_response = requests.patch(
+            f"{projects_url}/{project_record_id}",
+            headers=HEADERS,
+            json={'fields': {'Update': text}}
+        )
+        patch_response.raise_for_status()
+        print(f'[Hub API] Patched Project.Update for {job_number}')
+
         created = create_response.json()
         fields = created.get('fields', {})
 
