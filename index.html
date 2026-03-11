@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="logged-out">
+<body class="logged-out loading">
     <!-- Toast notifications -->
     <div class="toast" id="toast"></div>
 
@@ -216,26 +216,28 @@
         <main class="desktop-main">
             <!-- ===== LOGIN VIEW ===== -->
             <section class="view view-login" id="view-login">
-                <div class="login-state" id="desktop-login-input">
-                    <div class="login-logo">
-                        <img src="images/Dotandhello.png" alt="Hello from Dot">
+                <div class="login-container">
+                    <div class="login-left">
+                        <img src="images/Dotandhello.png" alt="Hello from Dot" class="login-hello-img" id="login-dot-img">
                     </div>
-                    <p class="login-title">What's your email?</p>
-                    <p class="login-subtitle">We'll flick you a link so you can get into it.</p>
-                    <div class="login-form">
-                        <input type="email" class="login-email" id="login-email" placeholder="your@email.com">
-                        <button class="login-btn" id="login-send">Send link</button>
+                    <div class="login-right">
+                        <!-- Input State -->
+                        <div class="login-state" id="desktop-login-input">
+                            <div class="login-form">
+                                <input type="email" class="login-email" id="login-email" placeholder="What's your email?">
+                                <button class="login-btn" id="login-send">Send me a link</button>
+                                <p class="login-helper">We'll send you a link to get started</p>
+                            </div>
+                            <p class="login-error" id="login-error"></p>
+                        </div>
+                        
+                        <!-- Sent State -->
+                        <div class="login-state hidden" id="desktop-login-sent">
+                            <p class="login-title">Check your inbox</p>
+                            <p class="login-subtitle">Your magic link is on its way ✨</p>
+                            <p class="login-retry">No dice? Check your spam or <a href="#" id="login-try-again">try again</a></p>
+                        </div>
                     </div>
-                    <p class="login-error" id="login-error"></p>
-                </div>
-                
-                <div class="login-state hidden" id="desktop-login-sent">
-                    <div class="login-logo">
-                        <img src="images/Onit.png" alt="On it">
-                    </div>
-                    <p class="login-title">Check your inbox</p>
-                    <p class="login-subtitle">Your magic link is on its way ✨</p>
-                    <p class="login-retry">No dice? Check your spam or <a href="#" id="login-try-again">try again</a></p>
                 </div>
             </section>
 

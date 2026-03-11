@@ -317,6 +317,9 @@ async function checkSession() {
         if (errorEl) errorEl.textContent = errorMsg;
         if (phoneErrorEl) phoneErrorEl.textContent = errorMsg;
     }
+    
+    // Auth check complete - show login
+    document.body.classList.remove('loading');
 }
 
 async function requestLogin(source = 'desktop') {
@@ -360,11 +363,14 @@ async function requestLogin(source = 'desktop') {
             $('desktop-login-sent')?.classList.remove('hidden');
             $('phone-login-input')?.classList.add('hidden');
             $('phone-login-sent')?.classList.remove('hidden');
+            // Swap Dot image to "On it"
+            const dotImg = $('login-dot-img');
+            if (dotImg) dotImg.src = 'images/Onit.png';
         } else {
             if (errorEl) errorEl.textContent = data.message || "Something went wrong. Try again?";
             if (btn) {
                 btn.disabled = false;
-                btn.textContent = 'Send link';
+                btn.textContent = 'Send me a link';
             }
         }
     } catch (e) {
@@ -372,7 +378,7 @@ async function requestLogin(source = 'desktop') {
         if (errorEl) errorEl.textContent = "Couldn't connect. Try again?";
         if (btn) {
             btn.disabled = false;
-            btn.textContent = 'Send link';
+            btn.textContent = 'Send me a link';
         }
     }
 }
@@ -383,6 +389,10 @@ function resetLoginForm() {
     $('desktop-login-input')?.classList.remove('hidden');
     $('phone-login-sent')?.classList.add('hidden');
     $('phone-login-input')?.classList.remove('hidden');
+    
+    // Swap Dot image back to "Hello"
+    const dotImg = $('login-dot-img');
+    if (dotImg) dotImg.src = 'images/Dotandhello.png';
     
     // Clear inputs and errors
     const loginEmail = $('login-email');
@@ -398,7 +408,7 @@ function resetLoginForm() {
     const phoneLoginSend = $('phone-login-send');
     if (loginSend) {
         loginSend.disabled = false;
-        loginSend.textContent = 'Send link';
+        loginSend.textContent = 'Send me a link';
     }
     if (phoneLoginSend) {
         phoneLoginSend.disabled = false;
@@ -407,8 +417,9 @@ function resetLoginForm() {
 }
 
 function unlockApp() {
-    // Remove logged-out state
+    // Remove logged-out and loading states
     document.body.classList.remove('logged-out');
+    document.body.classList.remove('loading');
     
     const placeholder = `What's cooking ${state.currentUser.name}?`;
     if ($('phone-home-input')) $('phone-home-input').placeholder = placeholder;
