@@ -287,7 +287,7 @@ body:not(.loading) .desktop-main {
 /* Sent state styling */
 .login-message {
     font-family: var(--font-body);
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 500;
     color: var(--grey-800);
     margin: 0 0 20px 0;
