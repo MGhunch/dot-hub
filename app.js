@@ -183,6 +183,12 @@ function setupEventListeners() {
                 return;
             }
             
+            // Special handling for "Send a wip" - open modal instead
+            if (question === 'Send a wip') {
+                openWipEmailModal();
+                return;
+            }
+            
             const layout = isDesktop() ? 'desktop' : 'phone';
             const input = $(layout + '-home-input');
             if (input) input.value = question;
@@ -501,8 +507,8 @@ function updateExampleButtons() {
     if (level === 'Full') {
         buttons = [
             { question: 'Find a job', label: 'Find a job' },
-            { question: 'Check the WIP', label: 'Check the WIP' },
-            { question: 'Meet Dot', label: 'Meet Dot' }
+            { question: 'Send a wip', label: 'Send a wip' },
+            { question: 'Show me jobs due today and tomorrow', label: 'Deadlines' }
         ];
     } else if (level === 'Client Tracker') {
         buttons = [
