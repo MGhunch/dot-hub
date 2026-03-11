@@ -1461,6 +1461,47 @@ async function openJobBag(jobNumber) {
     if (storyEditLink) storyEditLink.style.display = isFullAccess ? '' : 'none';
     if (trackerLink) trackerLink.style.display = isFullAccess ? '' : 'none';
 
+    // Make cards clickable for Full access users
+    const storyCard = $('jb-story-card');
+    const summaryBody = document.querySelector('.jb-summary-body');
+    const summaryCardEl = summaryBody?.closest('.jb-card');
+    const budgetBody = $('jb-budget-body');
+    const budgetCard = budgetBody?.closest('.jb-card');
+
+    if (isFullAccess) {
+        // Story card → Story modal
+        if (storyCard) {
+            storyCard.style.cursor = 'pointer';
+            storyCard.onclick = (e) => {
+                if (e.target.closest('.jb-story-fade-btn') || e.target.closest('.jb-story-more')) return;
+                openStoryModal(currentBagJob);
+            };
+        }
+
+        // Summary card → Job Edit modal
+        if (summaryCardEl) {
+            summaryCardEl.style.cursor = 'pointer';
+            summaryCardEl.onclick = () => openJobModal(jobNumber);
+        }
+
+        // Budget card → Tracker modal (with loading)
+        if (budgetCard) {
+            budgetCard.style.cursor = 'pointer';
+            budgetCard.onclick = async () => {
+                budgetBody.innerHTML = loadingDots('small');
+                await loadTrackerData(job.clientCode);
+                loadJobBagBudget(jobNumber);
+                const month = new Date().toLocaleString('en-US', { month: 'long' });
+                openTrackerEditModal(jobNumber, month);
+            };
+        }
+    } else {
+        // Remove clickability for non-Full users
+        if (storyCard) { storyCard.style.cursor = ''; storyCard.onclick = null; }
+        if (summaryCardEl) { summaryCardEl.style.cursor = ''; summaryCardEl.onclick = null; }
+        if (budgetCard) { budgetCard.style.cursor = ''; budgetCard.onclick = null; }
+    }
+
     // Update URL so refresh returns to this job
     const compactJob = jobNumber.replace(/\s+/g, '');
     window.history.replaceState({}, '', `?job=${compactJob}`);
@@ -1495,6 +1536,48 @@ function closeJobBag() {
     currentBagJob = null;
     window.history.replaceState({}, '', window.location.pathname);
     navigateTo('wip');
+}
+
+// Refresh the Job Bag left column from currentBagJob state
+function refreshJobBagLeft() {
+    if (!currentBagJob) return;
+    const job = currentBagJob;
+
+    // Summary fields
+    $('jb-client-name').textContent = job.projectOwner || '—';
+    $('jb-status').textContent = job.status || '—';
+    $('jb-live').textContent = job.liveDate || 'Tbc';
+
+    // Update due with formatting
+    const dueEl = $('jb-update-due');
+    if (job.updateDue) {
+        const due = new Date(job.updateDue);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const dueDay = new Date(due);
+        dueDay.setHours(0,0,0,0);
+        const diffDays = Math.round((dueDay - today) / 86400000);
+
+        let dueText;
+        if (diffDays === 0) dueText = 'Today';
+        else if (diffDays === 1) dueText = 'Tomorrow';
+        else if (diffDays === -1) dueText = 'Yesterday';
+        else if (diffDays < 0) dueText = `${Math.abs(diffDays)} days overdue`;
+        else dueText = due.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+        dueEl.textContent = dueText;
+        dueEl.className = diffDays < 0 ? 'jb-meta-val overdue' : 'jb-meta-val';
+    } else {
+        dueEl.textContent = 'Not set';
+        dueEl.className = 'jb-meta-val';
+    }
+
+    // Story
+    const storyEl = $('jb-story-text');
+    if (storyEl) storyEl.textContent = job.theStory || 'Watch this space.';
+
+    // Budget — reload from API
+    loadJobBagBudget(job.jobNumber);
 }
 
 // ===== JOB BAG SWITCHER =====
@@ -2246,6 +2329,18 @@ async function saveJobUpdate() {
             if (message) job.update = message;
             if (description) job.description = description;
             if (projectOwner) job.projectOwner = projectOwner;
+        }
+
+        // Also update currentBagJob if we're editing the same job
+        if (currentBagJob?.jobNumber === jobNumber) {
+            currentBagJob.status = status;
+            currentBagJob.withClient = withClient;
+            currentBagJob.updateDue = updateDue;
+            currentBagJob.liveDate = liveDate;
+            if (message) currentBagJob.update = message;
+            if (description) currentBagJob.description = description;
+            if (projectOwner) currentBagJob.projectOwner = projectOwner;
+            refreshJobBagLeft();
         }
         
         showToast('Job updated.', 'success');
@@ -3534,6 +3629,12 @@ async function saveTrackerProject() {
         
         await loadTrackerData(state.trackerClient);
         renderTrackerContent();
+
+        // Refresh Job Bag budget if we're viewing this job
+        if (currentBagJob?.jobNumber === trackerCurrentEditData.jobNumber) {
+            loadJobBagBudget(currentBagJob.jobNumber);
+        }
+
         showToast('On it.', 'success');
         
     } catch (e) {
