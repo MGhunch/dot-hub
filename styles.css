@@ -3520,7 +3520,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 
 /* View header image — matches WIP/Tracker pattern */
 .jb-view-header {
-    padding: 24px 0 16px;
+    padding: 32px 0 24px;
 }
 
 .jb-view-header-img {
@@ -3563,9 +3563,9 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 .jb-job-title {
-    font-size: 20px;
+    font-size: 17px;
     font-weight: 700;
-    color: #111;
+    color: #444;
     letter-spacing: -0.02em;
     font-family: 'DM Sans', sans-serif;
     line-height: 1.2;
