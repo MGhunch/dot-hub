@@ -3984,6 +3984,10 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     box-shadow: var(--shadow-sm);
 }
 
+.jb-left > .jb-card:last-of-type {
+    flex: 1;
+}
+
 .jb-label-pencil {
     color: #CCC;
     cursor: pointer;
