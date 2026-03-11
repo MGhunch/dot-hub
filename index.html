@@ -974,29 +974,29 @@
     <script src="app.js"></script>
     <!-- Story Edit Modal -->
     <!-- Update Edit Modal -->
-    <div class="job-modal-overlay" id="update-edit-modal">
+    <div class="job-modal-overlay" id="update-edit-modal" onclick="handleUpdateModalBackdrop(event)">
         <div class="job-name-modal" style="max-width:420px">
-            <h3 class="job-name-modal-title">Edit update</h3>
+            <div class="update-edit-header">
+                <h3 class="job-name-modal-title" style="margin:0">Edit update</h3>
+                <button class="update-delete-icon" id="update-delete-icon" onclick="confirmDeleteUpdate()" title="Delete update">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+                <button class="update-delete-confirm-btn" id="update-delete-confirm-btn" onclick="executeDeleteUpdate()" style="display:none">Delete?</button>
+            </div>
             <div class="job-form-group">
                 <textarea class="job-form-input jb-story-textarea" id="update-edit-input" rows="4" placeholder="What happened?"></textarea>
             </div>
-            <div class="job-form-group" style="margin-top:8px">
-                <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#999;display:block;margin-bottom:4px">Date <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional — leave blank to keep original)</span></label>
-                <input type="date" id="update-edit-date" class="job-form-input" style="font-size:13px;padding:8px 12px">
+            <div class="update-edit-date-row" onclick="document.getElementById('update-edit-date').showPicker?.()">
+                <svg class="update-edit-calendar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <input type="date" id="update-edit-date" class="update-edit-date-input">
             </div>
-            <div class="job-name-modal-buttons" id="update-edit-footer" style="justify-content:space-between">
-                <button class="job-btn job-btn-secondary" style="color:var(--red)" onclick="confirmDeleteUpdate()">Delete</button>
-                <div style="display:flex;gap:8px">
-                    <button class="job-btn job-btn-secondary" onclick="closeUpdateEditModal()">Cancel</button>
-                    <button class="job-btn job-btn-primary" id="update-save-btn" onclick="saveUpdateEdit()">Save</button>
-                </div>
-            </div>
-            <div class="job-name-modal-buttons" id="update-delete-confirm" style="display:none;justify-content:space-between;align-items:center">
-                <span style="font-size:13px;color:#666">Delete this update?</span>
-                <div style="display:flex;gap:8px">
-                    <button class="job-btn job-btn-secondary" onclick="cancelDeleteUpdate()">Cancel</button>
-                    <button class="job-btn job-btn-primary" id="update-delete-confirm-btn" onclick="executeDeleteUpdate()">Yes, delete</button>
-                </div>
+            <div class="job-name-modal-buttons" id="update-edit-footer">
+                <button class="job-btn job-btn-secondary" onclick="closeUpdateEditModal()">Cancel</button>
+                <button class="job-btn job-btn-primary" id="update-save-btn" onclick="saveUpdateEdit()">Save</button>
             </div>
         </div>
     </div>

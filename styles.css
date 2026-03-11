@@ -2777,6 +2777,92 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     margin-top: 20px;
 }
 
+/* Edit Update Modal */
+.update-edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.update-delete-icon {
+    background: none;
+    border: none;
+    color: var(--grey-400);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.update-delete-icon:hover {
+    color: var(--red);
+    background: #fef2f2;
+}
+
+.update-delete-confirm-btn {
+    padding: 6px 14px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    background: var(--red);
+    border: none;
+    color: white;
+    transition: all 0.15s ease;
+}
+
+.update-delete-confirm-btn:hover {
+    background: #c42f2f;
+}
+
+.update-delete-confirm-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.update-edit-date-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--grey-200);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+}
+
+.update-edit-date-row:hover {
+    border-color: var(--grey-300);
+}
+
+.update-edit-date-row:focus-within {
+    border-color: var(--red);
+}
+
+.update-edit-calendar-icon {
+    color: var(--red);
+    flex-shrink: 0;
+}
+
+.update-edit-date-input {
+    border: none;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--grey-800);
+    flex: 1;
+    background: transparent;
+    cursor: pointer;
+}
+
+.update-edit-date-input:focus {
+    outline: none;
+}
+
 .job-btn-secondary {
     padding: 10px 20px;
     border: none;

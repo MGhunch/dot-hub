@@ -2078,14 +2078,21 @@ function editEntry(entryId) {
     const input = $('update-edit-input');
     if (!modal || !input) return;
     input.value = entry.update || '';
-    // Pre-fill date if backdated
+    
+    // Pre-fill date with effective date (backdate or created_time)
     const dateInput = $('update-edit-date');
-    if (dateInput) dateInput.value = entry.backdate || '';
-    // Reset confirm state
-    const footer = $('update-edit-footer');
-    const confirm = $('update-delete-confirm');
-    if (footer) footer.style.display = 'flex';
-    if (confirm) confirm.style.display = 'none';
+    if (dateInput) {
+        let effectiveDate = entry.backdate || '';
+        if (!effectiveDate && entry.created_time) {
+            // Extract YYYY-MM-DD from created_time
+            effectiveDate = entry.created_time.split('T')[0];
+        }
+        dateInput.value = effectiveDate;
+    }
+    
+    // Reset delete confirm state
+    resetDeleteConfirmState();
+    
     modal.classList.add('visible');
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
@@ -2094,16 +2101,42 @@ function editEntry(entryId) {
 function closeUpdateEditModal() {
     $('update-edit-modal')?.classList.remove('visible');
     currentEditEntry = null;
+    resetDeleteConfirmState();
+}
+
+function resetDeleteConfirmState() {
+    const icon = $('update-delete-icon');
+    const btn = $('update-delete-confirm-btn');
+    if (icon) icon.style.display = 'flex';
+    if (btn) {
+        btn.style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = 'Delete?';
+    }
 }
 
 function confirmDeleteUpdate() {
-    $('update-edit-footer').style.display = 'none';
-    $('update-delete-confirm').style.display = 'flex';
+    const icon = $('update-delete-icon');
+    const btn = $('update-delete-confirm-btn');
+    if (icon) icon.style.display = 'none';
+    if (btn) btn.style.display = 'block';
 }
 
 function cancelDeleteUpdate() {
-    $('update-edit-footer').style.display = 'flex';
-    $('update-delete-confirm').style.display = 'none';
+    resetDeleteConfirmState();
+}
+
+function handleUpdateModalBackdrop(event) {
+    // If clicking the overlay background, close modal
+    if (event.target.id === 'update-edit-modal') {
+        closeUpdateEditModal();
+        return;
+    }
+    // If clicking inside modal but not on delete button, reset confirm state
+    const btn = $('update-delete-confirm-btn');
+    if (btn && btn.style.display !== 'none' && !event.target.closest('.update-delete-confirm-btn')) {
+        resetDeleteConfirmState();
+    }
 }
 
 async function saveUpdateEdit() {
@@ -2159,7 +2192,7 @@ async function executeDeleteUpdate() {
         showToast("Couldn't delete update.", 'error');
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Yes, delete';
+        btn.textContent = 'Delete?';
     }
 }
 
@@ -2169,6 +2202,7 @@ window.confirmDeleteUpdate = confirmDeleteUpdate;
 window.cancelDeleteUpdate = cancelDeleteUpdate;
 window.saveUpdateEdit = saveUpdateEdit;
 window.executeDeleteUpdate = executeDeleteUpdate;
+window.handleUpdateModalBackdrop = handleUpdateModalBackdrop;
 
 
 
