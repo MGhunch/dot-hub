@@ -4504,3 +4504,209 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 /* Backdate pill — shown when a past date is selected */
+
+/* =================================================================
+   JOB FINDER MODAL
+   ================================================================= */
+
+.job-finder-modal {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.job-modal-overlay.visible .job-finder-modal {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.job-finder-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #E5E5E5;
+}
+
+.job-finder-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    letter-spacing: -0.02em;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.job-finder-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    color: #999;
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.15s;
+}
+
+.job-finder-close:hover {
+    color: #333;
+}
+
+.job-finder-logos {
+    padding: 16px 24px;
+    border-bottom: 1px solid #E5E5E5;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+}
+
+.job-finder-logos:empty {
+    display: none;
+}
+
+.job-finder-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background: #F7F7F7;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    padding: 6px;
+}
+
+.job-finder-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.job-finder-logo:hover {
+    border-color: #E5E5E5;
+}
+
+.job-finder-logo.selected {
+    border-color: var(--red, #E8291C);
+    background: rgba(232, 41, 28, 0.08);
+}
+
+.job-finder-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #F7F7F7;
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid #E5E5E5;
+    margin: 16px 24px 8px;
+}
+
+.job-finder-search input {
+    border: none;
+    background: none;
+    outline: none;
+    font-size: 14px;
+    color: #333;
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.job-finder-search input::placeholder {
+    color: #999;
+}
+
+.job-finder-list {
+    padding: 8px 24px 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.job-finder-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #F0F0F0;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.job-finder-row:last-child {
+    border-bottom: none;
+}
+
+.job-finder-row:hover {
+    background: #FAFAFA;
+    margin: 0 -12px;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.job-finder-row-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: #F7F7F7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 4px;
+}
+
+.job-finder-row-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.job-finder-row-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.job-finder-row-number {
+    font-weight: 700;
+    font-size: 14px;
+    color: #333;
+    letter-spacing: -0.01em;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.job-finder-row-name {
+    font-size: 14px;
+    color: #666;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.job-finder-row-chevron {
+    color: #CCC;
+    flex-shrink: 0;
+}
+
+.job-finder-empty {
+    padding: 32px 0;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+}

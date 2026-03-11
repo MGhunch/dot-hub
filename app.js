@@ -176,6 +176,13 @@ function setupEventListeners() {
     $$('.example-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const question = btn.dataset.question;
+            
+            // Special handling for "Find a job" - open modal instead
+            if (question === 'Find a job') {
+                openJobFinder();
+                return;
+            }
+            
             const layout = isDesktop() ? 'desktop' : 'phone';
             const input = $(layout + '-home-input');
             if (input) input.value = question;
@@ -231,6 +238,8 @@ function setupEventListeners() {
             // Route to appropriate handler
             if (action === 'new-job') {
                 openNewJobModal();
+            } else if (action === 'find-job') {
+                openJobFinder();
             } else if (action === 'files') {
                 openFilesModal();
             } else if (action === 'wip-email') {
@@ -1325,6 +1334,8 @@ function closeJobSummary() {
 
 // Helper: open Job Bag for any user
 function openJobDetail(jobNumber) {
+    // Track as recent
+    trackRecentJob(jobNumber);
     openJobBag(jobNumber);
 }
 
@@ -1659,11 +1670,9 @@ function goToAllJobs() {
     $('jb-job-chevron')?.classList.remove('open');
     $('jb-job-dropdown')?.classList.remove('open');
     
-    // Go to WIP filtered by current client
-    if (currentBagJob) {
-        state.wipClient = currentBagJob.clientCode;
-    }
-    navigateTo('wip');
+    // Open Job Finder with current client pre-selected
+    const preselect = currentBagJob?.clientCode || null;
+    openJobFinder(preselect);
 }
 
 // Close dropdown on outside click
@@ -1678,6 +1687,218 @@ document.addEventListener('click', (e) => {
 window.toggleJobSwitcher = toggleJobSwitcher;
 window.selectJob = selectJob;
 window.goToAllJobs = goToAllJobs;
+
+// ===== JOB FINDER MODAL =====
+
+const RECENT_JOBS_KEY = 'dot_recent_jobs';
+const MAX_RECENT_JOBS = 10;
+
+let jobFinderSelectedClient = null;
+
+function openJobFinder(preselectClient = null) {
+    const modal = $('job-finder-modal');
+    if (!modal) return;
+    
+    // Reset state
+    jobFinderSelectedClient = preselectClient;
+    $('job-finder-search-input').value = '';
+    
+    // Render and show
+    renderJobFinderLogos();
+    renderJobFinderList();
+    modal.classList.add('visible');
+    
+    // Focus search after animation
+    setTimeout(() => $('job-finder-search-input')?.focus(), 200);
+}
+
+function closeJobFinder() {
+    const modal = $('job-finder-modal');
+    if (modal) modal.classList.remove('visible');
+}
+
+function renderJobFinderLogos() {
+    const container = $('job-finder-logos');
+    if (!container) return;
+    
+    // If user has client filter (client access), hide logos entirely
+    if (state.clientFilter) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    // Get unique clients from active jobs, group ONE/ONS/ONB under ONE
+    const clientMap = new Map();
+    state.allJobs.forEach(job => {
+        if (job.status === 'Completed') return;
+        let displayCode = job.clientCode;
+        // Group One NZ divisions under ONE
+        if (['ONE', 'ONS', 'ONB'].includes(job.clientCode)) {
+            displayCode = 'ONE';
+        }
+        if (!clientMap.has(displayCode)) {
+            clientMap.set(displayCode, displayCode);
+        }
+    });
+    
+    const clients = Array.from(clientMap.keys()).sort();
+    
+    let html = '';
+    clients.forEach(code => {
+        const isSelected = jobFinderSelectedClient === code || 
+            (jobFinderSelectedClient && ['ONE', 'ONS', 'ONB'].includes(jobFinderSelectedClient) && code === 'ONE');
+        html += `
+            <button class="job-finder-logo ${isSelected ? 'selected' : ''}" onclick="toggleJobFinderClient('${code}')">
+                <img src="${getLogoUrl(code)}" alt="${code}" onerror="this.src='images/logos/Unknown.png'">
+            </button>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function toggleJobFinderClient(code) {
+    // Toggle selection
+    if (jobFinderSelectedClient === code) {
+        jobFinderSelectedClient = null;
+    } else {
+        jobFinderSelectedClient = code;
+    }
+    
+    renderJobFinderLogos();
+    renderJobFinderList();
+}
+
+function filterJobFinder() {
+    renderJobFinderList();
+}
+
+function renderJobFinderList() {
+    const container = $('job-finder-list');
+    const searchInput = $('job-finder-search-input');
+    if (!container) return;
+    
+    const searchTerm = (searchInput?.value || '').toLowerCase().trim();
+    
+    // Get active jobs
+    let jobs = state.allJobs.filter(job => job.status !== 'Completed');
+    
+    // Filter by client (for client access users, use their filter)
+    const clientFilter = state.clientFilter || jobFinderSelectedClient;
+    if (clientFilter) {
+        // Handle ONE grouping
+        if (clientFilter === 'ONE') {
+            jobs = jobs.filter(job => ['ONE', 'ONS', 'ONB'].includes(job.clientCode));
+        } else {
+            jobs = jobs.filter(job => job.clientCode === clientFilter);
+        }
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+        jobs = jobs.filter(job => {
+            const jobNum = (job.jobNumber || '').toLowerCase();
+            const jobName = (job.jobName || '').toLowerCase();
+            return jobNum.includes(searchTerm) || jobName.includes(searchTerm);
+        });
+    }
+    
+    // Sort by recent views first, then by last update
+    const recentJobs = getRecentJobs();
+    jobs.sort((a, b) => {
+        const aRecent = recentJobs.indexOf(a.jobNumber);
+        const bRecent = recentJobs.indexOf(b.jobNumber);
+        
+        // Both in recent - sort by recency
+        if (aRecent !== -1 && bRecent !== -1) {
+            return aRecent - bRecent;
+        }
+        // Only a in recent
+        if (aRecent !== -1) return -1;
+        // Only b in recent
+        if (bRecent !== -1) return 1;
+        
+        // Neither in recent - sort by last update
+        const aDate = a.lastUpdateMade ? new Date(a.lastUpdateMade) : new Date(0);
+        const bDate = b.lastUpdateMade ? new Date(b.lastUpdateMade) : new Date(0);
+        return bDate - aDate;
+    });
+    
+    if (jobs.length === 0) {
+        container.innerHTML = '<div class="job-finder-empty">No jobs found</div>';
+        return;
+    }
+    
+    let html = '';
+    jobs.forEach(job => {
+        html += `
+            <div class="job-finder-row" onclick="selectJobFromFinder('${job.jobNumber}')">
+                <div class="job-finder-row-logo">
+                    <img src="${getLogoUrl(job.clientCode)}" alt="${job.clientCode}" onerror="this.src='images/logos/Unknown.png'">
+                </div>
+                <div class="job-finder-row-info">
+                    <span class="job-finder-row-number">${job.jobNumber}</span>
+                    <span class="job-finder-row-name">${job.jobName || ''}</span>
+                </div>
+                <svg class="job-finder-row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function selectJobFromFinder(jobNumber) {
+    // Track as recent
+    trackRecentJob(jobNumber);
+    
+    // Close modal
+    closeJobFinder();
+    
+    // Open job bag
+    openJobDetail(jobNumber);
+}
+
+// Recent jobs tracking (localStorage)
+function getRecentJobs() {
+    try {
+        const stored = localStorage.getItem(RECENT_JOBS_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch {
+        return [];
+    }
+}
+
+function trackRecentJob(jobNumber) {
+    try {
+        let recent = getRecentJobs();
+        // Remove if already exists
+        recent = recent.filter(j => j !== jobNumber);
+        // Add to front
+        recent.unshift(jobNumber);
+        // Limit size
+        recent = recent.slice(0, MAX_RECENT_JOBS);
+        localStorage.setItem(RECENT_JOBS_KEY, JSON.stringify(recent));
+    } catch {
+        // Ignore localStorage errors
+    }
+}
+
+// Make functions globally available
+window.openJobFinder = openJobFinder;
+window.closeJobFinder = closeJobFinder;
+window.toggleJobFinderClient = toggleJobFinderClient;
+window.filterJobFinder = filterJobFinder;
+window.selectJobFromFinder = selectJobFromFinder;
+
+// Close on overlay click
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'job-finder-modal') {
+        closeJobFinder();
+    }
+});
 
 // ===== STORY EDITOR =====
 
