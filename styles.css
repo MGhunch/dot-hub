@@ -2548,6 +2548,12 @@ body.logged-out .view-tracker {
     border-bottom: 1px solid var(--grey-100);
 }
 
+.job-modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .job-modal-title-row {
     display: flex;
     align-items: center;

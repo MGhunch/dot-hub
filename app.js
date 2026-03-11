@@ -4071,14 +4071,14 @@ async function openNewJobModal() {
         
         // Add top clients
         topClients.forEach(c => {
-            html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectNewJobOption('client', '${c.code}', '${c.name.replace(/'/g, "\\'")}')">${c.name}</div>`;
+            html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectNewJobOption('client', '${c.code}', '${c.name.replace(/'/g, "\\'")}')"><img src="${getLogoUrl(c.code)}" alt="${c.code}" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;" onerror="this.src='images/logos/Unknown.png'">${c.name}</div>`;
         });
         
         // Add other clients with header
         if (otherClients.length > 0) {
             html += '<div class="custom-dropdown-option section-header">Other</div>';
             otherClients.forEach(c => {
-                html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectNewJobOption('client', '${c.code}', '${c.name.replace(/'/g, "\\'")}')">${c.name}</div>`;
+                html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectNewJobOption('client', '${c.code}', '${c.name.replace(/'/g, "\\'")}')"><img src="${getLogoUrl(c.code)}" alt="${c.code}" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;" onerror="this.src='images/logos/Unknown.png'">${c.name}</div>`;
             });
         }
         
@@ -4605,13 +4605,13 @@ async function openWipEmailModal() {
     
     let html = '';
     topClients.forEach(c => {
-        html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectWipEmailClient('${c.code}', '${c.name.replace(/'/g, "\\'")}')">${c.name}</div>`;
+        html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectWipEmailClient('${c.code}', '${c.name.replace(/'/g, "\\'")}')"><img src="${getLogoUrl(c.code)}" alt="${c.code}" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;" onerror="this.src='images/logos/Unknown.png'">${c.name}</div>`;
     });
     
     if (otherClients.length > 0) {
         html += '<div class="custom-dropdown-option section-header">Other</div>';
         otherClients.forEach(c => {
-            html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectWipEmailClient('${c.code}', '${c.name.replace(/'/g, "\\'")}')">${c.name}</div>`;
+            html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectWipEmailClient('${c.code}', '${c.name.replace(/'/g, "\\'")}')"><img src="${getLogoUrl(c.code)}" alt="${c.code}" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;" onerror="this.src='images/logos/Unknown.png'">${c.name}</div>`;
         });
     }
     
@@ -4664,7 +4664,7 @@ async function selectWipEmailClient(code, name) {
         let peopleHtml = `<label style="display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer;">
             <input type="checkbox" checked style="margin-right: 12px; width: 18px; height: 18px; accent-color: #ED1C24;" onchange="toggleWipEmailRecipient('michael@hunch.co.nz', 'Michael', 'Full')">
             <div>
-                <div style="font-size: 15px; font-weight: 500; color: #333;">Michael Campion</div>
+                <div style="font-size: 15px; font-weight: 500; color: #333;">Michael</div>
                 <div style="font-size: 13px; color: #999;">michael@hunch.co.nz</div>
             </div>
         </label>`;
