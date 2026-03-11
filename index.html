@@ -405,7 +405,13 @@
                     <div class="jb-header-left">
                         <img id="jb-logo" class="jb-logo" src="" alt="">
                         <div class="jb-title-block">
-                            <div class="jb-job-title" id="jb-job-title"></div>
+                            <div class="jb-job-title-row">
+                                <div class="jb-job-title" id="jb-job-title"></div>
+                                <button class="jb-job-chevron" id="jb-job-chevron" onclick="toggleJobSwitcher()">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <div class="jb-job-dropdown" id="jb-job-dropdown"></div>
+                            </div>
                             <div class="jb-job-desc" id="jb-job-desc"></div>
                         </div>
                     </div>
@@ -452,7 +458,7 @@
                             </a>
                         </div>
                         <div class="jb-card">
-                            <div class="jb-summary-body" id="jb-summary-body">
+                            <div class="jb-summary-body">
                                 <div class="jb-meta-row">
                                     <span class="jb-meta-key">Client</span>
                                     <span class="jb-meta-val" id="jb-client-name"></span>
@@ -542,24 +548,6 @@
                         </div>
                     </div>
 
-                </div>
-
-                <!-- Job Bag Nav -->
-                <div class="jb-nav" id="jb-nav">
-                    <button class="jb-nav-arrow jb-nav-prev" id="jb-nav-prev" onclick="navigateJobBag('prev')">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                        <span id="jb-nav-prev-label"></span>
-                    </button>
-                    <div class="jb-nav-center" id="jb-nav-center">
-                        <img class="jb-nav-logo" id="jb-nav-logo" src="" alt="">
-                        <span class="jb-nav-client" id="jb-nav-client"></span>
-                        <svg class="jb-nav-chevron" id="jb-nav-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                        <div class="jb-nav-dropdown" id="jb-nav-dropdown"></div>
-                    </div>
-                    <button class="jb-nav-arrow jb-nav-next" id="jb-nav-next" onclick="navigateJobBag('next')">
-                        <span id="jb-nav-next-label"></span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
                 </div>
 
             </section>

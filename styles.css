@@ -3588,6 +3588,111 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     display: none;
 }
 
+/* Job Switcher */
+.jb-job-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+}
+
+.jb-job-chevron {
+    background: none;
+    border: none;
+    color: var(--red, #E8291C);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.15s;
+}
+
+.jb-job-chevron:hover {
+    background: rgba(232, 41, 28, 0.08);
+}
+
+.jb-job-chevron.open svg {
+    transform: rotate(180deg);
+}
+
+.jb-job-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+    min-width: 260px;
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 200;
+}
+
+.jb-job-dropdown.open {
+    display: block;
+}
+
+.jb-job-dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.1s;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #333;
+    gap: 8px;
+}
+
+.jb-job-dropdown-item:first-child {
+    border-radius: 10px 10px 0 0;
+}
+
+.jb-job-dropdown-item:last-child {
+    border-radius: 0 0 10px 10px;
+}
+
+.jb-job-dropdown-item:hover {
+    background: #f5f5f5;
+}
+
+.jb-job-dropdown-item.active {
+    background: rgba(232, 41, 28, 0.06);
+}
+
+.jb-job-dropdown-item.active .jb-job-dropdown-num {
+    color: var(--red, #E8291C);
+}
+
+.jb-job-dropdown-num {
+    font-weight: 600;
+    color: #333;
+    min-width: 70px;
+}
+
+.jb-job-dropdown-name {
+    color: #666;
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.jb-job-dropdown-divider {
+    height: 1px;
+    background: #eee;
+    margin: 4px 0;
+}
+
+.jb-job-dropdown-item.all-jobs {
+    color: var(--red, #E8291C);
+    font-weight: 500;
+}
+
 .jb-header-right {
     display: flex;
     align-items: center;
@@ -3655,7 +3760,6 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     margin-bottom: 0;
     position: relative;
     box-shadow: var(--shadow-sm);
-    cursor: pointer;
 }
 
 .jb-story-eyebrow {
@@ -3816,7 +3920,6 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 /* Summary */
 .jb-summary-body {
     padding: 14px 18px 12px;
-    cursor: pointer;
 }
 
 .jb-meta-row {
@@ -3847,7 +3950,6 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 .jb-budget-body {
     padding: 14px 18px;
     font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
 }
 
 .jb-spend-total {
@@ -3998,7 +4100,6 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 .jb-entry:hover { background: #FAFAFA; }
-.jb-entry { cursor: pointer; }
 
 .jb-avatar {
     width: 28px;
@@ -4299,141 +4400,6 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     color: #999;
     margin-top: 6px;
     font-family: 'DM Sans', sans-serif;
-}
-
-/* Job Bag Nav */
-.jb-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 24px 0 0 0;
-    margin-top: 24px;
-    font-family: 'DM Sans', sans-serif;
-}
-
-.jb-nav-arrow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: none;
-    border: none;
-    color: #999;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 8px 12px;
-    border-radius: 6px;
-    transition: color 0.15s, background 0.15s;
-}
-
-.jb-nav-arrow:hover {
-    color: var(--red, #E8291C);
-    background: rgba(232, 41, 28, 0.05);
-}
-
-.jb-nav-arrow svg {
-    flex-shrink: 0;
-}
-
-.jb-nav-arrow:disabled {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.jb-nav-center {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    padding: 8px 12px;
-    border-radius: 6px;
-    position: relative;
-    transition: background 0.15s;
-}
-
-.jb-nav-center:hover {
-    background: rgba(0, 0, 0, 0.03);
-}
-
-.jb-nav-center.no-dropdown {
-    cursor: default;
-}
-
-.jb-nav-center.no-dropdown:hover {
-    background: transparent;
-}
-
-.jb-nav-logo {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    object-fit: contain;
-}
-
-.jb-nav-client {
-    color: #666;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.jb-nav-chevron {
-    color: #999;
-    transition: transform 0.15s;
-}
-
-.jb-nav-center.no-dropdown .jb-nav-chevron {
-    display: none;
-}
-
-.jb-nav-center.open .jb-nav-chevron {
-    transform: rotate(180deg);
-}
-
-.jb-nav-dropdown {
-    display: none;
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    min-width: 180px;
-    max-height: 280px;
-    overflow-y: auto;
-    margin-bottom: 8px;
-    z-index: 100;
-}
-
-.jb-nav-center.open .jb-nav-dropdown {
-    display: block;
-}
-
-.jb-nav-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    cursor: pointer;
-    transition: background 0.1s;
-    font-size: 13px;
-    color: #333;
-}
-
-.jb-nav-dropdown-item:hover {
-    background: #f5f5f5;
-}
-
-.jb-nav-dropdown-item.active {
-    background: rgba(232, 41, 28, 0.08);
-    color: var(--red, #E8291C);
-}
-
-.jb-nav-dropdown-item img {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    object-fit: contain;
 }
 
 /* Backdate pill — shown when a past date is selected */

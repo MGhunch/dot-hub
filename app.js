@@ -1333,6 +1333,12 @@ async function openJobBag(jobNumber) {
 
     currentBagJob = job;
 
+    // Reset thread height before loading new job
+    const thread = document.querySelector('.jb-thread');
+    if (thread) {
+        thread.style.height = 'auto';
+    }
+
     // Job header — combined title
     const jobNameParts = `<span style="font-weight:700">${job.jobNumber}</span> <span style="font-weight:300">— ${job.jobName || 'Untitled'}</span>`;
     $('jb-job-title').innerHTML = jobNameParts;
@@ -1428,25 +1434,6 @@ async function openJobBag(jobNumber) {
         openTrackerEditModal(jobNumber, month);
     };
 
-    // Card click-to-edit handlers
-    const storyCard = $('jb-story-card');
-    if (storyCard) {
-        storyCard.onclick = (e) => {
-            if (e.target.tagName === 'BUTTON') return; // Let toggle buttons work
-            openStoryModal(currentBagJob);
-        };
-    }
-
-    const summaryBody = $('jb-summary-body');
-    if (summaryBody) {
-        summaryBody.onclick = () => openJobModal(jobNumber);
-    }
-
-    const budgetBody = $('jb-budget-body');
-    if (budgetBody) {
-        budgetBody.onclick = $('jb-tracker-link').onclick;
-    }
-
     // Files
     renderJobBagFiles(job);
 
@@ -1468,12 +1455,10 @@ async function openJobBag(jobNumber) {
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             const left = document.querySelector('.jb-left');
-            const threadWrap = document.querySelector('.jb-thread-wrap');
             const thread = document.querySelector('.jb-thread');
             const threadBody = $('jb-thread-body');
-            const labelRow = threadWrap?.querySelector('.jb-section-label-row');
-            if (left && thread && labelRow) {
-                thread.style.height = (left.offsetHeight - labelRow.offsetHeight) + 'px';
+            if (left && thread) {
+                thread.style.height = left.offsetHeight + 'px';
                 thread.style.minHeight = 'unset';
                 thread.style.flex = 'none';
             }
@@ -1481,8 +1466,8 @@ async function openJobBag(jobNumber) {
         });
     });
     
-    // Render nav footer
-    renderJobBagNav();
+    // Render job switcher dropdown
+    renderJobSwitcher();
 }
 
 function closeJobBag() {
@@ -1491,12 +1476,21 @@ function closeJobBag() {
     navigateTo('wip');
 }
 
-// ===== JOB BAG NAV =====
+// ===== JOB BAG SWITCHER =====
 
 function getClientActiveJobs(clientCode) {
     const activeStatuses = ['In Progress', 'On Hold', 'Always on'];
+    const financeNumbers = ['000', '001', '998', '999'];
+    
     return state.allJobs
-        .filter(j => j.clientCode === clientCode && activeStatuses.includes(j.status))
+        .filter(j => {
+            if (j.clientCode !== clientCode) return false;
+            if (!activeStatuses.includes(j.status)) return false;
+            // Exclude finance jobs
+            const num = j.jobNumber.replace(/\D/g, '');
+            if (financeNumbers.includes(num)) return false;
+            return true;
+        })
         .sort((a, b) => {
             // Sort by job number (extract numeric part)
             const numA = parseInt(a.jobNumber.replace(/\D/g, '')) || 0;
@@ -1505,167 +1499,83 @@ function getClientActiveJobs(clientCode) {
         });
 }
 
-function getClientsWithActiveJobs() {
-    const activeStatuses = ['In Progress', 'On Hold', 'Always on'];
-    const clientCodes = new Set();
-    state.allJobs.forEach(j => {
-        if (activeStatuses.includes(j.status)) {
-            clientCodes.add(j.clientCode);
-        }
-    });
-    // Return clients that have active jobs
-    return state.allClients.filter(c => clientCodes.has(c.code));
-}
-
-function renderJobBagNav() {
+function renderJobSwitcher() {
     if (!currentBagJob) return;
     
-    const clientCode = currentBagJob.clientCode;
-    const jobs = getClientActiveJobs(clientCode);
-    const currentIndex = jobs.findIndex(j => j.jobNumber === currentBagJob.jobNumber);
-    
-    // Prev/next with wrap-around
-    const prevIndex = currentIndex > 0 ? currentIndex - 1 : jobs.length - 1;
-    const nextIndex = currentIndex < jobs.length - 1 ? currentIndex + 1 : 0;
-    const prevJob = jobs[prevIndex];
-    const nextJob = jobs[nextIndex];
-    
-    // Update prev button
-    const prevLabel = $('jb-nav-prev-label');
-    const prevBtn = $('jb-nav-prev');
-    if (prevLabel && prevBtn) {
-        if (jobs.length > 1) {
-            prevLabel.textContent = prevJob.jobNumber;
-            prevBtn.disabled = false;
-        } else {
-            prevLabel.textContent = '';
-            prevBtn.disabled = true;
-        }
-    }
-    
-    // Update next button
-    const nextLabel = $('jb-nav-next-label');
-    const nextBtn = $('jb-nav-next');
-    if (nextLabel && nextBtn) {
-        if (jobs.length > 1) {
-            nextLabel.textContent = nextJob.jobNumber;
-            nextBtn.disabled = false;
-        } else {
-            nextLabel.textContent = '';
-            nextBtn.disabled = true;
-        }
-    }
-    
-    // Update center - logo + client name
-    const logo = $('jb-nav-logo');
-    const clientName = $('jb-nav-client');
-    const center = $('jb-nav-center');
-    
-    if (logo) {
-        logo.src = getLogoUrl(clientCode);
-        logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
-    }
-    
-    if (clientName) {
-        const client = state.allClients.find(c => c.code === clientCode);
-        clientName.textContent = client?.name || clientCode;
-    }
-    
-    // Dropdown: only for Full access with multiple clients
-    const canSwitch = state.currentUser?.accessLevel === 'Full';
-    const clientsWithJobs = getClientsWithActiveJobs();
-    
-    if (center) {
-        if (canSwitch && clientsWithJobs.length > 1) {
-            center.classList.remove('no-dropdown');
-            center.onclick = toggleJobBagClientDropdown;
-            renderJobBagClientDropdown(clientsWithJobs, clientCode);
-        } else {
-            center.classList.add('no-dropdown');
-            center.onclick = null;
-        }
-    }
-}
-
-function renderJobBagClientDropdown(clients, currentCode) {
-    const dropdown = $('jb-nav-dropdown');
+    const dropdown = $('jb-job-dropdown');
+    const chevron = $('jb-job-chevron');
     if (!dropdown) return;
     
-    // Sort: key clients first, then alphabetical
-    const keyClients = ['ONE', 'ONS', 'ONB', 'SKY', 'TOW', 'FIS'];
-    clients.sort((a, b) => {
-        const aKey = keyClients.indexOf(a.code);
-        const bKey = keyClients.indexOf(b.code);
-        if (aKey !== -1 && bKey !== -1) return aKey - bKey;
-        if (aKey !== -1) return -1;
-        if (bKey !== -1) return 1;
-        return a.name.localeCompare(b.name);
-    });
+    const jobs = getClientActiveJobs(currentBagJob.clientCode);
+    
+    // Hide chevron if only one job
+    if (chevron) {
+        chevron.style.display = jobs.length > 1 ? 'flex' : 'none';
+    }
+    
+    if (jobs.length <= 1) {
+        dropdown.innerHTML = '';
+        return;
+    }
     
     let html = '';
-    clients.forEach(c => {
-        const isActive = c.code === currentCode ? ' active' : '';
-        html += `<div class="jb-nav-dropdown-item${isActive}" onclick="switchJobBagClient('${c.code}')">
-            <img src="${getLogoUrl(c.code)}" onerror="this.src='images/logos/Unknown.png'" alt="">
-            <span>${c.name}</span>
+    jobs.forEach(j => {
+        const isActive = j.jobNumber === currentBagJob.jobNumber ? ' active' : '';
+        const name = j.jobName || 'Untitled';
+        html += `<div class="jb-job-dropdown-item${isActive}" onclick="selectJob('${j.jobNumber}')">
+            <span class="jb-job-dropdown-num">${j.jobNumber}</span>
+            <span class="jb-job-dropdown-name">${name}</span>
         </div>`;
     });
+    
+    // Add divider and "All jobs" link
+    html += '<div class="jb-job-dropdown-divider"></div>';
+    html += `<div class="jb-job-dropdown-item all-jobs" onclick="goToAllJobs()">All jobs</div>`;
     
     dropdown.innerHTML = html;
 }
 
-function toggleJobBagClientDropdown(e) {
-    e.stopPropagation();
-    const center = $('jb-nav-center');
-    if (center) {
-        center.classList.toggle('open');
-    }
+function toggleJobSwitcher() {
+    const chevron = $('jb-job-chevron');
+    const dropdown = $('jb-job-dropdown');
+    if (!chevron || !dropdown) return;
+    
+    chevron.classList.toggle('open');
+    dropdown.classList.toggle('open');
 }
 
-function switchJobBagClient(clientCode) {
+function selectJob(jobNumber) {
     // Close dropdown
-    $('jb-nav-center')?.classList.remove('open');
+    $('jb-job-chevron')?.classList.remove('open');
+    $('jb-job-dropdown')?.classList.remove('open');
     
-    // Find most recent active job for this client (by last update)
-    const jobs = getClientActiveJobs(clientCode);
-    if (jobs.length === 0) return;
-    
-    // Sort by last update date, most recent first
-    const sorted = [...jobs].sort((a, b) => {
-        const dateA = a.lastUpdate ? new Date(a.lastUpdate) : new Date(0);
-        const dateB = b.lastUpdate ? new Date(b.lastUpdate) : new Date(0);
-        return dateB - dateA;
-    });
-    
-    openJobBag(sorted[0].jobNumber);
+    openJobBag(jobNumber);
 }
 
-function navigateJobBag(direction) {
-    if (!currentBagJob) return;
+function goToAllJobs() {
+    // Close dropdown
+    $('jb-job-chevron')?.classList.remove('open');
+    $('jb-job-dropdown')?.classList.remove('open');
     
-    const jobs = getClientActiveJobs(currentBagJob.clientCode);
-    const currentIndex = jobs.findIndex(j => j.jobNumber === currentBagJob.jobNumber);
-    
-    let newIndex;
-    if (direction === 'prev') {
-        newIndex = currentIndex > 0 ? currentIndex - 1 : jobs.length - 1;
-    } else {
-        newIndex = currentIndex < jobs.length - 1 ? currentIndex + 1 : 0;
+    // Go to WIP filtered by current client
+    if (currentBagJob) {
+        state.wipClient = currentBagJob.clientCode;
     }
-    
-    openJobBag(jobs[newIndex].jobNumber);
+    navigateTo('wip');
 }
 
 // Close dropdown on outside click
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('.jb-nav-center')) {
-        $('jb-nav-center')?.classList.remove('open');
+    if (!e.target.closest('.jb-job-title-row')) {
+        $('jb-job-chevron')?.classList.remove('open');
+        $('jb-job-dropdown')?.classList.remove('open');
     }
 });
 
-// Make nav functions globally available
-window.navigateJobBag = navigateJobBag;
-window.switchJobBagClient = switchJobBagClient;
+// Make functions globally available
+window.toggleJobSwitcher = toggleJobSwitcher;
+window.selectJob = selectJob;
+window.goToAllJobs = goToAllJobs;
 
 // ===== STORY EDITOR =====
 
@@ -1844,13 +1754,13 @@ function renderThreadEntries(updates) {
         threadEntryRegistry[entry.id] = entry;
 
         html += `
-            <div class="jb-entry" onclick="editEntry('${entry.id}')">
+            <div class="jb-entry">
                 <div class="jb-avatar ${avatarClass}">${initials}</div>
                 <div class="jb-entry-content">
                     <div class="jb-entry-header">
                         <span class="jb-entry-author">${escapeHtml(author)}</span>
                         <span class="jb-entry-time">${timeStr}</span>
-                        <button class="jb-entry-edit" onclick="event.stopPropagation(); editEntry('${entry.id}')" title="Edit">
+                        <button class="jb-entry-edit" onclick="editEntry('${entry.id}')" title="Edit">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>
                     </div>
