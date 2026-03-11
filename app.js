@@ -4271,7 +4271,8 @@ function toggleWipEmailDropdown() {
 
 async function selectWipEmailClient(code, name) {
     wipEmailState.clientCode = code;
-    wipEmailState.recipients = [];
+    // Pre-add Michael as default recipient
+    wipEmailState.recipients = [{ email: 'michael@hunch.co.nz', firstName: 'Michael', accessLevel: 'Full' }];
     
     // Update UI
     $('wip-email-client-trigger').querySelector('span').textContent = name;
@@ -4294,14 +4295,15 @@ async function selectWipEmailClient(code, name) {
         // Filter to people with email addresses
         const withEmail = people.filter(p => p.email);
         
-        if (withEmail.length === 0) {
-            $('wip-email-people-list').innerHTML = '<div style="color: #999; font-size: 14px;">No contacts with email addresses</div>';
-            $('wip-email-note-group').style.display = 'none';
-            $('wip-email-footer').style.display = 'none';
-            return;
-        }
+        // Build people list - Michael first (pre-checked), then client contacts
+        let peopleHtml = `<label style="display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer;">
+            <input type="checkbox" checked style="margin-right: 12px; width: 18px; height: 18px; accent-color: #ED1C24;" onchange="toggleWipEmailRecipient('michael@hunch.co.nz', 'Michael', 'Full')">
+            <div>
+                <div style="font-size: 15px; font-weight: 500; color: #333;">Michael Campion</div>
+                <div style="font-size: 13px; color: #999;">michael@hunch.co.nz</div>
+            </div>
+        </label>`;
         
-        let peopleHtml = '';
         withEmail.forEach(p => {
             const escapedEmail = p.email.replace(/'/g, "\\'");
             const escapedName = (p.firstName || p.name).replace(/'/g, "\\'");
@@ -4316,9 +4318,8 @@ async function selectWipEmailClient(code, name) {
         });
         
         $('wip-email-people-list').innerHTML = peopleHtml;
-        $('wip-email-note-group').style.display = 'block';
-        $('wip-email-note').value = "Here's what's new, what's due and what's cooking.";
-        $('wip-email-footer').style.display = 'none';
+        // Show send button since Michael is pre-checked
+        $('wip-email-footer').style.display = 'flex';
         
     } catch (e) {
         console.error('Failed to load people:', e);
@@ -4348,8 +4349,7 @@ async function sendWipEmail() {
     
     const payload = {
         clientCode: wipEmailState.clientCode,
-        recipients: wipEmailState.recipients,
-        customNote: $('wip-email-note').value.trim() || null
+        recipients: wipEmailState.recipients
     };
     
     try {

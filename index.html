@@ -324,24 +324,22 @@
             <!-- ===== WIP VIEW ===== -->
             <section class="view view-wip" id="view-wip">
                 <div class="wip-controls">
-                    <div class="wip-controls-inner">
-                        <div class="custom-dropdown" id="wip-client-dropdown">
-                            <button class="custom-dropdown-trigger" id="wip-client-trigger">
-                                <span>All Clients</span>
-                                <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                            <div class="custom-dropdown-menu" id="wip-client-menu">
-                                <div class="custom-dropdown-option selected" data-value="all">All Clients</div>
-                            </div>
+                    <div class="custom-dropdown" id="wip-client-dropdown">
+                        <button class="custom-dropdown-trigger" id="wip-client-trigger">
+                            <span>All Clients</span>
+                            <svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="custom-dropdown-menu" id="wip-client-menu">
+                            <div class="custom-dropdown-option selected" data-value="all">All Clients</div>
                         </div>
-                        <div class="mode-toggle">
-                            <span class="mode-label" id="mode-mobile" onclick="setWipMode('mobile')">Mobile</span>
-                            <label class="mode-switch">
-                                <input type="checkbox" id="wip-mode-switch" checked onchange="toggleWipMode()">
-                                <span class="mode-switch-slider"></span>
-                            </label>
-                            <span class="mode-label active" id="mode-desktop" onclick="setWipMode('desktop')">Desktop</span>
-                        </div>
+                    </div>
+                    <div class="mode-toggle">
+                        <span class="mode-label" id="mode-mobile" onclick="setWipMode('mobile')">Mobile</span>
+                        <label class="mode-switch">
+                            <input type="checkbox" id="wip-mode-switch" checked onchange="toggleWipMode()">
+                            <span class="mode-switch-slider"></span>
+                        </label>
+                        <span class="mode-label active" id="mode-desktop" onclick="setWipMode('desktop')">Desktop</span>
                     </div>
                 </div>
                 <div class="wip-content" id="wip-content">
@@ -965,12 +963,6 @@
                 <div class="job-form-group" id="wip-email-people-group" style="display: none;">
                     <label class="job-form-label">Send to</label>
                     <div id="wip-email-people-list" style="max-height: 200px; overflow-y: auto;"></div>
-                </div>
-
-                <!-- Custom note -->
-                <div class="job-form-group" id="wip-email-note-group" style="display: none;">
-                    <label class="job-form-label">Add a note (optional)</label>
-                    <textarea class="job-form-input job-form-textarea" id="wip-email-note" placeholder="That project with the chickens needs some eggs..." rows="2"></textarea>
                 </div>
             </div>
             <div class="job-modal-footer" id="wip-email-footer" style="display: none;">

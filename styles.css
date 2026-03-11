@@ -287,7 +287,7 @@ body:not(.loading) .desktop-main {
 /* Sent state styling */
 .login-message {
     font-family: var(--font-body);
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 500;
     color: var(--grey-800);
     margin: 0 0 20px 0;
@@ -1050,15 +1050,10 @@ body.logged-out .view-tracker {
 .wip-controls {
     background: var(--white);
     padding: 20px 32px;
-    border-bottom: 1px solid var(--grey-200);
-}
-
-.wip-controls-inner {
-    max-width: 1600px;
-    margin: 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid var(--grey-200);
 }
 
 .wip-content {
@@ -1068,9 +1063,6 @@ body.logged-out .view-tracker {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 64px;
-    max-width: 1600px;
-    margin: 0 auto;
-    width: 100%;
 }
 
 .wip-column {
@@ -1358,6 +1350,7 @@ body.logged-out .view-tracker {
     font-size: 14px;
     font-weight: 500;
     padding: 16px 18px;
+    min-height: 90px;
     text-align: center;
     background: var(--white);
     border-radius: 12px;
@@ -1366,7 +1359,6 @@ body.logged-out .view-tracker {
     align-items: center;
     justify-content: center;
     gap: 16px;
-    max-width: 480px;
 }
 .empty-section img { width: 48px; height: auto; }
 
