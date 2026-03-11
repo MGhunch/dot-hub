@@ -285,20 +285,36 @@ body:not(.loading) .desktop-main {
 }
 
 /* Sent state styling */
-.login-title {
-    font-family: var(--font-display);
-    font-size: 28px;
+.login-message {
+    font-family: var(--font-body);
+    font-size: 18px;
+    font-weight: 500;
     color: var(--grey-800);
-    margin: 0 0 8px 0;
+    margin: 0 0 20px 0;
+}
+
+.login-retry-btn {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 14px 28px;
+    background: var(--red);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
-.login-subtitle {
-    font-family: var(--font-body);
-    font-size: 15px;
-    color: var(--grey-600);
-    margin: 0 0 24px 0;
+.login-retry-btn:hover {
+    background: var(--red-dark);
+    transform: scale(1.02);
+}
+
+.login-retry-btn:active {
+    transform: scale(0.98);
 }
 
 /* Login Form */
@@ -367,22 +383,6 @@ body:not(.loading) .desktop-main {
     color: #ED1C24;
     margin: 16px 0 0 0;
     min-height: 20px;
-}
-
-.login-retry {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    color: #999;
-    margin: 16px 0 0 0;
-}
-
-.login-retry a {
-    color: #ED1C24;
-    text-decoration: none;
-}
-
-.login-retry a:hover {
-    text-decoration: underline;
 }
 
 /* ===== LOGGED OUT STATE ===== */

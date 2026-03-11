@@ -128,7 +128,7 @@ function setupEventListeners() {
     // Login form - Desktop
     $('login-send')?.addEventListener('click', () => requestLogin('desktop'));
     $('login-email')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') requestLogin('desktop'); });
-    $('login-try-again')?.addEventListener('click', (e) => { e.preventDefault(); resetLoginForm(); });
+    $('login-try-again')?.addEventListener('click', () => resetLoginForm());
     
     // Login form - Phone
     $('phone-login-send')?.addEventListener('click', () => requestLogin('phone'));
