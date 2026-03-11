@@ -1420,7 +1420,7 @@ async function openJobBag(jobNumber) {
 
         pencil.style.opacity = '0.4';
         pencil.style.pointerEvents = 'none';
-        if (budgetBody) budgetBody.innerHTML = '<div style="font-size:12px;color:#999;">Loading…</div>';
+        if (budgetBody) budgetBody.innerHTML = loadingDots('small');
 
         await loadTrackerData(job.clientCode);
 
@@ -1684,7 +1684,7 @@ function renderJobBagFiles(job) {
 
 async function loadJobBagUpdates(jobNumber) {
     const threadBody = $('jb-thread-body');
-    threadBody.innerHTML = '<div class="jb-thread-loading">Loading updates...</div>';
+    threadBody.innerHTML = loadingDots();
 
     try {
         const response = await fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}/updates`);
@@ -1797,7 +1797,7 @@ function escapeHtml(str) {
 
 async function loadJobBagBudget(jobNumber) {
     const budgetBody = $('jb-budget-body');
-    budgetBody.innerHTML = '<div class="jb-thread-loading">Loading...</div>';
+    budgetBody.innerHTML = loadingDots('small');
 
     try {
         const response = await fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}/budget`);
@@ -2555,7 +2555,7 @@ function renderWip() {
     // Show loading modal if jobs haven't loaded yet
     if (!state.jobsLoaded) {
         content.innerHTML = '';
-        showLoadingModal('Grabbing all your jobs...');
+        showLoadingModal();
         return;
     }
     
@@ -2667,7 +2667,7 @@ function renderPhoneWip() {
     
     if (!state.jobsLoaded) {
         content.innerHTML = '';
-        showLoadingModal('Grabbing all your jobs...');
+        showLoadingModal();
         return;
     }
     
@@ -3052,7 +3052,7 @@ async function renderTracker() {
     
     // Show loading modal and clear content
     content.innerHTML = '';
-    showLoadingModal('Digging for the numbers...');
+    showLoadingModal();
     
     if (Object.keys(trackerClients).length === 0) {
         await loadTrackerClients();
@@ -3653,7 +3653,7 @@ async function openNewJobModal() {
     
     // Reset dropdowns
     $('new-job-client-trigger').querySelector('span').textContent = 'Select client...';
-    $('new-job-client-menu').innerHTML = '<div class="custom-dropdown-option" style="color: var(--grey-400)">Loading...</div>';
+    $('new-job-client-menu').innerHTML = loadingDots('small');
     $('new-job-owner-trigger').querySelector('span').textContent = 'Select client first...';
     $('new-job-owner-menu').innerHTML = '';
     setNewJobDropdown('status', 'Incoming', 'Incoming');
@@ -3970,11 +3970,28 @@ document.addEventListener('click', (e) => {
 window.showComingSoonModal = showComingSoonModal;
 window.closeComingSoonModal = closeComingSoonModal;
 
-// ===== LOADING MODAL =====
-function showLoadingModal(message = 'Loading...') {
+// ===== LOADING STATES =====
+
+/**
+ * Returns HTML for inline loading dots
+ * @param {string} size - 'default' or 'small'
+ * @returns {string} HTML string
+ */
+function loadingDots(size = 'default') {
+    const sizeClass = size === 'small' ? ' loading-dots--small' : '';
+    return `<div class="loading-dots${sizeClass}">
+        <div class="loading-dots__dot"></div>
+        <div class="loading-dots__dot"></div>
+        <div class="loading-dots__dot"></div>
+    </div>`;
+}
+
+/**
+ * Shows the loading modal with Dot + heart animation
+ */
+function showLoadingModal() {
     let overlay = $('loading-modal');
     
-    // Create modal HTML if it doesn't exist
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'loading-modal';
@@ -3985,14 +4002,12 @@ function showLoadingModal(message = 'Loading...') {
                     <img src="images/Robot_01.svg" alt="Dot" class="dot-robot">
                     <img src="images/Heart_01.svg" alt="" class="dot-heart-svg">
                 </div>
-                <div class="loading-modal-text"></div>
+                <div class="loading-modal-text">Just a sec</div>
             </div>
         `;
         document.body.appendChild(overlay);
     }
     
-    // Set message and show
-    overlay.querySelector('.loading-modal-text').textContent = message;
     overlay.classList.add('visible');
 }
 
@@ -4258,7 +4273,7 @@ async function selectWipEmailClient(code, name) {
     logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
     
     // Fetch people for this client
-    $('wip-email-people-list').innerHTML = '<div style="color: #999; font-size: 14px;">Loading contacts...</div>';
+    $('wip-email-people-list').innerHTML = loadingDots('small');
     $('wip-email-people-group').style.display = 'block';
     
     try {
