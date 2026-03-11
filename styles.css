@@ -4101,6 +4101,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 .jb-thread-wrap {
     display: flex;
     flex-direction: column;
+    flex: 1;
 }
 
 /* Tabs — sit in the RH side of the Updates section-label-row */
@@ -4140,6 +4141,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     flex-direction: column;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
+    flex: 1;
 }
 
 .jb-thread-body {
