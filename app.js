@@ -4617,7 +4617,7 @@ async function selectWipEmailClient(code, name) {
     
     // Fetch people for this client
     $('wip-email-people-list').innerHTML = loadingDots('small');
-    $('wip-email-people-group').style.display = 'block';
+    $('wip-email-people-group').style.display = 'flex';
     
     try {
         const response = await fetch(`${API_BASE}/people/${code}`);
@@ -4650,7 +4650,7 @@ async function selectWipEmailClient(code, name) {
         
         $('wip-email-people-list').innerHTML = peopleHtml;
         // Show intro field and send button since Michael is pre-checked
-        $('wip-email-intro-group').style.display = 'block';
+        $('wip-email-intro-group').style.display = 'flex';
         $('wip-email-footer').style.display = 'flex';
         
     } catch (e) {
