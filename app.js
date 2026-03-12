@@ -3820,6 +3820,7 @@ async function openTrackerEditModal(jobNumber, month) {
     }
     
     const contextBox = $('tracker-context-box');
+    const totalRow = document.querySelector('.tracker-total-row');
     const isCreateMode = !trackerEntry;
     
     if (isCreateMode) {
@@ -3829,13 +3830,13 @@ async function openTrackerEditModal(jobNumber, month) {
             jobNumber: job.jobNumber
         };
         
-        $('tracker-modal-title').textContent = jobNumber;
-        $('tracker-edit-name').textContent = job.jobName;
+        $('tracker-edit-name').textContent = `${jobNumber} | ${job.jobName}`;
         
         if (totalSpend > 0) {
-            $('tracker-edit-total').innerHTML = `Total: <strong>$${totalSpend.toLocaleString()}</strong>`;
+            $('tracker-edit-total').textContent = `$${totalSpend.toLocaleString()}`;
+            totalRow?.classList.remove('hidden');
         } else {
-            $('tracker-edit-total').textContent = 'First entry for this job';
+            totalRow?.classList.add('hidden');
         }
         
         contextBox?.classList.add('create-mode');
@@ -3854,9 +3855,9 @@ async function openTrackerEditModal(jobNumber, month) {
         // UPDATE mode
         trackerCurrentEditData = { ...trackerEntry, mode: 'update' };
         
-        $('tracker-modal-title').textContent = jobNumber;
-        $('tracker-edit-name').textContent = trackerEntry.projectName;
-        $('tracker-edit-total').innerHTML = `Total: <strong>$${totalSpend.toLocaleString()}</strong>`;
+        $('tracker-edit-name').textContent = `${jobNumber} | ${trackerEntry.projectName}`;
+        $('tracker-edit-total').textContent = `$${totalSpend.toLocaleString()}`;
+        totalRow?.classList.remove('hidden');
         
         contextBox?.classList.remove('create-mode');
         

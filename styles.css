@@ -2310,39 +2310,9 @@ body.logged-out .view-tracker {
 
 .tracker-modal-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+    justify-content: flex-end;
+    padding-bottom: 8px;
 }
-
-.tracker-modal-header-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.tracker-modal-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--grey-800);
-}
-
-.ballpark-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.ballpark-label {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--grey-400);
-    transition: color 0.15s ease;
-}
-
-.ballpark-label.active { color: var(--red); }
 
 .tracker-modal-close {
     background: none;
@@ -2359,7 +2329,7 @@ body.logged-out .view-tracker {
 .tracker-modal-body {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
 }
 
 .tracker-form-group {
@@ -2441,10 +2411,7 @@ body.logged-out .view-tracker {
     background: var(--grey-100);
     border-radius: var(--radius-sm);
     padding: 14px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .tracker-context-box.create-mode {
@@ -2458,14 +2425,29 @@ body.logged-out .view-tracker {
     color: var(--grey-800);
 }
 
-.tracker-context-total {
-    font-size: 13px;
-    color: var(--grey-600);
+.tracker-total-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 16px;
 }
 
-.tracker-context-total strong {
+.tracker-total-row.hidden {
+    display: none;
+}
+
+.tracker-total-label {
+    font-size: 11px;
     font-weight: 600;
-    color: var(--grey-800);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--red);
+}
+
+.tracker-total-amount {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--red);
 }
 
 .tracker-section-label {
@@ -2473,8 +2455,8 @@ body.logged-out .view-tracker {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--red);
-    margin: 20px 0 12px;
+    color: var(--grey-400);
+    margin: 8px 0 12px;
 }
 
 .tracker-stage-pills,
