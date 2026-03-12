@@ -3751,58 +3751,126 @@ function renderTrackerChart() {
 
 function setupTrackerModalListeners() {
     const modal = $('tracker-edit-modal');
-    const ballparkToggle = $('tracker-edit-ballpark');
     
     if (modal) {
         modal.addEventListener('click', (e) => { if (e.target === modal) closeTrackerModal(); });
     }
     
-    if (ballparkToggle) {
-        ballparkToggle.addEventListener('change', function() {
-            updateTrackerBallparkUI(this.checked);
+    // Stage pill click handlers
+    document.querySelectorAll('.tracker-stage-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            document.querySelectorAll('.tracker-stage-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
         });
-    }
+    });
+    
+    // Type pill click handlers
+    document.querySelectorAll('.tracker-type-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            document.querySelectorAll('.tracker-type-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+        });
+    });
 }
 
-function updateTrackerBallparkUI(isBallpark) {
-    const modal = document.querySelector('.tracker-modal');
-    const label = $('tracker-ballpark-label');
-    if (isBallpark) {
-        modal?.classList.add('ballpark-active');
-        label?.classList.add('active');
-    } else {
-        modal?.classList.remove('ballpark-active');
-        label?.classList.remove('active');
-    }
+function setTrackerStagePill(stage) {
+    document.querySelectorAll('.tracker-stage-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.value === stage);
+    });
 }
 
-function openTrackerEditModal(jobNumber, month) {
-    const project = trackerData.find(p => p.jobNumber === jobNumber && p.month === month) ||
-                    trackerData.find(p => p.jobNumber === jobNumber);
+function setTrackerTypePill(type) {
+    document.querySelectorAll('.tracker-type-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.value === type);
+    });
+}
 
-    if (!project) {
-        showToast('No tracker entry found for this job.', 'error');
+function getTrackerStagePill() {
+    const active = document.querySelector('.tracker-stage-pill.active');
+    return active?.dataset.value || 'Simplify';
+}
+
+function getTrackerTypePill() {
+    const active = document.querySelector('.tracker-type-pill.active');
+    return active?.dataset.value || 'Project budget';
+}
+
+async function openTrackerEditModal(jobNumber, month) {
+    // Get job info from Projects (always exists)
+    const job = state.allJobs?.find(j => j.jobNumber === jobNumber);
+    if (!job) {
+        showToast('Job not found.', 'error');
         return;
     }
-
-    trackerCurrentEditData = project;
-
-    $('tracker-modal-title').textContent = 'Update ' + jobNumber;
-    $('tracker-edit-name').value = project.projectName;
-    $('tracker-edit-description').value = project.description || '';
-    $('tracker-edit-spend').value = project.spend;
-    $('tracker-edit-month').value = project.month;
-    $('tracker-edit-spendtype').value = project.spendType;
-
-    // Stage — read from allJobs state
-    const job = state.allJobs?.find(j => j.jobNumber === jobNumber);
-    const stageEl = $('tracker-edit-stage');
-    if (stageEl) stageEl.value = job?.stage || 'Triage';
-
-    const isBallpark = project.ballpark || false;
-    $('tracker-edit-ballpark').checked = isBallpark;
-    updateTrackerBallparkUI(isBallpark);
-
+    
+    // Try to find existing tracker entry
+    const trackerEntry = trackerData.find(p => p.jobNumber === jobNumber && p.month === month) ||
+                         trackerData.find(p => p.jobNumber === jobNumber);
+    
+    // Fetch total spend for this job
+    let totalSpend = 0;
+    try {
+        const budgetRes = await fetch(`${API_BASE}/job/${jobNumber}/budget`);
+        if (budgetRes.ok) {
+            const budgetData = await budgetRes.json();
+            totalSpend = budgetData.total || 0;
+        }
+    } catch (e) {
+        console.log('Could not fetch budget:', e);
+    }
+    
+    const contextBox = $('tracker-context-box');
+    const isCreateMode = !trackerEntry;
+    
+    if (isCreateMode) {
+        // CREATE mode
+        trackerCurrentEditData = {
+            mode: 'create',
+            jobNumber: job.jobNumber
+        };
+        
+        $('tracker-modal-title').textContent = jobNumber;
+        $('tracker-edit-name').textContent = job.jobName;
+        
+        if (totalSpend > 0) {
+            $('tracker-edit-total').innerHTML = `Total: <strong>$${totalSpend.toLocaleString()}</strong>`;
+        } else {
+            $('tracker-edit-total').textContent = 'First entry for this job';
+        }
+        
+        contextBox?.classList.add('create-mode');
+        
+        $('tracker-edit-spend').value = '';
+        $('tracker-edit-month').value = new Date().toLocaleString('en-US', { month: 'long' });
+        $('tracker-edit-description').value = '';
+        $('tracker-edit-ballpark').checked = true;
+        
+        setTrackerStagePill(job.stage || 'Simplify');
+        setTrackerTypePill('Project budget');
+        
+        $('tracker-save-btn').textContent = 'Create Entry';
+        
+    } else {
+        // UPDATE mode
+        trackerCurrentEditData = { ...trackerEntry, mode: 'update' };
+        
+        $('tracker-modal-title').textContent = jobNumber;
+        $('tracker-edit-name').textContent = trackerEntry.projectName;
+        $('tracker-edit-total').innerHTML = `Total: <strong>$${totalSpend.toLocaleString()}</strong>`;
+        
+        contextBox?.classList.remove('create-mode');
+        
+        $('tracker-edit-spend').value = trackerEntry.spend;
+        $('tracker-edit-month').value = trackerEntry.month;
+        $('tracker-edit-description').value = trackerEntry.description || '';
+        $('tracker-edit-ballpark').checked = trackerEntry.ballpark || false;
+        
+        setTrackerStagePill(job.stage || 'Simplify');
+        setTrackerTypePill(trackerEntry.spendType || 'Project budget');
+        
+        $('tracker-save-btn').textContent = 'Save Changes';
+    }
+    
     $('tracker-edit-modal')?.classList.add('visible');
 }
 
@@ -3817,7 +3885,7 @@ function openTrackerDetail(jobNumber, month) {
 
 function closeTrackerModal() {
     $('tracker-edit-modal')?.classList.remove('visible');
-    document.querySelector('.tracker-modal')?.classList.remove('ballpark-active');
+    $('tracker-context-box')?.classList.remove('create-mode');
     const saveBtn = $('tracker-save-btn');
     if (saveBtn) { saveBtn.textContent = 'Save Changes'; saveBtn.disabled = false; }
     trackerCurrentEditData = null;
@@ -3826,46 +3894,57 @@ function closeTrackerModal() {
 async function saveTrackerProject() {
     if (!trackerCurrentEditData) return;
     
-    const updates = {
-        id: trackerCurrentEditData.id,
+    const isCreateMode = trackerCurrentEditData.mode === 'create';
+    
+    const payload = {
         jobNumber: trackerCurrentEditData.jobNumber,
         description: $('tracker-edit-description').value,
         spend: parseFloat($('tracker-edit-spend').value) || 0,
         month: $('tracker-edit-month').value,
-        spendType: $('tracker-edit-spendtype').value,
+        spendType: getTrackerTypePill(),
         ballpark: $('tracker-edit-ballpark').checked,
-        stage: $('tracker-edit-stage')?.value || 'Triage'
+        stage: getTrackerStagePill()
     };
     
+    if (!isCreateMode) {
+        payload.id = trackerCurrentEditData.id;
+    }
+    
     const saveBtn = $('tracker-save-btn');
-    if (saveBtn) { saveBtn.textContent = 'Saving...'; saveBtn.disabled = true; }
+    if (saveBtn) { 
+        saveBtn.textContent = isCreateMode ? 'Creating...' : 'Saving...'; 
+        saveBtn.disabled = true; 
+    }
     
     try {
-        const response = await fetch(`${API_BASE}/tracker/update`, {
+        const endpoint = isCreateMode ? '/tracker/create' : '/tracker/update';
+        const response = await fetch(`${API_BASE}${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updates)
+            body: JSON.stringify(payload)
         });
         
         if (!response.ok) throw new Error('Failed to save');
         
-        Object.assign(trackerCurrentEditData, updates);
         closeTrackerModal();
         
         await loadTrackerData(state.trackerClient);
         renderTrackerContent();
 
         // Refresh Job Bag budget if we're viewing this job
-        if (currentBagJob?.jobNumber === trackerCurrentEditData.jobNumber) {
+        if (currentBagJob?.jobNumber === trackerCurrentEditData?.jobNumber) {
             loadJobBagBudget(currentBagJob.jobNumber);
         }
 
-        showToast('On it.', 'success');
+        showToast(isCreateMode ? 'Entry created.' : 'On it.', 'success');
         
     } catch (e) {
         console.error('Save failed:', e);
         showToast("Doh, that didn't work.", 'error');
-        if (saveBtn) { saveBtn.textContent = 'Save Changes'; saveBtn.disabled = false; }
+        if (saveBtn) { 
+            saveBtn.textContent = isCreateMode ? 'Create Entry' : 'Save Changes'; 
+            saveBtn.disabled = false; 
+        }
     }
 }
 

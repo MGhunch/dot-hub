@@ -1255,6 +1255,70 @@ def update_tracker():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/tracker/create', methods=['POST'])
+def create_tracker():
+    """Create a new tracker record linked to a Project"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        job_number = data.get('jobNumber')
+        if not job_number:
+            return jsonify({'error': 'Job number required'}), 400
+
+        # Look up the Project record to get its ID
+        projects_url = get_airtable_url('Projects')
+        params = {
+            'filterByFormula': f"{{Job Number}} = '{job_number}'",
+            'maxRecords': 1
+        }
+        proj_response = requests.get(projects_url, headers=HEADERS, params=params)
+        proj_response.raise_for_status()
+        records = proj_response.json().get('records', [])
+        
+        if not records:
+            return jsonify({'error': f'Project not found: {job_number}'}), 404
+        
+        project_record_id = records[0].get('id')
+        
+        # Create the Tracker record
+        tracker_url = get_airtable_url('Tracker')
+        tracker_fields = {
+            'Link': [project_record_id],
+            'Spend': data.get('spend', 0),
+            'Ballpark': data.get('ballpark', True),
+            'Month': data.get('month', datetime.now().strftime('%B')),
+            'Spend type': data.get('spendType', 'Project budget'),
+            'Tracker notes': data.get('description', '')
+        }
+        
+        tracker_response = requests.post(
+            tracker_url,
+            headers=HEADERS,
+            json={'fields': tracker_fields}
+        )
+        tracker_response.raise_for_status()
+        
+        print(f'[Hub API] Created Tracker record for {job_number}')
+        
+        # If stage provided, also patch the Projects record
+        stage = data.get('stage')
+        if stage:
+            requests.patch(
+                f"{projects_url}/{project_record_id}",
+                headers=HEADERS,
+                json={'fields': {'Stage': stage}}
+            )
+            print(f'[Hub API] Updated Stage to {stage} for {job_number}')
+
+        return jsonify({'success': True})
+
+    except Exception as e:
+        print(f'[Hub API] Error creating tracker: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
 # ===== JOB BAG =====
 
 @app.route('/api/job/<job_number>/updates', methods=['GET'])

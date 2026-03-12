@@ -2436,6 +2436,118 @@ body.logged-out .view-tracker {
 
 .tracker-btn-primary:hover { background: var(--red-dark); }
 
+/* Tracker Modal - New Design */
+.tracker-context-box {
+    background: var(--grey-100);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+}
+
+.tracker-context-box.create-mode {
+    background: linear-gradient(135deg, rgba(237, 28, 36, 0.06), rgba(237, 28, 36, 0.02));
+    border: 1.5px dashed var(--red);
+}
+
+.tracker-context-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--grey-800);
+}
+
+.tracker-context-total {
+    font-size: 13px;
+    color: var(--grey-600);
+}
+
+.tracker-context-total strong {
+    font-weight: 600;
+    color: var(--grey-800);
+}
+
+.tracker-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--red);
+    margin: 20px 0 12px;
+}
+
+.tracker-stage-pills,
+.tracker-type-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tracker-stage-pill {
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--grey-200);
+    background: var(--white);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey-600);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.tracker-stage-pill:hover {
+    border-color: var(--grey-400);
+    color: var(--grey-800);
+}
+
+.tracker-stage-pill.active {
+    border-color: var(--red);
+    background: var(--red);
+    color: var(--white);
+}
+
+.tracker-type-pills {
+    gap: 8px;
+}
+
+.tracker-type-pill {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--grey-200);
+    background: var(--white);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--grey-600);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+}
+
+.tracker-type-pill:hover {
+    border-color: var(--grey-400);
+}
+
+.tracker-type-pill.active {
+    border-color: var(--red);
+    background: rgba(237, 28, 36, 0.08);
+    color: var(--red);
+}
+
+.tracker-ballpark-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+.tracker-ballpark-row .tracker-form-label {
+    margin-bottom: 0;
+}
+
 /* Quarter context label */
 .quarter-context {
     color: var(--grey-300);
