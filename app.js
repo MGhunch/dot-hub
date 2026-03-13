@@ -3819,9 +3819,16 @@ async function openTrackerEditModal(jobNumber, month) {
         console.log('Could not fetch budget:', e);
     }
     
-    const contextBox = $('tracker-context-box');
     const totalRow = document.querySelector('.tracker-total-row');
     const isCreateMode = !trackerEntry;
+    
+    // Set logo based on client code
+    const clientCode = job.clientCode || jobNumber.replace(/\s*\d+$/, '').trim();
+    const logoEl = $('tracker-job-logo');
+    if (logoEl) {
+        logoEl.src = `/images/logos/${clientCode}.png`;
+        logoEl.onerror = () => { logoEl.src = '/images/logos/Unknown.png'; };
+    }
     
     if (isCreateMode) {
         // CREATE mode
@@ -3838,8 +3845,6 @@ async function openTrackerEditModal(jobNumber, month) {
         } else {
             totalRow?.classList.add('hidden');
         }
-        
-        contextBox?.classList.add('create-mode');
         
         $('tracker-edit-spend').value = '';
         $('tracker-edit-month').value = new Date().toLocaleString('en-US', { month: 'long' });
@@ -3858,8 +3863,6 @@ async function openTrackerEditModal(jobNumber, month) {
         $('tracker-edit-name').textContent = `${jobNumber} | ${trackerEntry.projectName}`;
         $('tracker-edit-total').textContent = `$${totalSpend.toLocaleString()}`;
         totalRow?.classList.remove('hidden');
-        
-        contextBox?.classList.remove('create-mode');
         
         $('tracker-edit-spend').value = trackerEntry.spend;
         $('tracker-edit-month').value = trackerEntry.month;
@@ -3886,7 +3889,6 @@ function openTrackerDetail(jobNumber, month) {
 
 function closeTrackerModal() {
     $('tracker-edit-modal')?.classList.remove('visible');
-    $('tracker-context-box')?.classList.remove('create-mode');
     const saveBtn = $('tracker-save-btn');
     if (saveBtn) { saveBtn.textContent = 'Save Changes'; saveBtn.disabled = false; }
     trackerCurrentEditData = null;
