@@ -2435,10 +2435,6 @@ body.logged-out .view-tracker {
     margin-bottom: 16px;
 }
 
-.tracker-total-row.hidden {
-    display: none;
-}
-
 .tracker-total-amount {
     font-size: 20px;
     font-weight: 700;

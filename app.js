@@ -46,6 +46,7 @@ function init() {
     handleDeepLink();    // First - capture URL params
     checkSession();      // Then - check session (auto-login if deep link)
     setupEventListeners();
+    setupTrackerModalListeners();  // Set up tracker modal pill handlers
 }
 
 // ===== DEEP LINK HANDLING =====
@@ -3751,26 +3752,39 @@ function renderTrackerChart() {
 
 function setupTrackerModalListeners() {
     const modal = $('tracker-edit-modal');
+    if (!modal || modal.dataset.listenersAttached) return;
+    modal.dataset.listenersAttached = 'true';
     
-    if (modal) {
-        modal.addEventListener('click', (e) => { if (e.target === modal) closeTrackerModal(); });
+    // Backdrop click to close
+    modal.addEventListener('click', (e) => { 
+        if (e.target === modal) closeTrackerModal(); 
+    });
+    
+    // Event delegation for stage pills
+    const stagePills = $('tracker-stage-pills');
+    if (stagePills) {
+        stagePills.addEventListener('click', (e) => {
+            const pill = e.target.closest('.tracker-stage-pill');
+            if (pill) {
+                e.stopPropagation();
+                stagePills.querySelectorAll('.tracker-stage-pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+            }
+        });
     }
     
-    // Stage pill click handlers
-    document.querySelectorAll('.tracker-stage-pill').forEach(pill => {
-        pill.addEventListener('click', () => {
-            document.querySelectorAll('.tracker-stage-pill').forEach(p => p.classList.remove('active'));
-            pill.classList.add('active');
+    // Event delegation for type pills
+    const typePills = $('tracker-type-pills');
+    if (typePills) {
+        typePills.addEventListener('click', (e) => {
+            const pill = e.target.closest('.tracker-type-pill');
+            if (pill) {
+                e.stopPropagation();
+                typePills.querySelectorAll('.tracker-type-pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+            }
         });
-    });
-    
-    // Type pill click handlers
-    document.querySelectorAll('.tracker-type-pill').forEach(pill => {
-        pill.addEventListener('click', () => {
-            document.querySelectorAll('.tracker-type-pill').forEach(p => p.classList.remove('active'));
-            pill.classList.add('active');
-        });
-    });
+    }
 }
 
 function setTrackerStagePill(stage) {
@@ -3819,7 +3833,6 @@ async function openTrackerEditModal(jobNumber, month) {
         console.log('Could not fetch budget:', e);
     }
     
-    const totalRow = document.querySelector('.tracker-total-row');
     const isCreateMode = !trackerEntry;
     
     // Set logo based on client code
@@ -3838,11 +3851,15 @@ async function openTrackerEditModal(jobNumber, month) {
         
         $('tracker-edit-name').textContent = `${jobNumber} | ${job.jobName}`;
         
+        const totalAmount = $('tracker-edit-total');
+        const totalLabel = document.querySelector('.tracker-total-label');
         if (totalSpend > 0) {
-            $('tracker-edit-total').textContent = `$${totalSpend.toLocaleString()}`;
-            totalRow?.classList.remove('hidden');
+            totalAmount.textContent = `$${totalSpend.toLocaleString()}`;
+            totalAmount?.classList.remove('hidden');
+            totalLabel?.classList.remove('hidden');
         } else {
-            totalRow?.classList.add('hidden');
+            totalAmount?.classList.add('hidden');
+            totalLabel?.classList.add('hidden');
         }
         
         $('tracker-edit-spend').value = '';
@@ -3860,8 +3877,12 @@ async function openTrackerEditModal(jobNumber, month) {
         trackerCurrentEditData = { ...trackerEntry, mode: 'update' };
         
         $('tracker-edit-name').textContent = `${jobNumber} | ${trackerEntry.projectName}`;
-        $('tracker-edit-total').textContent = `$${totalSpend.toLocaleString()}`;
-        totalRow?.classList.remove('hidden');
+        
+        const totalAmount = $('tracker-edit-total');
+        const totalLabel = document.querySelector('.tracker-total-label');
+        totalAmount.textContent = `$${totalSpend.toLocaleString()}`;
+        totalAmount?.classList.remove('hidden');
+        totalLabel?.classList.remove('hidden');
         
         $('tracker-edit-spend').value = trackerEntry.spend;
         $('tracker-edit-month').value = trackerEntry.month;
