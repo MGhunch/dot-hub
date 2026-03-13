@@ -2308,24 +2308,6 @@ body.logged-out .view-tracker {
     border: 2px solid rgba(237, 28, 36, 0.3);
 }
 
-.tracker-modal-header {
-    display: flex;
-    justify-content: flex-end;
-    padding-bottom: 8px;
-}
-
-.tracker-modal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: var(--grey-400);
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-}
-
-.tracker-modal-close:hover { color: var(--red); }
-
 .tracker-modal-body {
     display: flex;
     flex-direction: column;
@@ -2426,15 +2408,30 @@ body.logged-out .view-tracker {
 }
 
 .tracker-job-title {
+    flex: 1;
     font-size: 16px;
     font-weight: 600;
     color: var(--grey-800);
 }
 
+.tracker-job-header .tracker-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--grey-400);
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.tracker-job-header .tracker-modal-close:hover { 
+    color: var(--red); 
+}
+
 .tracker-total-row {
     display: flex;
-    align-items: baseline;
-    gap: 8px;
+    align-items: center;
+    gap: 6px;
     margin-bottom: 16px;
 }
 
@@ -2442,18 +2439,25 @@ body.logged-out .view-tracker {
     display: none;
 }
 
-.tracker-total-label {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--red);
-}
-
 .tracker-total-amount {
     font-size: 20px;
     font-weight: 700;
     color: var(--red);
+}
+
+.tracker-total-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey-600);
+}
+
+.tracker-total-spacer {
+    flex: 1;
+}
+
+.tracker-ballpark-label {
+    margin-bottom: 0;
+    margin-right: 8px;
 }
 
 .tracker-section-label {
@@ -2523,17 +2527,6 @@ body.logged-out .view-tracker {
     border-color: var(--red);
     background: rgba(237, 28, 36, 0.08);
     color: var(--red);
-}
-
-.tracker-ballpark-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 8px;
-}
-
-.tracker-ballpark-row .tracker-form-label {
-    margin-bottom: 0;
 }
 
 /* Quarter context label */

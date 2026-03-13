@@ -1026,18 +1026,22 @@
     <!-- Tracker Edit Modal -->
     <div class="tracker-modal-overlay" id="tracker-edit-modal">
         <div class="tracker-modal">
-            <div class="tracker-modal-header">
-                <button class="tracker-modal-close" onclick="closeTrackerModal()">&times;</button>
-            </div>
             <div class="tracker-modal-body">
-                <!-- Header with logo -->
-                <div class="tracker-job-header" id="tracker-job-header">
-                    <img class="tracker-job-logo" id="tracker-job-logo" src="/images/logos/Unknown.png" alt="">
+                <!-- Header with logo, title, and close -->
+                <div class="tracker-job-header">
+                    <img class="tracker-job-logo" id="tracker-job-logo" src="images/logos/Unknown.png" alt="">
                     <span class="tracker-job-title" id="tracker-edit-name">ONB 089 | Project Name</span>
+                    <button class="tracker-modal-close" onclick="closeTrackerModal()">&times;</button>
                 </div>
                 <div class="tracker-total-row">
-                    <span class="tracker-total-label">Total</span>
                     <span class="tracker-total-amount" id="tracker-edit-total">$0</span>
+                    <span class="tracker-total-label">to date</span>
+                    <div class="tracker-total-spacer"></div>
+                    <label class="tracker-form-label tracker-ballpark-label">Ballpark</label>
+                    <label class="toggle">
+                        <input type="checkbox" id="tracker-edit-ballpark">
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
 
                 <!-- Progress -->
@@ -1090,14 +1094,6 @@
                 <div class="tracker-form-group">
                     <label class="tracker-form-label">Tracker Notes</label>
                     <input type="text" class="tracker-form-input" id="tracker-edit-description" placeholder="Optional notes...">
-                </div>
-
-                <div class="tracker-ballpark-row">
-                    <label class="tracker-form-label">Ballpark</label>
-                    <label class="toggle">
-                        <input type="checkbox" id="tracker-edit-ballpark">
-                        <span class="toggle-slider"></span>
-                    </label>
                 </div>
             </div>
             <div class="tracker-modal-footer">

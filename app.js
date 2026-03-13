@@ -3823,11 +3823,10 @@ async function openTrackerEditModal(jobNumber, month) {
     const isCreateMode = !trackerEntry;
     
     // Set logo based on client code
-    const clientCode = job.clientCode || jobNumber.replace(/\s*\d+$/, '').trim();
     const logoEl = $('tracker-job-logo');
     if (logoEl) {
-        logoEl.src = `/images/logos/${clientCode}.png`;
-        logoEl.onerror = () => { logoEl.src = '/images/logos/Unknown.png'; };
+        logoEl.src = getLogoUrl(job.clientCode);
+        logoEl.onerror = () => { logoEl.src = 'images/logos/Unknown.png'; };
     }
     
     if (isCreateMode) {
