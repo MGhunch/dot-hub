@@ -3850,17 +3850,7 @@ async function openTrackerEditModal(jobNumber, month) {
         };
         
         $('tracker-edit-name').textContent = `${jobNumber} | ${job.jobName}`;
-        
-        const totalAmount = $('tracker-edit-total');
-        const totalLabel = document.querySelector('.tracker-total-label');
-        if (totalSpend > 0) {
-            totalAmount.textContent = `$${totalSpend.toLocaleString()}`;
-            totalAmount?.classList.remove('hidden');
-            totalLabel?.classList.remove('hidden');
-        } else {
-            totalAmount?.classList.add('hidden');
-            totalLabel?.classList.add('hidden');
-        }
+        $('tracker-edit-total').textContent = `$${totalSpend.toLocaleString()}`;
         
         $('tracker-edit-spend').value = '';
         $('tracker-edit-month').value = new Date().toLocaleString('en-US', { month: 'long' });
@@ -3877,12 +3867,7 @@ async function openTrackerEditModal(jobNumber, month) {
         trackerCurrentEditData = { ...trackerEntry, mode: 'update' };
         
         $('tracker-edit-name').textContent = `${jobNumber} | ${trackerEntry.projectName}`;
-        
-        const totalAmount = $('tracker-edit-total');
-        const totalLabel = document.querySelector('.tracker-total-label');
-        totalAmount.textContent = `$${totalSpend.toLocaleString()}`;
-        totalAmount?.classList.remove('hidden');
-        totalLabel?.classList.remove('hidden');
+        $('tracker-edit-total').textContent = `$${totalSpend.toLocaleString()}`;
         
         $('tracker-edit-spend').value = trackerEntry.spend;
         $('tracker-edit-month').value = trackerEntry.month;
