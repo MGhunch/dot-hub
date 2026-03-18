@@ -320,6 +320,27 @@ def dev_login():
     return response
 
 
+@app.route('/demo')
+def demo_login():
+    """Demo login — instant access as Demo Inc for platform demos."""
+    session_token = generate_token(
+        email='demo@hunch.co.nz',
+        client_code='DEM',
+        first_name='Demo',
+        access_level='Client Tracker'
+    )
+    response = make_response(redirect('/'))
+    response.set_cookie(
+        'dot_session',
+        session_token,
+        max_age=TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
+        httponly=True,
+        secure=True,
+        samesite='Lax'
+    )
+    return response
+
+
 @app.route('/api/check-session')
 def handle_check_session():
     """Check if current session is valid. Used by frontend to determine login state."""
