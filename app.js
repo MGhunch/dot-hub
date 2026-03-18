@@ -4777,7 +4777,8 @@ async function sendWipEmail() {
     const payload = {
         clientCode: wipEmailState.clientCode,
         recipients: wipEmailState.recipients,
-        intro: intro
+        intro: intro,
+        senderEmail: state.currentUser?.email
     };
     
     try {
