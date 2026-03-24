@@ -2068,6 +2068,31 @@ body.logged-out .view-tracker {
 .chevron-btn:hover { opacity: 0.7; }
 .chevron-btn .chevron-icon { width: 16px; height: 16px; }
 
+/* Clickable tracker rows */
+.chevron-indicator {
+    color: var(--red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease;
+}
+.chevron-indicator svg { width: 16px; height: 16px; }
+
+.tracker-row-clickable {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+.tracker-row-clickable:hover {
+    background-color: var(--grey-50);
+}
+.tracker-row-clickable:hover .chevron-indicator {
+    transform: translateX(3px);
+}
+
+.tracker-row-grouped .chevron-indicator {
+    color: var(--grey-200);
+}
+
 /* Tracker Bottom Row (Chart + Notes) */
 .tracker-bottom-row {
     display: grid;
