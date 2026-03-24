@@ -3280,9 +3280,10 @@ function populateTrackerClients(data) {
     }
 }
 
-async function loadTrackerData(clientCode) {
+async function loadTrackerData(clientCode, cacheBust = false) {
     try {
-        const response = await fetch(`${API_BASE}/tracker/data?client=${clientCode}`);
+        const url = `${API_BASE}/tracker/data?client=${clientCode}${cacheBust ? '&_t=' + Date.now() : ''}`;
+        const response = await fetch(url);
         if (!response.ok) throw new Error('API returned ' + response.status);
         const data = await response.json();
         trackerData = data.map(d => ({
@@ -3753,7 +3754,7 @@ function setupTrackerModalListeners() {
     if (!modal || modal.dataset.listenersAttached) return;
     modal.dataset.listenersAttached = 'true';
     
-    // Backdrop click to close
+    // Backdrop click to close (only the overlay itself, not children)
     modal.addEventListener('click', (e) => { 
         if (e.target === modal) closeTrackerModal(); 
     });
@@ -3901,6 +3902,7 @@ async function saveTrackerProject() {
     if (!trackerCurrentEditData) return;
     
     const isCreateMode = trackerCurrentEditData.mode === 'create';
+    const savedJobNumber = trackerCurrentEditData.jobNumber; // Store before close
     
     const payload = {
         jobNumber: trackerCurrentEditData.jobNumber,
@@ -3934,11 +3936,12 @@ async function saveTrackerProject() {
         
         closeTrackerModal();
         
-        await loadTrackerData(state.trackerClient);
+        // Force fresh data fetch with cache-busting
+        await loadTrackerData(state.trackerClient, true);
         renderTrackerContent();
 
         // Refresh Job Bag budget if we're viewing this job
-        if (currentBagJob?.jobNumber === trackerCurrentEditData?.jobNumber) {
+        if (currentBagJob?.jobNumber === savedJobNumber) {
             loadJobBagBudget(currentBagJob.jobNumber);
         }
 
