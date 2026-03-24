@@ -3535,11 +3535,8 @@ function renderTrackerContent() {
                         ` : displayMainProjects.map(p => {
                             const jobNum = p.jobNumber.split(' ')[1] || '';
                             const showToDateCol = !trackerIsQuarterView && jobNum !== '000' && jobNum !== '001' && (spendToDate[p.jobNumber] || 0) > 0;
-                            const isClickable = !p._isGrouped;
-                            const rowClass = isClickable ? 'tracker-row-clickable' : 'tracker-row-grouped';
-                            const rowClick = isClickable ? `onclick="openTrackerDetail('${p.jobNumber}', '${trackerCurrentMonth}')"` : '';
                             return `
-                                <tr class="${rowClass}" ${rowClick}>
+                                <tr class="tracker-row-clickable" onclick="openTrackerDetail('${p.jobNumber}', '${trackerCurrentMonth}')">
                                     <td class="chevron-cell"><span class="chevron-indicator">${ICON_CHEVRON_RIGHT}</span></td>
                                     <td class="project-name">${p.jobNumber}  -  ${p.projectName}</td>
                                     <td>${p.owner || ''}</td>
@@ -3571,11 +3568,8 @@ function renderTrackerContent() {
                             ${displayOtherProjects.map(p => {
                                 const jobNum = p.jobNumber.split(' ')[1] || '';
                                 const showToDateCol = !trackerIsQuarterView && jobNum !== '000' && jobNum !== '001' && (spendToDate[p.jobNumber] || 0) > 0;
-                                const isClickable = !p._isGrouped;
-                                const rowClass = isClickable ? 'tracker-row-clickable' : 'tracker-row-grouped';
-                                const rowClick = isClickable ? `onclick="openTrackerDetail('${p.jobNumber}', '${trackerCurrentMonth}')"` : '';
                                 return `
-                                    <tr class="${rowClass}" ${rowClick}>
+                                    <tr class="tracker-row-clickable" onclick="openTrackerDetail('${p.jobNumber}', '${trackerCurrentMonth}')">
                                         <td class="chevron-cell"><span class="chevron-indicator">${ICON_CHEVRON_RIGHT}</span></td>
                                         <td class="project-name">${p.jobNumber}  -  ${p.projectName}</td>
                                         <td>${p.owner || ''}</td>
