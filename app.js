@@ -2828,6 +2828,14 @@ function toggleWipMode() {
     renderWip();
 }
 
+function openWipPdf() {
+    if (state.wipClient === 'all') {
+        showToast('Select a client first');
+        return;
+    }
+    window.open(`https://dot-tracker-pdf.up.railway.app/wip?client=${state.wipClient}`, '_blank');
+}
+
 function updateWipModeLabels() {
     $('mode-mobile')?.classList.toggle('active', state.wipMode === 'mobile');
     $('mode-desktop')?.classList.toggle('active', state.wipMode === 'desktop');
@@ -3143,10 +3151,11 @@ const currentCalendarQuarter = (() => {
     return 'Q4-cal';
 })();
 
-const clientQuarterLabels = {
-    'ONE': 'Q4', 'ONS': 'Q4', 'ONB': 'Q4',
-    'SKY': 'Q3', 'TOW': 'Q2', 'FIS': 'Q4'
-};
+// Helper to get currentQuarter from trackerClients (loaded from API)
+function getClientCurrentQuarter(clientCode) {
+    const client = trackerClients.find(c => c.code === clientCode);
+    return client?.currentQuarter || 'Q1';
+}
 
 const fallbackTrackerClients = [
     { code: 'ONS', name: 'One NZ - Simplification', committed: 25000, rollover: 0, rolloverUseIn: '', yearEnd: 'March', currentQuarter: 'Q4' },
@@ -3176,7 +3185,7 @@ function getQuarterInfoForMonth(clientCode, month) {
     const quarter = calendarQuarters[calQ];
     const calQNum = parseInt(calQ.replace('Q', '').replace('-cal', ''));
     const clientCurrentCalQ = parseInt(currentCalendarQuarter.replace('Q', '').replace('-cal', ''));
-    const clientCurrentLabel = parseInt(clientQuarterLabels[clientCode]?.replace('Q', '') || '1');
+    const clientCurrentLabel = parseInt(getClientCurrentQuarter(clientCode).replace('Q', '') || '1');
     let clientQNum = clientCurrentLabel + (calQNum - clientCurrentCalQ);
     if (clientQNum > 4) clientQNum -= 4;
     if (clientQNum < 1) clientQNum += 4;
@@ -3185,13 +3194,13 @@ function getQuarterInfoForMonth(clientCode, month) {
 
 function getCurrentQuarterInfo(clientCode) {
     const quarter = calendarQuarters[currentCalendarQuarter];
-    const clientLabel = clientQuarterLabels[clientCode] || 'Q1';
+    const clientLabel = getClientCurrentQuarter(clientCode);
     return { quarter: clientLabel, months: quarter.months, label: quarter.label };
 }
 
 function getPreviousQuarter(clientCode) {
     const quarter = calendarQuarters['Q4-cal'];
-    const clientCurrentQ = parseInt((clientQuarterLabels[clientCode] || 'Q1').replace('Q', ''));
+    const clientCurrentQ = parseInt(getClientCurrentQuarter(clientCode).replace('Q', ''));
     const prevQ = clientCurrentQ === 1 ? 'Q4' : 'Q' + (clientCurrentQ - 1);
     return { quarter: prevQ, months: quarter.months, label: quarter.label };
 }
@@ -4839,5 +4848,6 @@ window.getTrackerPDF = getTrackerPDF;
 window.navigateTo = navigateTo;
 window.setWipMode = setWipMode;
 window.toggleWipMode = toggleWipMode;
+window.openWipPdf = openWipPdf;
 window.submitWipUpdate = submitWipUpdate;
 window.toggleWipWithClient = toggleWipWithClient;
