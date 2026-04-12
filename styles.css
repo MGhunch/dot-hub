@@ -1023,6 +1023,9 @@ body.logged-out .view-tracker {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 64px;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
 }
 
 .wip-column {
