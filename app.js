@@ -3156,7 +3156,7 @@ const currentCalendarQuarter = (() => {
 
 // Helper to get currentQuarter from trackerClients (loaded from API)
 function getClientCurrentQuarter(clientCode) {
-    const client = trackerClients.find(c => c.code === clientCode);
+    const client = trackerClients[clientCode];
     return client?.currentQuarter || 'Q1';
 }
 
