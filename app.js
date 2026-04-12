@@ -3067,7 +3067,7 @@ function renderWipSection(section, isListMode = false) {
         // Cards mode: title inside the section
         let html = `<div class="section"><div class="section-title">${section.title}</div>`;
         if (section.jobs.length === 0) {
-            html += `<div class="empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Nothing to see here</span></div>`;
+            html += `<div class="job-card empty-section"><img src="images/dot-sitting.png" alt="Dot"><span>Nothing to see here</span></div>`;
         } else {
             section.jobs.forEach((job, i) => {
                 html += createUniversalCard(job, `wip-${section.title.replace(/\s+/g, '-')}-${i}`);
