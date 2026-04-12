@@ -10,6 +10,9 @@ const TRAFFIC_BASE = 'https://dot-traffic-2.up.railway.app';
 
 const KEY_CLIENTS = ['ONE', 'ONB', 'ONS', 'SKY', 'TOW'];
 
+// Clients to hide from WIP dropdown (cleanup later)
+const HIDDEN_CLIENTS = ['DEM', 'FIR', 'EON', 'N4L', 'WHA'];
+
 const CLIENT_DISPLAY_NAMES = {
     'ONE': 'One NZ (Marketing)',
     'ONB': 'One NZ (Business)',
@@ -2787,9 +2790,9 @@ async function setupWipDropdown() {
     allOpt.textContent = 'All Clients';
     menu.appendChild(allOpt);
     
-    // Add client options
+    // Add client options (excluding hidden)
     let selectedText = 'All Clients';
-    state.allClients.forEach(c => {
+    state.allClients.filter(c => !HIDDEN_CLIENTS.includes(c.code)).forEach(c => {
         const opt = document.createElement('div');
         const isSelected = (c.code === presetClient);
         opt.className = 'custom-dropdown-option' + (isSelected ? ' selected' : '');
@@ -2985,7 +2988,7 @@ async function setupPhoneWipDropdown() {
     allOpt.textContent = 'All Clients';
     menu.appendChild(allOpt);
     
-    state.allClients.forEach(c => {
+    state.allClients.filter(c => !HIDDEN_CLIENTS.includes(c.code)).forEach(c => {
         const opt = document.createElement('div');
         opt.className = 'custom-dropdown-option';
         opt.dataset.value = c.code;
