@@ -2516,7 +2516,7 @@ async function saveJobUpdate() {
     // Build payload for Hub's unified update endpoint
     const authorName = state.currentUser?.firstName || state.currentUser?.name || 'Dot';
     const payload = { status, withClient, author: authorName };
-    if (updateDue) payload.updateDue = updateDue;
+    payload.updateDue = updateDue || null;  // Allow clearing to TBC
     if (liveDate) payload.liveDate = liveDate;
     if (message && message !== originalUpdate) payload.message = message;
     if (description !== currentEditJob.description) payload.description = description;
@@ -2550,7 +2550,7 @@ async function saveJobUpdate() {
         if (job) {
             job.status = status;
             job.withClient = withClient;
-            if (updateDue) job.updateDue = updateDue;
+            job.updateDue = updateDue || null;  // Allow clearing to TBC
             if (liveDate) job.liveDate = liveDate;
             if (message) job.update = message;
             if (description) job.description = description;

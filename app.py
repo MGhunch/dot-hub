@@ -965,8 +965,9 @@ def update_job(job_number):
         for key, value in data.items():
             if key in field_mapping:
                 airtable_key = field_mapping[key]
-                if key in ['updateDue', 'liveDate'] and value:
-                    airtable_fields[airtable_key] = value
+                if key in ['updateDue', 'liveDate']:
+                    # Empty string or null clears the field in Airtable
+                    airtable_fields[airtable_key] = value if value else None
                 elif key == 'withClient':
                     airtable_fields[airtable_key] = bool(value)
                 else:
