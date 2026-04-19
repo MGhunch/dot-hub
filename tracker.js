@@ -766,13 +766,6 @@ async function openTrackerEditModal(jobNumber, month) {
     
     const isCreateMode = !trackerEntry;
     
-    // Set logo based on client code
-    const logoEl = $('tracker-job-logo');
-    if (logoEl) {
-        logoEl.src = getLogoUrl(job.clientCode);
-        logoEl.onerror = () => { logoEl.src = 'images/logos/Unknown.png'; };
-    }
-    
     if (isCreateMode) {
         // CREATE mode
         trackerCurrentEditData = {
@@ -780,16 +773,13 @@ async function openTrackerEditModal(jobNumber, month) {
             jobNumber: job.jobNumber
         };
         
-        $('tracker-edit-name').textContent = `${jobNumber} | ${job.jobName}`;
-        $('tracker-edit-total').textContent = `$${totalSpend.toLocaleString()}`;
-        
+        $('tracker-edit-name').value = `${jobNumber} | ${job.jobName}`;
         $('tracker-edit-spend').value = '';
         $('tracker-edit-month').value = new Date().toLocaleString('en-US', { month: 'long' });
         $('tracker-edit-description').value = '';
         $('tracker-edit-ballpark').checked = true;
-        
-        setTrackerStagePill(job.stage || 'Simplify');
-        setTrackerTypePill('Project budget');
+        $('tracker-edit-stage').value = job.stage || 'Simplify';
+        $('tracker-edit-spendtype').value = 'Project budget';
         
         $('tracker-save-btn').textContent = 'Create Entry';
         
@@ -797,16 +787,13 @@ async function openTrackerEditModal(jobNumber, month) {
         // UPDATE mode
         trackerCurrentEditData = { ...trackerEntry, mode: 'update' };
         
-        $('tracker-edit-name').textContent = `${jobNumber} | ${trackerEntry.projectName}`;
-        $('tracker-edit-total').textContent = `$${totalSpend.toLocaleString()}`;
-        
+        $('tracker-edit-name').value = `${jobNumber} | ${trackerEntry.projectName}`;
         $('tracker-edit-spend').value = trackerEntry.spend;
         $('tracker-edit-month').value = trackerEntry.month;
         $('tracker-edit-description').value = trackerEntry.description || '';
         $('tracker-edit-ballpark').checked = trackerEntry.ballpark || false;
-        
-        setTrackerStagePill(job.stage || 'Simplify');
-        setTrackerTypePill(trackerEntry.spendType || 'Project budget');
+        $('tracker-edit-stage').value = job.stage || 'Simplify';
+        $('tracker-edit-spendtype').value = trackerEntry.spendType || 'Project budget';
         
         $('tracker-save-btn').textContent = 'Save Changes';
     }
@@ -844,9 +831,9 @@ async function saveTrackerProject() {
         description: $('tracker-edit-description').value,
         spend: parseFloat($('tracker-edit-spend').value) || 0,
         month: $('tracker-edit-month').value,
-        spendType: getTrackerTypePill(),
+        spendType: $('tracker-edit-spendtype').value,
         ballpark: $('tracker-edit-ballpark').checked,
-        stage: getTrackerStagePill()
+        stage: $('tracker-edit-stage').value
     };
     
     if (!isCreateMode) {
