@@ -289,16 +289,25 @@ function setupTrackerDropdown(triggerId, menuId, onChange) {
     const menu = $(menuId);
     if (!trigger || !menu) return;
     
-    trigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        $$('.custom-dropdown-menu.open').forEach(m => {
-            if (m.id !== menuId) { m.classList.remove('open'); m.previousElementSibling?.classList.remove('open'); }
+    // Only attach trigger listener once (prevents double-toggle on re-render)
+    if (!trigger.dataset.listenerAttached) {
+        trigger.dataset.listenerAttached = 'true';
+        
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            $$('.custom-dropdown-menu.open').forEach(m => {
+                if (m.id !== menuId) { m.classList.remove('open'); m.previousElementSibling?.classList.remove('open'); }
+            });
+            trigger.classList.toggle('open');
+            menu.classList.toggle('open');
         });
-        trigger.classList.toggle('open');
-        menu.classList.toggle('open');
-    });
+    }
     
+    // Always reattach option listeners (options may be dynamically recreated)
     menu.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+        if (opt.dataset.listenerAttached) return;
+        opt.dataset.listenerAttached = 'true';
+        
         opt.addEventListener('click', function() {
             const value = this.dataset.value;
             menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
