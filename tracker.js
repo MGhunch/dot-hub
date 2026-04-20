@@ -85,7 +85,13 @@ function getCurrentQuarterInfo(clientCode) {
 }
 
 function getPreviousQuarter(clientCode) {
-    const quarter = calendarQuarters['Q4-cal'];
+    // Get actual previous calendar quarter
+    const calQNum = parseInt(currentCalendarQuarter.replace('Q', '').replace('-cal', ''));
+    const prevCalQNum = calQNum === 1 ? 4 : calQNum - 1;
+    const prevCalQ = 'Q' + prevCalQNum + '-cal';
+    const quarter = calendarQuarters[prevCalQ];
+    
+    // Calculate client's quarter label for this period
     const clientCurrentQ = parseInt(getClientCurrentQuarter(clientCode).replace('Q', ''));
     const prevQ = clientCurrentQ === 1 ? 'Q4' : 'Q' + (clientCurrentQ - 1);
     return { quarter: prevQ, months: quarter.months, label: quarter.label };
