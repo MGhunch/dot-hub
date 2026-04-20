@@ -2085,14 +2085,14 @@ body.logged-out .view-tracker {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--grey-400);
+    color: var(--red);
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
-    transition: transform 0.15s ease, color 0.15s ease, background 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease;
 }
-.chevron-indicator:hover { color: var(--red); background: var(--grey-50); }
-.chevron-indicator.expanded { transform: rotate(90deg); color: var(--red); }
+.chevron-indicator:hover { background: var(--grey-50); }
+.chevron-indicator.expanded { transform: rotate(90deg); }
 
 .projects-table .tracker-row-child { cursor: pointer; }
 .projects-table .tracker-row-child td {
