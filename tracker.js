@@ -9,6 +9,7 @@ let trackerData = [];
 let trackerCurrentMonth = getCurrentMonthName();
 let trackerIsQuarterView = false;
 let trackerCurrentEditData = null;
+let expandedJobs = new Set(); // job numbers currently expanded to show monthly breakdown
 
 // ===== CONSTANTS =====
 const TRACKER_MONTHS = [
@@ -230,6 +231,7 @@ function setupTrackerDropdowns() {
     setupTrackerDropdown('tracker-client-trigger', 'tracker-client-menu', async (value) => {
         state.trackerClient = value;
         localStorage.setItem('trackerLastClient', value);
+        expandedJobs.clear();
         $('tracker-content').style.opacity = '0.5';
         await loadTrackerData(value);
         $('tracker-content').style.opacity = '1';
@@ -269,6 +271,7 @@ function setupTrackerDropdowns() {
             trackerIsQuarterView = this.checked;
             labelMonth?.classList.toggle('active', !trackerIsQuarterView);
             labelQuarter?.classList.toggle('active', trackerIsQuarterView);
+            expandedJobs.clear();
             renderTrackerContent();
         });
     }
@@ -278,6 +281,7 @@ function setupTrackerDropdowns() {
         trackerIsQuarterView = false;
         labelMonth.classList.add('active');
         labelQuarter?.classList.remove('active');
+        expandedJobs.clear();
         renderTrackerContent();
     });
     
@@ -286,6 +290,7 @@ function setupTrackerDropdowns() {
         trackerIsQuarterView = true;
         labelMonth?.classList.remove('active');
         labelQuarter.classList.add('active');
+        expandedJobs.clear();
         renderTrackerContent();
     });
 }
@@ -348,6 +353,42 @@ async function renderTracker() {
     
     setupTrackerDropdowns();
     renderTrackerContent();
+}
+
+function toggleJobExpand(jobNumber) {
+    if (expandedJobs.has(jobNumber)) {
+        expandedJobs.delete(jobNumber);
+    } else {
+        expandedJobs.add(jobNumber);
+    }
+    renderTrackerContent();
+}
+
+function buildChildRows(jobNumber, isExpanded, spendTypeFilter, isQuarterView) {
+    if (!isExpanded) return '';
+    
+    const children = trackerData
+        .filter(d => d.jobNumber === jobNumber && d.spendType === spendTypeFilter && d.spend > 0)
+        .sort((a, b) => TRACKER_MONTHS.indexOf(a.month) - TRACKER_MONTHS.indexOf(b.month));
+    
+    if (children.length === 0) return '';
+    
+    const safeJob = jobNumber.replace(/'/g, "\\'");
+    
+    return children.map(c => {
+        const isCurrentMonth = !isQuarterView && c.month === trackerCurrentMonth;
+        const safeMonth = c.month.replace(/'/g, "\\'");
+        return `
+            <tr class="tracker-row-child ${isCurrentMonth ? 'current-month' : ''}" onclick="openTrackerDetail('${safeJob}', '${safeMonth}')">
+                <td class="chevron-cell"></td>
+                <td class="child-month-label">${c.month}</td>
+                <td></td>
+                <td class="child-description">${c.description || ''}</td>
+                ${!isQuarterView ? '<td></td>' : ''}
+                <td class="amount ${c.ballpark ? 'ballpark' : ''}">${formatTrackerCurrency(c.spend)}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function renderTrackerContent() {
@@ -473,15 +514,18 @@ function renderTrackerContent() {
                         ` : displayMainProjects.map(p => {
                             const jobNum = p.jobNumber.split(' ')[1] || '';
                             const showToDateCol = !trackerIsQuarterView && jobNum !== '000' && jobNum !== '001' && (spendToDate[p.jobNumber] || 0) > 0;
+                            const isExpanded = expandedJobs.has(p.jobNumber);
+                            const safeJob = p.jobNumber.replace(/'/g, "\\'");
                             return `
-                                <tr class="tracker-row-clickable" onclick="openTrackerDetail('${p.jobNumber}', '${trackerCurrentMonth}')">
-                                    <td class="chevron-cell"><span class="chevron-indicator">${ICON_CHEVRON_RIGHT}</span></td>
+                                <tr class="tracker-row-clickable ${isExpanded ? 'expanded-parent' : ''}" onclick="openTrackerDetail('${safeJob}', '${trackerCurrentMonth}')">
+                                    <td class="chevron-cell"><span class="chevron-indicator ${isExpanded ? 'expanded' : ''}" onclick="event.stopPropagation(); toggleJobExpand('${safeJob}')">${ICON_CHEVRON_RIGHT}</span></td>
                                     <td class="project-name">${p.jobNumber}  -  ${p.projectName}</td>
                                     <td>${p.owner || ''}</td>
                                     <td>${p.description || ''}</td>
                                     ${!trackerIsQuarterView ? `<td class="amount" style="color:var(--grey-400);font-weight:normal;">${showToDateCol ? '(' + formatTrackerCurrency(spendToDate[p.jobNumber]) + ')' : ''}</td>` : ''}
                                     <td class="amount ${p.ballpark ? 'ballpark' : ''}">${formatTrackerCurrency(p.spend)}</td>
                                 </tr>
+                                ${buildChildRows(p.jobNumber, isExpanded, 'Project budget', trackerIsQuarterView)}
                             `;
                         }).join('')}
                     </tbody>
@@ -900,6 +944,7 @@ window.closeTrackerModal = closeTrackerModal;
 window.saveTrackerProject = saveTrackerProject;
 window.openTrackerDetail = openTrackerDetail;
 window.getTrackerPDF = getTrackerPDF;
+window.toggleJobExpand = toggleJobExpand;
 
 // Expose state for deep link handling in app.js
 Object.defineProperty(window, 'trackerCurrentMonth', {
