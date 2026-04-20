@@ -2081,6 +2081,47 @@ body.logged-out .view-tracker {
 .chevron-btn:hover { opacity: 0.7; }
 .chevron-btn .chevron-icon { width: 16px; height: 16px; }
 
+.chevron-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--grey-400);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: transform 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.chevron-indicator:hover { color: var(--red); background: var(--grey-50); }
+.chevron-indicator.expanded { transform: rotate(90deg); color: var(--red); }
+
+.projects-table .tracker-row-child { cursor: pointer; }
+.projects-table .tracker-row-child td {
+    padding: 10px 0;
+    background: var(--grey-50);
+    border-bottom: 1px dashed var(--grey-100);
+    font-size: 12px;
+    color: var(--grey-600);
+}
+.projects-table .tracker-row-child:hover td { background: var(--grey-100); }
+.projects-table .tracker-row-child .child-month-label {
+    font-weight: 500;
+    color: var(--grey-800);
+    padding-left: 12px;
+}
+.projects-table .tracker-row-child .child-description {
+    font-style: italic;
+    color: var(--grey-600);
+}
+.projects-table .tracker-row-child.current-month td {
+    background: var(--grey-100);
+}
+.projects-table .tracker-row-child.current-month .child-month-label::after {
+    content: " · viewing";
+    font-weight: 400;
+    color: var(--grey-400);
+    font-style: italic;
+}
+
 /* Tracker Bottom Row (Chart + Notes) */
 .tracker-bottom-row {
     display: grid;
