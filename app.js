@@ -107,7 +107,7 @@ function applyDeepLink() {
     }
     
     // Now navigate - render functions will use our pre-set values
-    if (view && ['wip', 'tracker', 'home'].includes(view)) {
+    if (view && ['wip', 'tracker', 'home', 'todo'].includes(view)) {
         navigateTo(view);
     }
     
@@ -576,6 +576,7 @@ function navigateTo(view) {
         $('phone-conversation')?.classList.remove('visible');
         $('phone-wip')?.classList.remove('visible');
         $('phone-tracker-message')?.classList.remove('visible');
+        $('phone-todo')?.classList.remove('visible');
         if (view === 'home') {
             // Check if there's an active conversation
             const hasConversation = $('phone-conversation-area')?.children.length > 0;
@@ -591,6 +592,7 @@ function navigateTo(view) {
             renderPhoneWip();
         }
         else if (view === 'tracker') $('phone-tracker-message')?.classList.add('visible');
+        else if (view === 'todo') $('phone-todo')?.classList.add('visible');
     } else {
         // Desktop: restore conversation state if exists
         if (view === 'home') {
@@ -612,6 +614,7 @@ function navigateTo(view) {
     
     if (view === 'wip' && isDesktop()) { setupWipDropdown(); renderWip(); }
     if (view === 'tracker') renderTracker();
+    if (view === 'todo') renderTodos();
 }
 
 function goHome() {

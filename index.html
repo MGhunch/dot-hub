@@ -39,6 +39,9 @@
                 <div class="dropdown-item" data-view="tracker">
                     <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Tracker
                 </div>
+                <div class="dropdown-item" data-view="todo">
+                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Todo
+                </div>
                 <div class="dropdown-item muted" data-action="signout">
                     <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Sign out
                 </div>
@@ -181,6 +184,16 @@
             <p>Tracker is designed for bigger screens.</p>
             <button class="pill-btn" onclick="navigateTo('home')">Back to Ask Dot</button>
         </div>
+
+        <!-- Phone Todo -->
+        <div class="phone-todo" id="phone-todo">
+            <div class="phone-view-header">
+                <img src="images/Todo-header.png" alt="Todo" class="phone-view-header-img">
+            </div>
+            <div class="todo-content" id="phone-todo-content">
+                <div class="loading"><div class="loading-spinner"></div><p>Loading todos...</p></div>
+            </div>
+        </div>
     </div>
 
     <!-- ===== DESKTOP LAYOUT (900px+) ===== -->
@@ -195,6 +208,7 @@
                     <button class="nav-tab active" data-view="home">Ask Dot</button>
                     <button class="nav-tab" data-view="wip">WIP</button>
                     <button class="nav-tab" data-view="tracker">Tracker</button>
+                    <button class="nav-tab" data-view="todo">Todo</button>
                 </nav>
             </div>
             <div class="header-right">
@@ -379,6 +393,19 @@
                     <div class="loading">
                         <div class="loading-spinner"></div>
                         <p>Loading tracker...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== TODO VIEW ===== -->
+            <section class="view view-todo" id="view-todo">
+                <div class="todo-view-header">
+                    <img src="images/Todo-header.png" alt="Todo" class="todo-view-header-img">
+                </div>
+                <div class="todo-content" id="todo-content">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading todos...</p>
                     </div>
                 </div>
             </section>
@@ -959,6 +986,7 @@
 
     <script src="app.js"></script>
     <script src="tracker.js"></script>
+    <script src="todolist.js"></script>
     <!-- Story Edit Modal -->
     <!-- Update Edit Modal -->
     <div class="job-modal-overlay" id="update-edit-modal">
