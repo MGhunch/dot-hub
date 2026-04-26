@@ -1530,7 +1530,7 @@ def _resolve_client_record_id(client_code_or_name):
 def get_todos():
     """Get all todos, sorted newest first."""
     try:
-        url = get_airtable_url('Todos')
+        url = get_airtable_url('Todo')
         all_records = []
         offset = None
         while True:
@@ -1577,7 +1577,7 @@ def create_todo():
             else:
                 print(f"[Hub API] Could not resolve client '{client_input}' - creating without link")
 
-        url = get_airtable_url('Todos')
+        url = get_airtable_url('Todo')
         response = requests.post(url, headers=HEADERS, json={'fields': fields})
         response.raise_for_status()
         print(f"[Hub API] Created todo: {title} ({bucket})")
@@ -1613,7 +1613,7 @@ def update_todo(record_id):
         if not airtable_fields:
             return jsonify({'error': 'No valid fields to update'}), 400
 
-        url = get_airtable_url('Todos')
+        url = get_airtable_url('Todo')
         response = requests.patch(f"{url}/{record_id}", headers=HEADERS, json={'fields': airtable_fields})
         response.raise_for_status()
         return jsonify(_todo_record_to_dict(response.json()))
@@ -1626,7 +1626,7 @@ def update_todo(record_id):
 def delete_todo(record_id):
     """Delete a todo permanently."""
     try:
-        url = get_airtable_url('Todos')
+        url = get_airtable_url('Todo')
         response = requests.delete(f"{url}/{record_id}", headers=HEADERS)
         response.raise_for_status()
         print(f'[Hub API] Deleted todo {record_id}')
