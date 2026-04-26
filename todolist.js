@@ -101,8 +101,6 @@ function renderTodoCard(todo) {
     if (todo.urgent) classes.push('urgent');
     if (todo.done) classes.push('done');
 
-    const subtitle = todo.clientName ? `<div class="todo-subtitle">${escapeHtml(todo.clientName)}</div>` : '';
-
     return `
         <div class="${classes.join(' ')}" data-todo-id="${todo.id}">
             <div class="todo-tick" data-action="toggle" title="${todo.done ? 'Mark not done' : 'Mark done'}">
@@ -113,7 +111,6 @@ function renderTodoCard(todo) {
             </div>
             <div class="todo-main" data-action="toggle">
                 <div class="todo-title">${escapeHtml(todo.title)}</div>
-                ${subtitle}
             </div>
             <button class="todo-delete" data-action="delete" title="Delete">${ICON_X}</button>
         </div>

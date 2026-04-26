@@ -4476,20 +4476,11 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 
 /* ===== TODO VIEW ===== */
 .view-todo {
-    padding: 0 28px 60px;
+    padding: 24px 28px 60px;
     max-width: 1100px;
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
-}
-
-.todo-view-header {
-    padding: 24px 0 16px;
-}
-.todo-view-header-img {
-    height: 32px;
-    width: auto;
-    display: block;
 }
 
 /* Two columns on desktop, single column on phone */
@@ -4613,11 +4604,6 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     line-height: 1.3;
     word-break: break-word;
 }
-.todo-subtitle {
-    font-size: 12px;
-    color: var(--grey-400);
-    margin-top: 2px;
-}
 
 /* Delete button — visible on hover (desktop), always visible on touch */
 .todo-delete {
@@ -4648,18 +4634,10 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 /* ===== PHONE TODO ===== */
 .phone-todo {
     display: none;
-    padding: 16px 16px 80px;
+    padding: 24px 16px 80px;
     flex-direction: column;
     gap: 16px;
 }
 .phone-todo.visible {
     display: flex;
-}
-.phone-view-header {
-    padding: 8px 0 4px;
-}
-.phone-view-header-img {
-    height: 28px;
-    width: auto;
-    display: block;
 }
