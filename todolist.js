@@ -64,8 +64,8 @@ function renderTodoContent() {
             <button class="todo-add-btn" onclick="openTodoModal()">+ ADD</button>
         </div>
         <div class="todo-columns">
-            ${renderTodoColumn('CLIENTS', clientsTodos)}
-            ${renderTodoColumn('OTHER', otherTodos)}
+            ${renderTodoColumn('Client Work', clientsTodos)}
+            ${renderTodoColumn('Other', otherTodos)}
         </div>
     `;
 
@@ -269,7 +269,7 @@ async function openTodoModal(todoId) {
     document.getElementById('todo-modal-urgent').checked = todoModalState.urgent;
 
     // Bucket dropdown — set initial display + selected option
-    setTodoModalDropdown('bucket', todoModalState.bucket, todoModalState.bucket === 'CLIENTS' ? 'Clients' : 'Other');
+    setTodoModalDropdown('bucket', todoModalState.bucket, todoModalState.bucket === 'CLIENTS' ? 'Client Work' : 'Other');
 
     // Client dropdown — placeholder "None" until clients load
     const clientTrigger = document.getElementById('todo-modal-client-trigger');

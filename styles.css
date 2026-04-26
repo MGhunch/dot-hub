@@ -4542,11 +4542,6 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     box-shadow: var(--shadow-md);
 }
 
-/* Urgent: red left border */
-.todo-card.urgent {
-    border-left-color: var(--red);
-}
-
 /* Done: faded + strikethrough */
 .todo-card.done {
     opacity: 0.55;
