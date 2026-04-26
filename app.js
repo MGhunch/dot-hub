@@ -6,7 +6,7 @@
 // ===== CONFIGURATION =====
 const API_BASE = '/api';
 const PROXY_BASE = 'https://dot-proxy.up.railway.app';
-const TRAFFIC_BASE = 'https://dot-traffic-2.up.railway.app';
+const BRAIN_BASE = 'https://dot-brain.up.railway.app';
 
 const KEY_CLIENTS = ['ONE', 'ONB', 'ONS', 'SKY', 'TOW'];
 
@@ -289,7 +289,7 @@ function checkIfStale() {
 function clearSessionSilently() {
     if (state.currentUser) {
         // Clear session via Traffic (the brain)
-        fetch(`${TRAFFIC_BASE}/traffic/clear`, {
+        fetch(`${BRAIN_BASE}/traffic/clear`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId: state.currentUser.name })
@@ -913,7 +913,7 @@ async function askDot(question) {
             content: question
         });
         
-        const response = await fetch(`${TRAFFIC_BASE}/hub`, {
+        const response = await fetch(`${BRAIN_BASE}/hub`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -962,7 +962,7 @@ async function askDot(question) {
 async function clearDotSession() {
     try {
         const sessionId = state.currentUser?.name || 'anonymous';
-        await fetch(`${TRAFFIC_BASE}/traffic/clear`, {
+        await fetch(`${BRAIN_BASE}/traffic/clear`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId })

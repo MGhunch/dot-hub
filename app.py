@@ -35,7 +35,7 @@ def get_airtable_url(table):
 # ===== AUTH CONFIGURATION (NEW) =====
 POSTMAN_URL = os.environ.get('PA_POSTMAN_URL', '')
 TOKEN_SECRET = os.environ.get('TOKEN_SECRET', 'dot-hub-secret-change-me')
-HUB_URL = os.environ.get('HUB_URL', 'https://hub.hunch.co.nz')
+HUB_URL = os.environ.get('HUB_URL', 'https://dot.hunch.co.nz')
 TOKEN_EXPIRY_DAYS = 7
 
 
