@@ -1496,6 +1496,146 @@ def get_job_budget(job_number):
         return jsonify({'error': str(e)}), 500
 
 
+# ===== TODOS API =====
+def _todo_record_to_dict(record):
+    """Convert an Airtable Todos record into the API shape."""
+    fields = record.get('fields', {})
+    client_link = fields.get('Client', [])
+    client_name_lookup = fields.get('Clients (from Client)', [])
+    return {
+        'id': record.get('id'),
+        'title': fields.get('Title', ''),
+        'bucket': fields.get('Bucket', 'OTHER'),
+        'clientId': client_link[0] if client_link else None,
+        'clientName': client_name_lookup[0] if client_name_lookup else None,
+        'urgent': bool(fields.get('Urgent', False)),
+        'done': bool(fields.get('Done', False)),
+        'created': fields.get('Created', ''),
+    }
+
+
+def _resolve_client_record_id(client_code_or_name):
+    """Look up a Clients record by code or name. Returns record ID or None."""
+    if not client_code_or_name:
+        return None
+    url = get_airtable_url('Clients')
+    formula = f"OR({{Client code}} = '{client_code_or_name}', {{Clients}} = '{client_code_or_name}')"
+    response = requests.get(url, headers=HEADERS, params={'filterByFormula': formula, 'maxRecords': 1})
+    response.raise_for_status()
+    records = response.json().get('records', [])
+    return records[0]['id'] if records else None
+
+
+@app.route('/api/todos', methods=['GET'])
+def get_todos():
+    """Get all todos, sorted newest first."""
+    try:
+        url = get_airtable_url('Todos')
+        all_records = []
+        offset = None
+        while True:
+            params = {'sort[0][field]': 'Created', 'sort[0][direction]': 'desc'}
+            if offset:
+                params['offset'] = offset
+            response = requests.get(url, headers=HEADERS, params=params)
+            response.raise_for_status()
+            data = response.json()
+            for record in data.get('records', []):
+                all_records.append(_todo_record_to_dict(record))
+            offset = data.get('offset')
+            if not offset:
+                break
+        return jsonify(all_records)
+    except Exception as e:
+        print(f'[Hub API] Error fetching todos: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/todos', methods=['POST'])
+def create_todo():
+    """Create a todo. Accepts: title (req), bucket (CLIENTS|OTHER, default OTHER), client (code or name), urgent (bool)."""
+    try:
+        data = request.get_json() or {}
+        title = (data.get('title') or '').strip()
+        if not title:
+            return jsonify({'error': 'Title required'}), 400
+        bucket = data.get('bucket', 'OTHER').upper()
+        if bucket not in ('CLIENTS', 'OTHER'):
+            return jsonify({'error': 'Bucket must be CLIENTS or OTHER'}), 400
+
+        fields = {
+            'Title': title,
+            'Bucket': bucket,
+            'Urgent': bool(data.get('urgent', False)),
+            'Done': False,
+        }
+        client_input = data.get('client')
+        if client_input:
+            client_id = _resolve_client_record_id(client_input)
+            if client_id:
+                fields['Client'] = [client_id]
+            else:
+                print(f"[Hub API] Could not resolve client '{client_input}' - creating without link")
+
+        url = get_airtable_url('Todos')
+        response = requests.post(url, headers=HEADERS, json={'fields': fields})
+        response.raise_for_status()
+        print(f"[Hub API] Created todo: {title} ({bucket})")
+        return jsonify(_todo_record_to_dict(response.json()))
+    except Exception as e:
+        print(f'[Hub API] Error creating todo: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/todos/<record_id>', methods=['PATCH'])
+def update_todo(record_id):
+    """Update a todo. Accepts any of: title, bucket, urgent, done, client."""
+    try:
+        data = request.get_json() or {}
+        field_mapping = {
+            'title': 'Title',
+            'bucket': 'Bucket',
+            'urgent': 'Urgent',
+            'done': 'Done',
+        }
+        airtable_fields = {}
+        for key, value in data.items():
+            if key in field_mapping:
+                airtable_fields[field_mapping[key]] = value
+        if 'client' in data:
+            client_input = data.get('client')
+            if client_input:
+                client_id = _resolve_client_record_id(client_input)
+                if client_id:
+                    airtable_fields['Client'] = [client_id]
+            else:
+                airtable_fields['Client'] = []
+        if not airtable_fields:
+            return jsonify({'error': 'No valid fields to update'}), 400
+
+        url = get_airtable_url('Todos')
+        response = requests.patch(f"{url}/{record_id}", headers=HEADERS, json={'fields': airtable_fields})
+        response.raise_for_status()
+        return jsonify(_todo_record_to_dict(response.json()))
+    except Exception as e:
+        print(f'[Hub API] Error updating todo {record_id}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/todos/<record_id>', methods=['DELETE'])
+def delete_todo(record_id):
+    """Delete a todo permanently."""
+    try:
+        url = get_airtable_url('Todos')
+        response = requests.delete(f"{url}/{record_id}", headers=HEADERS)
+        response.raise_for_status()
+        print(f'[Hub API] Deleted todo {record_id}')
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f'[Hub API] Error deleting todo {record_id}: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
 # ===== STATIC FILES CATCH-ALL (must be last) =====
 @app.route('/<path:path>')
 def serve_static(path):
