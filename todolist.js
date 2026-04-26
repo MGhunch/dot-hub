@@ -8,6 +8,11 @@ let todos = [];
 let todosLoaded = false;
 let todosLoading = false;
 
+// Modal state
+let editingTodoId = null; // null = add mode, string = edit mode
+let todoModalState = { clientCode: null, clientName: null, bucket: 'OTHER', urgent: false };
+let cachedClients = null; // /api/clients result, loaded once per session
+
 // ===== ICONS =====
 const ICON_TICK_EMPTY = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>';
 const ICON_TICK_DONE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="#ED1C24" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9" stroke="white" fill="none"/></svg>';
@@ -55,6 +60,9 @@ function renderTodoContent() {
     const otherTodos = todos.filter(t => t.bucket === 'OTHER');
 
     const html = `
+        <div class="todo-toolbar">
+            <button class="todo-add-btn" onclick="openTodoModal()">+ ADD</button>
+        </div>
         <div class="todo-columns">
             ${renderTodoColumn('CLIENTS', clientsTodos)}
             ${renderTodoColumn('OTHER', otherTodos)}
@@ -92,9 +100,6 @@ function renderTodoColumn(label, items) {
 }
 
 function renderTodoCard(todo) {
-    const logoCode = todo.clientId ? (todo.clientName || '') : '';
-    // For client logos we need a code, not a name. clientName is what we have.
-    // Use Unknown.png as fallback when no client.
     const logoUrl = todo.clientId ? getTodoLogoUrl(todo.clientName) : 'images/logos/Unknown.png';
 
     const classes = ['todo-card'];
@@ -103,16 +108,15 @@ function renderTodoCard(todo) {
 
     return `
         <div class="${classes.join(' ')}" data-todo-id="${todo.id}">
-            <div class="todo-tick" data-action="toggle" title="${todo.done ? 'Mark not done' : 'Mark done'}">
-                ${todo.done ? ICON_TICK_DONE : ICON_TICK_EMPTY}
-            </div>
             <div class="todo-logo">
                 <img src="${logoUrl}" alt="" onerror="this.src='images/logos/Unknown.png'">
             </div>
-            <div class="todo-main" data-action="toggle">
+            <div class="todo-main" data-action="edit">
                 <div class="todo-title">${escapeHtml(todo.title)}</div>
             </div>
-            <button class="todo-delete" data-action="delete" title="Delete">${ICON_X}</button>
+            <div class="todo-tick" data-action="toggle" title="${todo.done ? 'Mark not done' : 'Mark done'}">
+                ${todo.done ? ICON_TICK_DONE : ICON_TICK_EMPTY}
+            </div>
         </div>
     `;
 }
@@ -220,14 +224,309 @@ document.addEventListener('click', (e) => {
     if (!actionEl) return;
     const action = actionEl.dataset.action;
 
-    if (action === 'delete') {
-        e.stopPropagation();
-        deleteTodo(todoId);
-    } else if (action === 'toggle') {
+    if (action === 'toggle') {
         toggleTodoDone(todoId);
+    } else if (action === 'edit') {
+        openTodoModal(todoId);
+    }
+});
+
+// ===== MODAL: OPEN / CLOSE =====
+async function openTodoModal(todoId) {
+    const modal = document.getElementById('todo-edit-modal');
+    if (!modal) return;
+
+    // Determine mode
+    editingTodoId = todoId || null;
+    const isEdit = !!editingTodoId;
+    const todo = isEdit ? todos.find(t => t.id === editingTodoId) : null;
+    if (isEdit && !todo) {
+        console.warn('[Todo] openTodoModal: todo not found', todoId);
+        return;
+    }
+
+    // Reset modal state
+    todoModalState = {
+        clientCode: null,
+        clientName: null,
+        bucket: todo ? (todo.bucket || 'OTHER') : 'OTHER',
+        urgent: todo ? !!todo.urgent : false,
+    };
+
+    // Title text + button label
+    document.getElementById('todo-modal-title').textContent = isEdit ? 'Edit Todo' : 'Add Todo';
+    const saveBtn = document.getElementById('todo-modal-save-btn');
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+    }
+
+    // Title input
+    const titleInput = document.getElementById('todo-modal-title-input');
+    titleInput.value = todo ? (todo.title || '') : '';
+
+    // Urgent toggle
+    document.getElementById('todo-modal-urgent').checked = todoModalState.urgent;
+
+    // Bucket dropdown — set initial display + selected option
+    setTodoModalDropdown('bucket', todoModalState.bucket, todoModalState.bucket === 'CLIENTS' ? 'Clients' : 'Other');
+
+    // Client dropdown — placeholder "None" until clients load
+    const clientTrigger = document.getElementById('todo-modal-client-trigger');
+    clientTrigger.querySelector('span').textContent = 'Loading...';
+    document.getElementById('todo-modal-client-menu').innerHTML = '';
+
+    // Modal logo defaults to robot/unknown
+    const modalLogo = document.getElementById('todo-modal-logo');
+    modalLogo.src = todo && todo.clientName ? getTodoLogoUrl(todo.clientName) : 'images/logos/Unknown.png';
+    modalLogo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
+
+    // Show/hide Delete button
+    const deleteBtn = document.getElementById('todo-modal-delete-btn');
+    deleteBtn.style.display = isEdit ? '' : 'none';
+
+    // Show modal
+    modal.classList.add('visible');
+
+    // Focus title input (after transition)
+    setTimeout(() => titleInput.focus(), 50);
+
+    // Load clients (cached after first load)
+    await loadTodoModalClients();
+
+    // Now set the client selection if editing
+    if (isEdit && todo && todo.clientName) {
+        // Try to match by name to find the code
+        const match = (cachedClients || []).find(c => c.name === todo.clientName);
+        if (match) {
+            todoModalState.clientCode = match.code;
+            todoModalState.clientName = match.name;
+            clientTrigger.querySelector('span').textContent = match.name;
+            // Mark selected option
+            document.querySelectorAll('#todo-modal-client-menu .custom-dropdown-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.value === match.code);
+            });
+        } else {
+            // Couldn't match — show name as-is, no code
+            clientTrigger.querySelector('span').textContent = todo.clientName;
+        }
+    } else {
+        clientTrigger.querySelector('span').textContent = 'None';
+    }
+}
+
+function closeTodoModal() {
+    const modal = document.getElementById('todo-edit-modal');
+    if (!modal) return;
+    modal.classList.remove('visible');
+    editingTodoId = null;
+    todoModalState = { clientCode: null, clientName: null, bucket: 'OTHER', urgent: false };
+    // Close any open dropdowns inside the modal
+    document.querySelectorAll('.todo-modal .custom-dropdown-menu.open').forEach(m => {
+        m.classList.remove('open');
+        m.previousElementSibling?.classList.remove('open');
+    });
+}
+
+// ===== MODAL: CLIENTS DROPDOWN =====
+async function loadTodoModalClients() {
+    const menu = document.getElementById('todo-modal-client-menu');
+    if (!menu) return;
+
+    // If we already have clients cached, just render
+    if (cachedClients) {
+        menu.innerHTML = renderTodoClientOptions(cachedClients);
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/clients`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        cachedClients = await response.json();
+        menu.innerHTML = renderTodoClientOptions(cachedClients);
+    } catch (err) {
+        console.error('[Todo] Failed to load clients', err);
+        menu.innerHTML = '<div class="custom-dropdown-option" style="color: var(--red)">Failed to load</div>';
+    }
+}
+
+function renderTodoClientOptions(clients) {
+    const topCodes = ['ONE', 'ONS', 'ONB', 'SKY', 'TOW', 'FIS', 'HUN'];
+    const top = [];
+    const other = [];
+    clients.forEach(c => {
+        if (topCodes.includes(c.code)) top.push(c);
+        else other.push(c);
+    });
+    top.sort((a, b) => topCodes.indexOf(a.code) - topCodes.indexOf(b.code));
+
+    let html = '';
+    // None option at top
+    html += `<div class="custom-dropdown-option" data-value="" onclick="selectTodoModalOption('client', '', 'None')"><img src="images/logos/Unknown.png" alt="" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;">None</div>`;
+
+    top.forEach(c => {
+        const safeName = c.name.replace(/'/g, "\\'");
+        html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectTodoModalOption('client', '${c.code}', '${safeName}')"><img src="${getLogoUrl(c.code)}" alt="${c.code}" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;" onerror="this.src='images/logos/Unknown.png'">${c.name}</div>`;
+    });
+
+    if (other.length > 0) {
+        html += '<div class="custom-dropdown-option section-header">Other</div>';
+        other.forEach(c => {
+            const safeName = c.name.replace(/'/g, "\\'");
+            html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectTodoModalOption('client', '${c.code}', '${safeName}')"><img src="${getLogoUrl(c.code)}" alt="${c.code}" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;" onerror="this.src='images/logos/Unknown.png'">${c.name}</div>`;
+        });
+    }
+    return html;
+}
+
+// ===== MODAL: DROPDOWN HELPERS =====
+function toggleTodoModalDropdown(id) {
+    const trigger = document.getElementById(`todo-modal-${id}-trigger`);
+    const menu = document.getElementById(`todo-modal-${id}-menu`);
+    if (!trigger || !menu) return;
+
+    const isOpen = menu.classList.contains('open');
+
+    // Close all other dropdowns inside the todo modal first
+    document.querySelectorAll('.todo-modal .custom-dropdown-menu.open').forEach(m => {
+        m.classList.remove('open');
+        m.previousElementSibling?.classList.remove('open');
+    });
+
+    if (!isOpen) {
+        trigger.classList.add('open');
+        menu.classList.add('open');
+    }
+}
+
+function selectTodoModalOption(id, value, label) {
+    const trigger = document.getElementById(`todo-modal-${id}-trigger`);
+    const menu = document.getElementById(`todo-modal-${id}-menu`);
+    if (!trigger || !menu) return;
+
+    // Update selected state
+    menu.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.value === value);
+    });
+
+    // Update trigger text
+    trigger.querySelector('span').textContent = label;
+
+    // Close dropdown
+    trigger.classList.remove('open');
+    menu.classList.remove('open');
+
+    // Update state
+    if (id === 'client') {
+        todoModalState.clientCode = value || null;
+        todoModalState.clientName = value ? label : null;
+        // Update modal logo to match
+        const modalLogo = document.getElementById('todo-modal-logo');
+        modalLogo.src = value ? getLogoUrl(value) : 'images/logos/Unknown.png';
+    } else if (id === 'bucket') {
+        todoModalState.bucket = value;
+    }
+}
+
+function setTodoModalDropdown(id, value, label) {
+    const trigger = document.getElementById(`todo-modal-${id}-trigger`);
+    const menu = document.getElementById(`todo-modal-${id}-menu`);
+    if (!trigger || !menu) return;
+    trigger.querySelector('span').textContent = label;
+    menu.querySelectorAll('.custom-dropdown-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.value === value);
+    });
+}
+
+// ===== MODAL: SAVE / DELETE =====
+async function saveTodoFromModal() {
+    const titleInput = document.getElementById('todo-modal-title-input');
+    const title = (titleInput.value || '').trim();
+    if (!title) {
+        titleInput.focus();
+        if (typeof showToast === 'function') showToast('Title required');
+        return;
+    }
+
+    const urgent = document.getElementById('todo-modal-urgent').checked;
+    todoModalState.urgent = urgent;
+
+    const payload = {
+        title,
+        bucket: todoModalState.bucket || 'OTHER',
+        urgent,
+        client: todoModalState.clientCode || '',
+    };
+
+    const saveBtn = document.getElementById('todo-modal-save-btn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+    }
+
+    try {
+        const isEdit = !!editingTodoId;
+        const url = isEdit ? `${API_BASE}/todos/${editingTodoId}` : `${API_BASE}/todos`;
+        const method = isEdit ? 'PATCH' : 'POST';
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const updated = await response.json();
+
+        if (isEdit) {
+            const idx = todos.findIndex(t => t.id === editingTodoId);
+            if (idx !== -1) todos[idx] = updated;
+        } else {
+            // Add to top of list (matches API ordering: newest first)
+            todos.unshift(updated);
+        }
+
+        renderTodoContent();
+        closeTodoModal();
+    } catch (err) {
+        console.error('[Todo] Save failed', err);
+        if (typeof showToast === 'function') showToast('Couldn\'t save todo');
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+        }
+    }
+}
+
+function deleteTodoFromModal() {
+    if (!editingTodoId) return;
+    const id = editingTodoId;
+    closeTodoModal();
+    deleteTodo(id);
+}
+
+// ===== MODAL: EVENT HANDLERS (scoped) =====
+// Close modal on overlay click
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'todo-edit-modal') {
+        closeTodoModal();
+    }
+});
+
+// Close dropdowns when clicking outside (scoped to .todo-modal)
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.todo-modal .custom-dropdown')) {
+        document.querySelectorAll('.todo-modal .custom-dropdown-menu.open').forEach(m => {
+            m.classList.remove('open');
+            m.previousElementSibling?.classList.remove('open');
+        });
     }
 });
 
 // ===== EXPORTS =====
 window.renderTodos = renderTodos;
 window.loadTodos = loadTodos;
+window.openTodoModal = openTodoModal;
+window.closeTodoModal = closeTodoModal;
+window.toggleTodoModalDropdown = toggleTodoModalDropdown;
+window.selectTodoModalOption = selectTodoModalOption;
+window.saveTodoFromModal = saveTodoFromModal;
+window.deleteTodoFromModal = deleteTodoFromModal;

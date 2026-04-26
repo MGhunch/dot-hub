@@ -4641,3 +4641,57 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 .phone-todo.visible {
     display: flex;
 }
+
+/* ===== Todo toolbar + Add button ===== */
+.todo-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+.todo-add-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--red);
+    color: var(--white);
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.todo-add-btn:hover {
+    background: var(--red-dark);
+}
+
+/* ===== Todo Edit/Add Modal ===== */
+.todo-modal .job-modal-footer {
+    gap: 8px;
+}
+.todo-modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+.todo-modal-urgent-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 2px;
+}
+.todo-modal-delete-btn {
+    background: transparent;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--grey-400);
+    cursor: pointer;
+    padding: 10px 4px;
+    transition: color 0.15s ease;
+}
+.todo-modal-delete-btn:hover {
+    color: var(--red);
+}
