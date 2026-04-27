@@ -2749,6 +2749,48 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     gap: 12px;
 }
 
+.date-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.date-input-row .job-form-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.tbc-pill {
+    padding: 0 16px;
+    border: 1px solid var(--grey-200, #e0e0e0);
+    background: #fff;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey-500, #999);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+}
+
+.tbc-pill:hover {
+    border-color: var(--grey-400, #999);
+    color: var(--grey-800, #333);
+}
+
+.tbc-pill.active {
+    background: var(--red);
+    border-color: var(--red);
+    color: #fff;
+}
+
+.tbc-pill.active:hover {
+    background: var(--red-dark);
+    border-color: var(--red-dark);
+}
+
 .job-modal-links {
     display: flex;
     justify-content: flex-start;

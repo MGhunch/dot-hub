@@ -128,6 +128,10 @@ function applyDeepLink() {
 }
 
 function setupEventListeners() {
+    // TBC pills on date inputs
+    setupTbcPill('job-edit-update-due', 'job-edit-tbc-pill');
+    setupTbcPill('new-job-update-due', 'new-job-tbc-pill');
+    
     // Login form - Desktop
     $('login-send')?.addEventListener('click', () => requestLogin('desktop'));
     $('login-email')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') requestLogin('desktop'); });
@@ -1201,6 +1205,7 @@ async function openJobModal(jobNumber) {
     // Hero section
     $('job-edit-message').value = job.update || '';
     $('job-edit-update-due').value = formatDateForInput(job.updateDue);
+    setTbcPillState('job-edit-tbc-pill', !job.updateDue);
     
     // Details section
     $('job-edit-description').value = job.description || '';
@@ -2507,9 +2512,11 @@ async function saveJobUpdate() {
     const projectOwner = $('job-edit-owner').value;
     
     // Validation: if posting an update, must set next update due date
+    // (unless TBC pill is active - that's an intentional choice)
     const originalDue = formatDateForInput(currentEditJob.updateDue);
     const originalUpdate = currentEditJob.update || '';
-    if (message && message !== originalUpdate && (!updateDue || updateDue === originalDue)) {
+    const tbcActive = isTbcActive('job-edit-tbc-pill');
+    if (message && message !== originalUpdate && !tbcActive && (!updateDue || updateDue === originalDue)) {
         showToast("When's the update due?", 'error');
         $('job-edit-update-due').focus();
         return;
@@ -2744,6 +2751,38 @@ function formatDueDate(isoDate, withClient = false) {
 }
 
 function formatDateForInput(d) { if (!d) return ''; return new Date(d).toISOString().split('T')[0]; }
+
+// ===== TBC PILL =====
+// Wires a TBC pill to a date input. Click pill → clears date + activates pill.
+// Pick date → deactivates pill. Use isTbcActive() to check intent at save time.
+function setupTbcPill(inputId, pillId) {
+    const input = $(inputId);
+    const pill = $(pillId);
+    if (!input || !pill) return;
+    pill.addEventListener('click', () => {
+        const willActivate = !pill.classList.contains('active');
+        if (willActivate) {
+            input.value = '';
+            pill.classList.add('active');
+        } else {
+            pill.classList.remove('active');
+            input.focus();
+        }
+    });
+    input.addEventListener('input', () => {
+        if (input.value) pill.classList.remove('active');
+    });
+}
+
+function setTbcPillState(pillId, active) {
+    const pill = $(pillId);
+    if (!pill) return;
+    pill.classList.toggle('active', !!active);
+}
+
+function isTbcActive(pillId) {
+    return $(pillId)?.classList.contains('active') || false;
+}
 function getDaysUntilDue(d) { if (!d) return 999; return Math.ceil((new Date(d) - new Date()) / 86400000); }
 function getDaysSinceUpdate(d) { if (!d) return 999; return Math.floor((new Date() - new Date(d)) / 86400000); }
 function getDaysAgoClass(days) { return days > 7 ? 'days-ago stale' : 'days-ago'; }
@@ -3273,6 +3312,7 @@ async function openNewJobModal() {
     // Set default update due (+5 working days)
     const updateDue = getWorkingDaysFromNow(5);
     $('new-job-update-due').value = updateDue;
+    setTbcPillState('new-job-tbc-pill', false);
     
     // Show form and confirmation hidden
     $('new-job-form').style.display = 'block';
