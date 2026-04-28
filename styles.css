@@ -4738,8 +4738,8 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 
 .plus-dock {
     position: fixed;
-    bottom: 16px;
-    left: 16px;
+    bottom: 32px;
+    left: 32px;
     width: 56px;
     height: 56px;
     z-index: 500; /* above content (z 100-200), below modals (z 1000+) */
