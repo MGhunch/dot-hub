@@ -4740,35 +4740,12 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     position: fixed;
     bottom: 16px;
     left: 16px;
-    width: 120px;
-    height: 72px;
+    width: 56px;
+    height: 56px;
     z-index: 500; /* above content (z 100-200), below modals (z 1000+) */
-    pointer-events: none; /* let clicks fall through except on the button */
-}
-
-.plus-tray {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 48px;
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
-    /* Cutout slightly bigger than the circle (36px radius vs circle's 28px) and
-       centred on the circle's centre — creates a visible halo of background around
-       the circle's lower hemisphere, so the tray reads as cupping the circle
-       rather than touching it flat. */
-    -webkit-mask-image: radial-gradient(circle 36px at 50% 4px, transparent 0, transparent 35px, black 36px);
-            mask-image: radial-gradient(circle 36px at 50% 4px, transparent 0, transparent 35px, black 36px);
-    pointer-events: auto;
 }
 
 .plus-button {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
     width: 56px;
     height: 56px;
     border-radius: 50%;
@@ -4779,18 +4756,17 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
-    pointer-events: auto;
     padding: 0;
 }
 
 .plus-button:hover {
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
 }
 
 .plus-button:active {
-    transform: translateX(-50%) scale(0.96);
+    transform: scale(0.96);
 }
 
 .plus-button svg {
