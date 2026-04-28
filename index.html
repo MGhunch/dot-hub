@@ -1057,6 +1057,7 @@
     <script src="todolist.js"></script>
     <script src="newJobModal.js"></script>
     <script src="editJobModal.js"></script>
+    <script src="plusComponent.js"></script>
     <!-- Story Edit Modal -->
     <!-- Update Edit Modal -->
     <div class="job-modal-overlay" id="update-edit-modal">
@@ -1172,6 +1173,16 @@
                 <button class="tracker-btn tracker-btn-primary" id="tracker-save-btn" onclick="saveTrackerProject()">Save Changes</button>
             </div>
         </div>
+    </div>
+    <!-- Plus Component (floating dock — visible on every page) -->
+    <div class="plus-dock" id="plus-dock">
+        <div class="plus-tray"></div>
+        <button class="plus-button" id="plus-button" aria-label="Open menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+        </button>
     </div>
 
 </body>

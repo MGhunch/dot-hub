@@ -4732,3 +4732,71 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 .todo-modal-delete-btn:hover {
     color: var(--red);
 }
+
+/* ===== PLUS COMPONENT (floating dock) ===== */
+/* v1 slice 1: visual only — dock + tray + circle, no menu yet */
+
+.plus-dock {
+    position: fixed;
+    bottom: 0;
+    left: 24px;
+    width: 96px;
+    height: 56px;
+    z-index: 500; /* above content (z 100-200), below modals (z 1000+) */
+    pointer-events: none; /* let clicks fall through except on the button */
+}
+
+.plus-tray {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 32px;
+    background: #ffffff;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+    /* Cut a semicircular hole at the top-centre where the circle nests.
+       Mask is opaque (white) everywhere except a 32px-radius circle at top centre. */
+    -webkit-mask-image: radial-gradient(circle 32px at 50% 0%, transparent 0, transparent 31px, black 32px);
+            mask-image: radial-gradient(circle 32px at 50% 0%, transparent 0, transparent 31px, black 32px);
+    pointer-events: auto;
+}
+
+.plus-button {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #ED1C24;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    pointer-events: auto;
+    padding: 0;
+}
+
+.plus-button:hover {
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+}
+
+.plus-button:active {
+    transform: translateX(-50%) scale(0.96);
+}
+
+.plus-button svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Note: per-view bottom padding (so last row clears the dock) is intentionally
+   NOT applied globally — would break views with fixed bottom inputs (home, chat).
+   Add per-view rules in the next slice if list rows get hidden behind the dock. */
