@@ -4738,10 +4738,10 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 
 .plus-dock {
     position: fixed;
-    bottom: 0;
-    left: 24px;
-    width: 96px;
-    height: 56px;
+    bottom: 16px;
+    left: 16px;
+    width: 120px;
+    height: 72px;
     z-index: 500; /* above content (z 100-200), below modals (z 1000+) */
     pointer-events: none; /* let clicks fall through except on the button */
 }
@@ -4751,15 +4751,16 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 32px;
+    height: 48px;
     background: #ffffff;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
-    /* Cut a semicircular hole at the top-centre where the circle nests.
-       Mask is opaque (white) everywhere except a 32px-radius circle at top centre. */
-    -webkit-mask-image: radial-gradient(circle 32px at 50% 0%, transparent 0, transparent 31px, black 32px);
-            mask-image: radial-gradient(circle 32px at 50% 0%, transparent 0, transparent 31px, black 32px);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+    /* Cutout slightly bigger than the circle (36px radius vs circle's 28px) and
+       centred on the circle's centre — creates a visible halo of background around
+       the circle's lower hemisphere, so the tray reads as cupping the circle
+       rather than touching it flat. */
+    -webkit-mask-image: radial-gradient(circle 36px at 50% 4px, transparent 0, transparent 35px, black 36px);
+            mask-image: radial-gradient(circle 36px at 50% 4px, transparent 0, transparent 35px, black 36px);
     pointer-events: auto;
 }
 
