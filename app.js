@@ -475,6 +475,20 @@ function applyAccessLevel() {
         trackerNavDesktop?.classList.remove('hidden');
     }
     
+    // Hide whole Plus dock + phone bar for non-Full users (read-only tiers see no create actions)
+    const plusDock = document.getElementById('plus-dock');
+    const plusBar = document.getElementById('plus-bar');
+    const plusBackdrop = document.getElementById('plus-backdrop');
+    if (level !== 'Full') {
+        plusDock?.classList.add('hidden');
+        plusBar?.classList.add('hidden');
+        plusBackdrop?.classList.add('hidden');
+    } else {
+        plusDock?.classList.remove('hidden');
+        plusBar?.classList.remove('hidden');
+        plusBackdrop?.classList.remove('hidden');
+    }
+    
     // Hide New Job, Files and Send WIP from plus menus for non-Full users
     const newJobItems = document.querySelectorAll('.plus-menu-item[data-action="new-job"]');
     const filesItems = document.querySelectorAll('.plus-menu-item[data-action="files"]');
@@ -2892,6 +2906,12 @@ function showComingSoonModal(action) {
     
     if (action === 'upload') {
         text.textContent = 'Uploads coming soon';
+    } else if (action === 'edit-job') {
+        text.textContent = 'Pick a job from WIP to edit for now.';
+    } else if (action === 'tracker') {
+        text.textContent = 'Pick a job from Tracker to edit for now.';
+    } else if (action === 'ask-dot') {
+        text.textContent = "Hey, what's cooking? Chat coming soon.";
     } else {
         text.textContent = 'Coming soon';
     }
