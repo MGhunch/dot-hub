@@ -1184,5 +1184,17 @@
         </button>
     </div>
 
+    <!-- Plus Component — phone bar (only renders on phone, hidden on desktop via CSS).
+         Bar = white rectangle across the bottom. Cradle = a centred SVG that draws
+         a flat-then-arc-then-flat silhouette in white, sitting on top of the bar
+         where the FAB's lower hemisphere tucks in. -->
+    <div class="plus-bar" id="plus-bar" aria-hidden="true">
+        <svg class="plus-bar-cradle" viewBox="0 0 128 40" xmlns="http://www.w3.org/2000/svg">
+            <!-- Path: flat for 32px, arc up and over (radius 32 = FAB radius 28 + 4 cushion), flat for 32px.
+                 The cradle width is 128px; the arc spans the middle 64px. -->
+            <path d="M 0,40 L 0,32 L 32,32 A 32,32 0 0 1 96,32 L 128,32 L 128,40 Z" fill="#ffffff"/>
+        </svg>
+    </div>
+
 </body>
 </html>

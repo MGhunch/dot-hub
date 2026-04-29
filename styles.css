@@ -647,11 +647,14 @@ body.logged-out .view-tracker {
 
 /* Phone Footer */
 .phone-footer {
+    /* Hidden 29 Apr 2026 — Plus Component now owns bottom-of-page zone.
+       Markup, JS toggles, and original styles all preserved. To restore,
+       delete the line below. */
+    display: none;
     margin-top: auto;
     padding: 18px 22px;
     border-top: 1px solid var(--grey-100);
     width: 100%;
-    display: flex;
     justify-content: center;
     align-items: center;
 }
@@ -979,10 +982,13 @@ body.logged-out .view-tracker {
 
 /* Desktop Footer */
 .desktop-footer {
+    /* Hidden 29 Apr 2026 — Plus Component now owns bottom-left zone.
+       Markup, JS toggles, and original styles all preserved. To restore,
+       delete the line below. */
+    display: none;
     padding: 16px 32px;
     background: var(--white);
     border-top: 1px solid var(--grey-100);
-    display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
@@ -4774,6 +4780,68 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     height: 24px;
 }
 
-/* Note: per-view bottom padding (so last row clears the dock) is intentionally
-   NOT applied globally — would break views with fixed bottom inputs (home, chat).
-   Add per-view rules in the next slice if list rows get hidden behind the dock. */
+/* ===== PHONE BAR (cradle for the FAB on phone) =====
+   Desktop: bar hidden, FAB stays floating bottom-left at 32/32.
+   Phone: bar visible at bottom, FAB centred and lifted so its lower hemisphere
+   tucks into the cradle. */
+
+.plus-bar {
+    display: none; /* hidden by default — only shows on phone breakpoint */
+}
+
+@media (max-width: 899px) {
+    /* Bar = white strip across the bottom, with the cradle SVG sitting on top of it */
+    .plus-bar {
+        display: block;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 56px;
+        background: #ffffff;
+        z-index: 499; /* one below FAB so the FAB sits over the cradle */
+        box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Cradle silhouette: centred, sits just above the bar's top edge, draws the bump */
+    .plus-bar-cradle {
+        position: absolute;
+        bottom: 56px; /* sits flush on top of the 56px bar */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 128px;
+        height: 40px;
+        display: block;
+        /* Soft shadow that matches the bar — keeps the cradle visually attached */
+        filter: drop-shadow(0 -2px 4px rgba(0, 0, 0, 0.04));
+    }
+
+    /* Reposition the dock: centred, lifted so FAB lower hemisphere sits in the cradle */
+    .plus-dock {
+        bottom: 24px;        /* FAB centre lands just above the bar/cradle meeting point */
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
+
+/* ===== BOTTOM BREATHING ROOM =====
+   Cleared the footer, so views need padding-bottom so last row doesn't sit
+   at the literal viewport edge or behind the FAB.
+   Desktop: 96px clears the FAB (32 inset + 56 height + ~8 gap).
+   Phone: 80px clears the bar (56 bar + ~24 cushion). FAB lives in the bar so
+   no extra clearance needed for it. */
+.view-wip,
+.view-tracker,
+.view-todo,
+.view-job-bag {
+    padding-bottom: 96px;
+}
+
+@media (max-width: 899px) {
+    .view-wip,
+    .view-tracker,
+    .view-todo,
+    .view-job-bag {
+        padding-bottom: 80px;
+    }
+}
