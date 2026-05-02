@@ -16,7 +16,7 @@
 // ===== STATE =====
 const updateModalState = {
     open: false,
-    view: 'picker', // 'picker' | 'populated'
+    view: 'picker', // 'picker' | 'populated' | 'completion'
     pickerStage: 'clients', // 'clients' | 'jobs'
     selectedClientCode: null,
     currentJob: null,
@@ -28,6 +28,9 @@ const updateModalState = {
     // All tracker entries for this job (used to compute "to date" and find current-month entry)
     trackerEntries: [],
     totalSpend: 0,
+    // Completion view: next-up suggestion + jobs already touched in this modal session
+    nextJobNumber: null,
+    sessionUpdatedJobs: new Set(),
 };
 
 const STATUSES = ['Incoming', 'In Progress', 'On Hold', 'Completed'];
@@ -223,6 +226,14 @@ function wireUpdateModalListeners() {
 
     // Submit
     $um('update-modal-submit')?.addEventListener('click', submitUpdate);
+
+    // Completion view — NEXT JOB loads the suggested job, DONE closes
+    $um('update-modal-completion-btn-next')?.addEventListener('click', async () => {
+        const nextNum = updateModalState.nextJobNumber;
+        if (!nextNum) return;
+        await loadHotEntry(nextNum);
+    });
+    $um('update-modal-completion-btn-done')?.addEventListener('click', closeUpdateModal);
 }
 
 // ===== OPEN / CLOSE =====
@@ -237,8 +248,10 @@ async function openUpdateModal(jobNumber) {
     // Hard reset view display so showView's animation logic skips on first open
     const pickerEl = $um('update-modal-picker');
     const populatedEl = $um('update-modal-populated');
+    const completionEl = $um('update-modal-completion');
     if (pickerEl) pickerEl.style.display = 'none';
     if (populatedEl) populatedEl.style.display = 'none';
+    if (completionEl) completionEl.style.display = 'none';
 
     if (jobNumber) {
         // Hot entry — open straight to populated view
@@ -274,6 +287,8 @@ function resetState() {
     updateModalState.currentMonthTrackerId = null;
     updateModalState.trackerEntries = [];
     updateModalState.totalSpend = 0;
+    updateModalState.nextJobNumber = null;
+    updateModalState.sessionUpdatedJobs = new Set();
 
     // Reset picker DOM so reopening always starts at the client list
     const clientsEl = $um('update-modal-picker-clients');
@@ -292,18 +307,25 @@ function resetState() {
 function showView(view, direction = 'fwd') {
     const picker = $um('update-modal-picker');
     const populated = $um('update-modal-populated');
-    if (!picker || !populated) return;
+    const completion = $um('update-modal-completion');
+    if (!picker || !populated || !completion) return;
 
     updateModalState.view = view;
 
-    const target = view === 'picker' ? picker : populated;
-    const other  = view === 'picker' ? populated : picker;
+    const views = { picker, populated, completion };
+    const target = views[view];
+    if (!target) return;
+
+    // Find any currently visible views (one or zero)
+    const others = Object.entries(views)
+        .filter(([k, v]) => k !== view && v.style.display !== 'none')
+        .map(([, v]) => v);
 
     // Already in correct state
-    if (target.style.display !== 'none' && other.style.display === 'none') return;
+    if (target.style.display !== 'none' && others.length === 0) return;
 
-    // Neither visible (first open after hard reset) — show target without animation
-    if (other.style.display === 'none') {
+    // No views currently visible (first open after hard reset) — show target plain
+    if (others.length === 0) {
         target.style.display = 'block';
         return;
     }
@@ -313,10 +335,12 @@ function showView(view, direction = 'fwd') {
     const enterCls = `um-stage-enter-${direction}`;
     const DUR = 140;
 
-    other.classList.add(leaveCls);
+    others.forEach(o => o.classList.add(leaveCls));
     setTimeout(() => {
-        other.style.display = 'none';
-        other.classList.remove(leaveCls);
+        others.forEach(o => {
+            o.style.display = 'none';
+            o.classList.remove(leaveCls);
+        });
         target.style.display = 'block';
         target.classList.add(enterCls);
         setTimeout(() => target.classList.remove(enterCls), DUR);
@@ -736,9 +760,11 @@ async function submitUpdate() {
         }
 
         if (typeof showToast === 'function') showToast('On it.', 'success');
-        closeUpdateModal();
 
-        // Best-effort refresh of jobs list so WIP reflects new state
+        // Track this job as updated in this modal session (so it's not suggested as "next")
+        updateModalState.sessionUpdatedJobs.add(job.jobNumber);
+
+        // Refresh jobs list FIRST — we need fresh state.allJobs to compute "next"
         try {
             if (typeof window.loadAllJobs === 'function') {
                 await window.loadAllJobs();
@@ -749,6 +775,15 @@ async function submitUpdate() {
             if (typeof window.renderWip === 'function') window.renderWip();
         } catch (refreshErr) {
             console.warn('[update-modal] post-save refresh failed:', refreshErr);
+        }
+
+        // Suggest the next In-Progress job — same client first, else any client.
+        // If nothing fits, close as before.
+        const nextJob = findNextJob(job.jobNumber, job.clientCode);
+        if (nextJob) {
+            showCompletionView(formatJobDisplay(job.jobNumber), nextJob);
+        } else {
+            closeUpdateModal();
         }
 
     } catch (err) {
@@ -830,6 +865,56 @@ function autoGrow(el) {
 function clientRecencyValue(v) {
     const n = Number(v);
     return Number.isFinite(n) ? n : Infinity;
+}
+
+// Find the next In-Progress job to suggest after a save.
+// Same client first (most recently touched), else any client (most recently touched).
+// Excludes the just-saved job and anything already updated in this modal session.
+function findNextJob(currentJobNumber, currentClientCode) {
+    const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
+    const session = updateModalState.sessionUpdatedJobs;
+
+    const isCandidate = (j) =>
+        j.status === 'In Progress' &&
+        j.jobNumber !== currentJobNumber &&
+        !session.has(j.jobNumber);
+
+    const sortByRecency = (a, b) =>
+        clientRecencyValue(a.daysSinceUpdate) - clientRecencyValue(b.daysSinceUpdate);
+
+    const sameClient = allJobs
+        .filter(j => isCandidate(j) && j.clientCode === currentClientCode)
+        .sort(sortByRecency);
+    if (sameClient.length > 0) return sameClient[0];
+
+    const anyClient = allJobs.filter(isCandidate).sort(sortByRecency);
+    return anyClient[0] || null;
+}
+
+function showCompletionView(savedJobDisplay, nextJob) {
+    if (!nextJob) return;
+
+    const titleEl = $um('update-modal-completion-title');
+    if (titleEl) titleEl.textContent = `${savedJobDisplay} saved`;
+
+    const logoEl = $um('update-modal-completion-next-logo');
+    const logoUrl = (typeof getLogoUrl === 'function')
+        ? getLogoUrl(nextJob.clientCode)
+        : `images/logos/${nextJob.clientCode}.png`;
+    if (logoEl) {
+        logoEl.src = logoUrl;
+        logoEl.alt = nextJob.clientCode || '';
+        logoEl.onerror = () => { logoEl.src = 'images/logos/Unknown.png'; };
+    }
+
+    const kickerEl = $um('update-modal-completion-next-kicker');
+    if (kickerEl) kickerEl.textContent = formatJobDisplay(nextJob.jobNumber);
+    const nameEl = $um('update-modal-completion-next-name');
+    if (nameEl) nameEl.textContent = nextJob.jobName || '';
+
+    updateModalState.nextJobNumber = nextJob.jobNumber;
+
+    showView('completion', 'fwd');
 }
 
 function formatJobDisplay(jobNumber) {

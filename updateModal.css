@@ -666,9 +666,124 @@
   transform: none;
 }
 
+/* ===== COMPLETION VIEW =====
+   Shown after a successful save when there's a sensible "next" job to suggest.
+   If no next job exists, the modal closes instead. */
+.update-modal-completion {
+  padding: 32px 28px 28px;
+}
+
+.update-modal-completion-eyebrow {
+  font-size: var(--um-type-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--um-text-tertiary);
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.update-modal-completion-title {
+  font-size: var(--um-type-hero);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  color: var(--um-text-primary);
+  margin-bottom: 28px;
+}
+
+.update-modal-completion-section-eyebrow {
+  font-size: var(--um-type-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--um-text-tertiary);
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.update-modal-completion-next-card {
+  background: var(--um-bg-soft);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.update-modal-completion-next-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--um-bg-soft-hover);
+}
+
+.update-modal-completion-next-content { flex: 1; min-width: 0; }
+
+.update-modal-completion-next-kicker {
+  font-size: var(--um-type-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--um-text-tertiary);
+  line-height: 1;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.update-modal-completion-next-name {
+  font-size: var(--um-type-body);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--um-text-primary);
+}
+
+.update-modal-completion-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.update-modal-completion-btn-outline,
+.update-modal-completion-btn-filled {
+  flex: 1;
+  padding: 16px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: var(--um-type-body);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.1s, border-color 0.15s;
+}
+.update-modal-completion-btn-outline {
+  background: #FFFFFF;
+  color: var(--um-red);
+  border: 2px solid var(--um-red);
+}
+.update-modal-completion-btn-outline:hover {
+  background: rgba(237, 28, 36, 0.06);
+}
+.update-modal-completion-btn-filled {
+  background: var(--um-red);
+  color: #FFFFFF;
+  border: 2px solid var(--um-red);
+}
+.update-modal-completion-btn-filled:hover {
+  background: var(--um-red-hover);
+  border-color: var(--um-red-hover);
+}
+.update-modal-completion-btn-outline:active,
+.update-modal-completion-btn-filled:active {
+  transform: scale(0.99);
+}
+
 /* Mobile tweaks */
 @media (max-width: 480px) {
   .update-modal-header { padding: 24px 20px 20px; }
   .update-modal-body { padding: 20px 20px 24px; }
   .update-modal-picker { padding: 28px 20px 24px; }
+  .update-modal-completion { padding: 28px 20px 24px; }
 }
