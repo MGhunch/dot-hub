@@ -1328,22 +1328,30 @@
 
             <!-- COMPLETION VIEW -->
             <div class="update-modal-completion" id="update-modal-completion" style="display:none">
-                <div class="update-modal-completion-eyebrow">UPDATED</div>
+                <div class="update-modal-completion-eyebrow">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 8 7 12 13 4"/></svg>
+                    <span>UPDATED</span>
+                </div>
                 <div class="update-modal-completion-title" id="update-modal-completion-title"></div>
 
                 <div class="update-modal-completion-section-eyebrow">NEXT UP</div>
-                <div class="update-modal-completion-next-card">
-                    <img class="update-modal-completion-next-logo" id="update-modal-completion-next-logo" src="images/logos/Unknown.png" alt="">
-                    <div class="update-modal-completion-next-content">
-                        <div class="update-modal-completion-next-kicker" id="update-modal-completion-next-kicker"></div>
-                        <div class="update-modal-completion-next-name" id="update-modal-completion-next-name"></div>
-                    </div>
+
+                <div class="update-modal-completion-next-card" id="update-modal-completion-next-card">
+                    <button class="update-modal-completion-next-main" id="update-modal-completion-next-main" type="button">
+                        <img class="update-modal-completion-next-logo" id="update-modal-completion-next-logo" src="images/logos/Unknown.png" alt="">
+                        <div class="update-modal-completion-next-content">
+                            <div class="update-modal-completion-next-kicker" id="update-modal-completion-next-kicker"></div>
+                            <div class="update-modal-completion-next-name" id="update-modal-completion-next-name"></div>
+                        </div>
+                    </button>
+                    <button class="update-modal-completion-next-toggle" id="update-modal-completion-next-toggle" type="button" aria-label="Show other jobs" hidden>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
                 </div>
 
-                <div class="update-modal-completion-buttons">
-                    <button class="update-modal-completion-btn-outline" id="update-modal-completion-btn-next" type="button">NEXT JOB</button>
-                    <button class="update-modal-completion-btn-filled" id="update-modal-completion-btn-done" type="button">DONE</button>
-                </div>
+                <div class="update-modal-completion-menu" id="update-modal-completion-menu" hidden></div>
+
+                <button class="update-modal-completion-btn-filled" id="update-modal-completion-btn-done" type="button">DONE</button>
             </div>
         </div>
     </div>

@@ -227,12 +227,54 @@ function wireUpdateModalListeners() {
     // Submit
     $um('update-modal-submit')?.addEventListener('click', submitUpdate);
 
-    // Completion view — NEXT JOB loads the suggested job, DONE closes
-    $um('update-modal-completion-btn-next')?.addEventListener('click', async () => {
+    // Completion view — main card loads the suggested job
+    $um('update-modal-completion-next-main')?.addEventListener('click', async () => {
         const nextNum = updateModalState.nextJobNumber;
         if (!nextNum) return;
         await loadHotEntry(nextNum);
     });
+
+    // Completion view — chevron toggles dropdown of other same-client jobs
+    $um('update-modal-completion-next-toggle')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleCompletionMenu();
+    });
+
+    // Completion menu — click a row (job or "choose another client")
+    $um('update-modal-completion-menu')?.addEventListener('click', async (e) => {
+        const row = e.target.closest('.update-modal-completion-menu-row');
+        if (!row) return;
+
+        if (row.dataset.action === 'choose-client') {
+            // Reset picker to clients stage and animate back
+            const clientsEl = $um('update-modal-picker-clients');
+            const jobsEl = $um('update-modal-picker-jobs');
+            if (clientsEl) clientsEl.hidden = false;
+            if (jobsEl) jobsEl.hidden = true;
+            updateModalState.pickerStage = 'clients';
+            renderClientList();
+            closeCompletionMenu();
+            showView('picker', 'back');
+            return;
+        }
+
+        const jobNumber = row.dataset.jobNumber;
+        if (jobNumber) {
+            closeCompletionMenu();
+            await loadHotEntry(jobNumber);
+        }
+    });
+
+    // Click outside the card+menu closes the menu
+    document.addEventListener('click', (e) => {
+        if (!updateModalState.open || updateModalState.view !== 'completion') return;
+        const menu = $um('update-modal-completion-menu');
+        if (!menu || menu.hidden) return;
+        if (e.target.closest('.update-modal-completion-next-card')) return;
+        if (e.target.closest('.update-modal-completion-menu')) return;
+        closeCompletionMenu();
+    });
+
     $um('update-modal-completion-btn-done')?.addEventListener('click', closeUpdateModal);
 }
 
@@ -781,7 +823,7 @@ async function submitUpdate() {
         // If nothing fits, close as before.
         const nextJob = findNextJob(job.jobNumber, job.clientCode);
         if (nextJob) {
-            showCompletionView(formatJobDisplay(job.jobNumber), nextJob);
+            showCompletionView(job, nextJob);
         } else {
             closeUpdateModal();
         }
@@ -891,12 +933,14 @@ function findNextJob(currentJobNumber, currentClientCode) {
     return anyClient[0] || null;
 }
 
-function showCompletionView(savedJobDisplay, nextJob) {
+function showCompletionView(savedJob, nextJob) {
     if (!nextJob) return;
 
+    // Title = job name of the just-saved job (closes the loop without redundancy)
     const titleEl = $um('update-modal-completion-title');
-    if (titleEl) titleEl.textContent = `${savedJobDisplay} saved`;
+    if (titleEl) titleEl.textContent = savedJob?.jobName || formatJobDisplay(savedJob?.jobNumber || '');
 
+    // Main card — the suggested next job
     const logoEl = $um('update-modal-completion-next-logo');
     const logoUrl = (typeof getLogoUrl === 'function')
         ? getLogoUrl(nextJob.clientCode)
@@ -914,7 +958,91 @@ function showCompletionView(savedJobDisplay, nextJob) {
 
     updateModalState.nextJobNumber = nextJob.jobNumber;
 
+    // Build dropdown of OTHER same-client in-progress jobs (excluding next + session)
+    const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
+    const session = updateModalState.sessionUpdatedJobs;
+    const sameClientOthers = allJobs
+        .filter(j =>
+            j.status === 'In Progress' &&
+            j.clientCode === nextJob.clientCode &&
+            j.jobNumber !== nextJob.jobNumber &&
+            !session.has(j.jobNumber)
+        )
+        .sort((a, b) => clientRecencyValue(a.daysSinceUpdate) - clientRecencyValue(b.daysSinceUpdate));
+
+    renderCompletionMenu(sameClientOthers, nextJob.clientCode);
+
+    // Chevron is only shown when there's a real menu to open
+    // (i.e. at least one other same-client job to choose from).
+    // If there's only "Choose another client" left, hide it — too thin to be a menu.
+    const toggleEl = $um('update-modal-completion-next-toggle');
+    if (toggleEl) toggleEl.hidden = sameClientOthers.length === 0;
+
+    // Always start with menu closed
+    closeCompletionMenu();
+
     showView('completion', 'fwd');
+}
+
+function renderCompletionMenu(sameClientJobs, currentClientCode) {
+    const menu = $um('update-modal-completion-menu');
+    if (!menu) return;
+
+    const logoUrl = (typeof getLogoUrl === 'function')
+        ? getLogoUrl(currentClientCode)
+        : `images/logos/${currentClientCode}.png`;
+
+    const jobRows = sameClientJobs.map(j => {
+        const num = escapeAttr(j.jobNumber || '');
+        const display = escapeHtml(formatJobDisplay(j.jobNumber));
+        const name = escapeHtml(j.jobName || '');
+        return `
+          <button class="update-modal-completion-menu-row" data-job-number="${num}" type="button">
+            <img class="update-modal-completion-menu-logo" src="${escapeAttr(logoUrl)}" alt="" onerror="this.src='images/logos/Unknown.png'">
+            <div class="update-modal-completion-menu-content">
+              <div class="update-modal-completion-menu-kicker">${display}</div>
+              <div class="update-modal-completion-menu-name">${name}</div>
+            </div>
+          </button>
+        `;
+    }).join('');
+
+    const divider = jobRows ? '<div class="update-modal-completion-menu-divider"></div>' : '';
+
+    const chooseClientRow = `
+      <button class="update-modal-completion-menu-row um-choose-client" data-action="choose-client" type="button">
+        <span>Choose another client</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+    `;
+
+    menu.innerHTML = jobRows + divider + chooseClientRow;
+}
+
+function openCompletionMenu() {
+    const menu = $um('update-modal-completion-menu');
+    const toggle = $um('update-modal-completion-next-toggle');
+    const card = $um('update-modal-completion-next-card');
+    if (!menu) return;
+    menu.hidden = false;
+    toggle?.classList.add('open');
+    card?.classList.add('menu-open');
+}
+
+function closeCompletionMenu() {
+    const menu = $um('update-modal-completion-menu');
+    const toggle = $um('update-modal-completion-next-toggle');
+    const card = $um('update-modal-completion-next-card');
+    if (!menu) return;
+    menu.hidden = true;
+    toggle?.classList.remove('open');
+    card?.classList.remove('menu-open');
+}
+
+function toggleCompletionMenu() {
+    const menu = $um('update-modal-completion-menu');
+    if (!menu) return;
+    if (menu.hidden) openCompletionMenu(); else closeCompletionMenu();
 }
 
 function formatJobDisplay(jobNumber) {
