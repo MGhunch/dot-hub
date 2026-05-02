@@ -236,6 +236,18 @@ function resetState() {
     updateModalState.currentMonthTrackerId = null;
     updateModalState.trackerEntries = [];
     updateModalState.totalSpend = 0;
+
+    // Reset picker DOM so reopening always starts at the client list
+    const clientsEl = $um('update-modal-picker-clients');
+    const jobsEl = $um('update-modal-picker-jobs');
+    if (clientsEl) {
+        clientsEl.hidden = false;
+        clientsEl.classList.remove('um-stage-leave-fwd', 'um-stage-leave-back', 'um-stage-enter-fwd', 'um-stage-enter-back');
+    }
+    if (jobsEl) {
+        jobsEl.hidden = true;
+        jobsEl.classList.remove('um-stage-leave-fwd', 'um-stage-leave-back', 'um-stage-enter-fwd', 'um-stage-enter-back');
+    }
 }
 
 // ===== VIEW SWITCHING =====
@@ -248,11 +260,39 @@ function showView(view) {
 }
 
 function showPickerStage(stage) {
-    updateModalState.pickerStage = stage;
     const clients = $um('update-modal-picker-clients');
     const jobs = $um('update-modal-picker-jobs');
-    if (clients) clients.hidden = stage !== 'clients';
-    if (jobs) jobs.hidden = stage !== 'jobs';
+    if (!clients || !jobs) return;
+
+    const target = stage === 'jobs' ? jobs : clients;
+    const other  = stage === 'jobs' ? clients : jobs;
+
+    updateModalState.pickerStage = stage;
+
+    // First-time render or already correct — skip animation
+    if (!target.hidden && other.hidden) return;
+    if (!target.hidden) return;
+
+    // If 'other' isn't on screen either (both hidden), just show target plain
+    if (other.hidden) {
+        target.hidden = false;
+        return;
+    }
+
+    // Animated: fade-out the leaving stage, then fade-in the target
+    const direction = stage === 'jobs' ? 'fwd' : 'back';
+    const leaveCls = `um-stage-leave-${direction}`;
+    const enterCls = `um-stage-enter-${direction}`;
+    const DUR = 140;
+
+    other.classList.add(leaveCls);
+    setTimeout(() => {
+        other.hidden = true;
+        other.classList.remove(leaveCls);
+        target.hidden = false;
+        target.classList.add(enterCls);
+        setTimeout(() => target.classList.remove(enterCls), DUR);
+    }, DUR);
 }
 
 // ===== PICKER RENDERING =====
@@ -279,7 +319,29 @@ async function renderClientList() {
         return;
     }
 
-    list.innerHTML = clients.map(c => {
+    // Filter to clients that have at least one active job, and compute their recency
+    // (min daysSinceUpdate across the client's jobs — smallest = most recently touched)
+    const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
+    const recencyByClient = {};
+    for (const j of allJobs) {
+        const code = j.clientCode;
+        if (!code) continue;
+        const days = clientRecencyValue(j.daysSinceUpdate);
+        if (recencyByClient[code] === undefined || days < recencyByClient[code]) {
+            recencyByClient[code] = days;
+        }
+    }
+
+    const visible = clients
+        .filter(c => recencyByClient[c.code] !== undefined)
+        .sort((a, b) => recencyByClient[a.code] - recencyByClient[b.code]);
+
+    if (visible.length === 0) {
+        list.innerHTML = '<div class="update-modal-picker-empty">No active jobs to update.</div>';
+        return;
+    }
+
+    list.innerHTML = visible.map(c => {
         const code = escapeAttr(c.code || '');
         const name = escapeHtml(c.name || c.code || '');
         const logoUrl = (typeof getLogoUrl === 'function') ? getLogoUrl(c.code) : `images/logos/${c.code}.png`;
@@ -297,19 +359,15 @@ async function renderClientList() {
 
 function renderJobList(clientCode) {
     const titleEl = $um('update-modal-picker-jobs-title');
-    const subEl = $um('update-modal-picker-jobs-sub');
     const listEl = $um('update-modal-job-list');
     if (!listEl) return;
 
     const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
-    const jobs = allJobs.filter(j => j.clientCode === clientCode);
+    const jobs = allJobs
+        .filter(j => j.clientCode === clientCode)
+        .sort((a, b) => clientRecencyValue(a.daysSinceUpdate) - clientRecencyValue(b.daysSinceUpdate));
 
-    if (titleEl) titleEl.textContent = clientCode;
-    if (subEl) {
-        subEl.textContent = jobs.length === 0
-            ? 'No active jobs for this client'
-            : `${jobs.length} active job${jobs.length === 1 ? '' : 's'}`;
-    }
+    if (titleEl) titleEl.textContent = 'Choose a job';
 
     if (jobs.length === 0) {
         listEl.innerHTML = '<div class="update-modal-picker-empty">No jobs to update.</div>';
@@ -690,6 +748,13 @@ function autoGrow(el) {
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
+}
+
+// daysSinceUpdate is normally a number, but Airtable can return '-' or null.
+// Treat anything non-numeric as "very stale" so it sorts to the bottom.
+function clientRecencyValue(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : Infinity;
 }
 
 function formatJobDisplay(jobNumber) {

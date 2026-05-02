@@ -61,6 +61,13 @@
   outline: 2px solid rgba(237, 28, 36, 0.35);
   outline-offset: 2px;
 }
+/* Inputs inside soft containers — the container handles focus state visually,
+   so the inner outline is redundant noise. */
+.update-modal-update-area textarea:focus-visible,
+.update-modal-notes-box textarea:focus-visible,
+.update-modal-spend-amount input:focus-visible {
+  outline: none;
+}
 
 .update-modal-close {
   position: absolute;
@@ -94,7 +101,7 @@
   font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.15;
-  margin-bottom: 6px;
+  margin-bottom: 22px;
   color: var(--um-text-primary);
 }
 
@@ -103,6 +110,17 @@
   color: var(--um-text-secondary);
   margin-bottom: 24px;
 }
+
+/* Stage transition — forward (clients → jobs) and back (jobs → clients) */
+.um-stage-leave-fwd  { animation: umLeaveFwd 140ms ease forwards; }
+.um-stage-leave-back { animation: umLeaveBack 140ms ease forwards; }
+.um-stage-enter-fwd  { animation: umEnterFwd 140ms ease; }
+.um-stage-enter-back { animation: umEnterBack 140ms ease; }
+
+@keyframes umLeaveFwd  { to   { opacity: 0; transform: translateX(-8px); } }
+@keyframes umLeaveBack { to   { opacity: 0; transform: translateX(8px);  } }
+@keyframes umEnterFwd  { from { opacity: 0; transform: translateX(8px);  } }
+@keyframes umEnterBack { from { opacity: 0; transform: translateX(-8px); } }
 
 .update-modal-picker-back {
   background: none;
