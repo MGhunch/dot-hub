@@ -232,16 +232,44 @@
   color: var(--um-text-primary);
 }
 
+.update-modal-description-area {
+  cursor: text;
+  border-radius: 6px;
+  margin: 0 -6px 8px -6px;
+  padding: 2px 6px;
+  transition: background 0.15s;
+}
+.update-modal-description-area:hover { background: rgba(0, 0, 0, 0.03); }
+.update-modal-description-area.editing { background: rgba(0, 0, 0, 0.04); cursor: default; }
+
 .update-modal-description {
   font-size: var(--um-type-meta);
   color: var(--um-text-secondary);
   line-height: 1.35;
-  margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.update-modal-description-area textarea {
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: var(--um-type-meta);
+  line-height: 1.35;
+  color: var(--um-text-primary);
+  resize: none;
+  padding: 0;
+  margin: 0;
+  display: none;
+  min-height: 36px;
+}
+.update-modal-description-area.editing textarea { display: block; }
+.update-modal-description-area.editing .update-modal-description { display: none; }
+.update-modal-description-area textarea::placeholder { color: var(--um-text-tertiary); }
 
 .update-modal-meta {
   font-size: var(--um-type-eyebrow);
@@ -250,7 +278,11 @@
   color: var(--um-text-tertiary);
   text-transform: uppercase;
   line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s;
+  display: inline-block;
 }
+.update-modal-meta:hover { color: var(--um-red); }
 
 /* ===== BODY ===== */
 .update-modal-body { padding: 24px 28px 28px; }

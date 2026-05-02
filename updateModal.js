@@ -91,8 +91,40 @@ function wireUpdateModalListeners() {
         setTimeout(() => { ta?.focus(); autoGrow(ta); }, 50);
     });
 
-    // Auto-grow update textarea (notes is single-line — no auto-grow)
+    // Description tap-to-edit (in header)
+    $um('update-modal-description-area')?.addEventListener('click', (e) => {
+        if (e.target.tagName === 'TEXTAREA') return;
+        const area = $um('update-modal-description-area');
+        if (area.classList.contains('editing')) return;
+        const ta = $um('update-modal-description-input');
+        const display = $um('update-modal-description');
+        if (!ta) return;
+        ta.value = display?.textContent || '';
+        area.classList.add('editing');
+        setTimeout(() => { ta.focus(); autoGrow(ta); }, 50);
+    });
+
+    // Meta line — tap to switch to a different job for the same client
+    $um('update-modal-meta')?.addEventListener('click', () => {
+        const job = updateModalState.currentJob;
+        if (!job?.clientCode) return;
+        updateModalState.selectedClientCode = job.clientCode;
+        renderJobList(job.clientCode);
+
+        // Set picker DOM directly to jobs stage (the outer view animation
+        // carries the transition feel; no inner animation needed)
+        const clientsEl = $um('update-modal-picker-clients');
+        const jobsEl = $um('update-modal-picker-jobs');
+        if (clientsEl) clientsEl.hidden = true;
+        if (jobsEl) jobsEl.hidden = false;
+        updateModalState.pickerStage = 'jobs';
+
+        showView('picker', 'back');
+    });
+
+    // Auto-grow update + description textareas (notes is single-line — no auto-grow)
     $um('update-modal-update-field')?.addEventListener('input', (e) => autoGrow(e.target));
+    $um('update-modal-description-input')?.addEventListener('input', (e) => autoGrow(e.target));
 
     // Due chip → opens native date picker
     $um('update-modal-due-chip')?.addEventListener('click', () => {
@@ -202,6 +234,12 @@ async function openUpdateModal(jobNumber) {
     }
     resetState();
 
+    // Hard reset view display so showView's animation logic skips on first open
+    const pickerEl = $um('update-modal-picker');
+    const populatedEl = $um('update-modal-populated');
+    if (pickerEl) pickerEl.style.display = 'none';
+    if (populatedEl) populatedEl.style.display = 'none';
+
     if (jobNumber) {
         // Hot entry — open straight to populated view
         await loadHotEntry(jobNumber);
@@ -251,12 +289,38 @@ function resetState() {
 }
 
 // ===== VIEW SWITCHING =====
-function showView(view) {
-    updateModalState.view = view;
+function showView(view, direction = 'fwd') {
     const picker = $um('update-modal-picker');
     const populated = $um('update-modal-populated');
-    if (picker) picker.style.display = view === 'picker' ? 'block' : 'none';
-    if (populated) populated.style.display = view === 'populated' ? 'block' : 'none';
+    if (!picker || !populated) return;
+
+    updateModalState.view = view;
+
+    const target = view === 'picker' ? picker : populated;
+    const other  = view === 'picker' ? populated : picker;
+
+    // Already in correct state
+    if (target.style.display !== 'none' && other.style.display === 'none') return;
+
+    // Neither visible (first open after hard reset) — show target without animation
+    if (other.style.display === 'none') {
+        target.style.display = 'block';
+        return;
+    }
+
+    // Animated swap
+    const leaveCls = `um-stage-leave-${direction}`;
+    const enterCls = `um-stage-enter-${direction}`;
+    const DUR = 140;
+
+    other.classList.add(leaveCls);
+    setTimeout(() => {
+        other.style.display = 'none';
+        other.classList.remove(leaveCls);
+        target.style.display = 'block';
+        target.classList.add(enterCls);
+        setTimeout(() => target.classList.remove(enterCls), DUR);
+    }, DUR);
 }
 
 function showPickerStage(stage) {
@@ -416,6 +480,11 @@ async function loadHotEntry(jobNumber) {
     }
     $um('update-modal-hero').textContent = job.jobName || '';
     $um('update-modal-description').textContent = job.description || '';
+    // Reset description editing state — fresh job, fresh display
+    const descArea = $um('update-modal-description-area');
+    if (descArea) descArea.classList.remove('editing');
+    const descInput = $um('update-modal-description-input');
+    if (descInput) descInput.value = '';
     const metaSecond = job.projectOwner || resolveClientName(clientCode);
     $um('update-modal-meta').textContent = `${formatJobDisplay(job.jobNumber)}  |  ${metaSecond}`;
 
@@ -607,6 +676,12 @@ async function submitUpdate() {
             author: author,
         };
         if (messageText) jobUpdatePayload.message = messageText;
+
+        // Include description only if the user opened the editor on it
+        const descArea = $um('update-modal-description-area');
+        if (descArea?.classList.contains('editing')) {
+            jobUpdatePayload.description = $um('update-modal-description-input').value.trim();
+        }
 
         const jobRes = await fetch(`${API_BASE}/job/${encodeURIComponent(job.jobNumber)}/update`, {
             method: 'POST',
