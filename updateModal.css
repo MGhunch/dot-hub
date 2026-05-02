@@ -313,9 +313,17 @@
 .update-modal-chip.empty { color: var(--um-text-tertiary); }
 .update-modal-chip .chevron {
   color: var(--um-red);
-  font-size: 18px;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s ease;
 }
+.update-modal-chip .chevron svg {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+.update-modal-chip.open { background: var(--um-bg-soft-hover); }
+.update-modal-chip.open .chevron { transform: rotate(180deg); }
 
 .update-modal-hidden-input {
   position: absolute;
@@ -323,6 +331,26 @@
   height: 1px;
   opacity: 0;
   pointer-events: none;
+}
+
+/* ===== DROPDOWN WRAPPERS =====
+   Reuses .custom-dropdown-menu / .custom-dropdown-option from styles.css
+   so the global click-outside handler in app.js (line ~213) closes them
+   automatically. */
+.update-modal-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+.update-modal-dropdown .custom-dropdown-menu {
+  min-width: 140px;
+}
+/* Drop-up variant — used by status (sits at bottom of modal) */
+.update-modal-dropdown-up .custom-dropdown-menu {
+  top: auto;
+  bottom: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  min-width: 160px;
 }
 
 /* Tracker section */
@@ -543,11 +571,7 @@
   transition: color 0.15s;
 }
 .update-modal-status:hover { color: var(--um-red); }
-.update-modal-status .chevron {
-  color: var(--um-red);
-  font-size: 18px;
-  line-height: 1;
-}
+.update-modal-status.open { color: var(--um-red); }
 .update-modal-status-indicator {
   width: 22px;
   height: 22px;

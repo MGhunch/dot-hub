@@ -114,26 +114,36 @@ function wireUpdateModalListeners() {
         }
     });
 
-    // Live chip — cycle through TBC + months
-    $um('update-modal-live-chip')?.addEventListener('click', () => {
-        const label = $um('update-modal-live-label');
-        const current = label.textContent.replace('Live · ', '').trim();
-        const idx = LIVE_OPTIONS.indexOf(current);
-        const next = LIVE_OPTIONS[(idx + 1) % LIVE_OPTIONS.length];
-        label.textContent = `Live · ${next}`;
-        $um('update-modal-live-chip').classList.toggle('empty', next === 'TBC');
+    // Live chip — open dropdown
+    $um('update-modal-live-chip')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleUmDropdown('live');
     });
 
-    // Status — cycle through 4 states
-    $um('update-modal-status')?.addEventListener('click', () => {
-        const label = $um('update-modal-status-label');
-        const current = label.textContent.trim();
-        // Match against either uppercase display or canonical
-        let idx = STATUSES.findIndex(s => s.toUpperCase() === current);
-        if (idx < 0) idx = STATUSES.indexOf(current);
-        const next = STATUSES[(idx + 1) % STATUSES.length];
-        label.textContent = next.toUpperCase();
-        renderStatusIndicator(next);
+    // Live menu — pick option
+    $um('update-modal-live-menu')?.addEventListener('click', (e) => {
+        const opt = e.target.closest('.custom-dropdown-option');
+        if (!opt) return;
+        const value = opt.dataset.value;
+        $um('update-modal-live-label').textContent = `Live · ${value}`;
+        $um('update-modal-live-chip').classList.toggle('empty', value === 'TBC');
+        closeAllUmDropdowns();
+    });
+
+    // Status pill — open dropdown (drops up)
+    $um('update-modal-status')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleUmDropdown('status');
+    });
+
+    // Status menu — pick option
+    $um('update-modal-status-menu')?.addEventListener('click', (e) => {
+        const opt = e.target.closest('.custom-dropdown-option');
+        if (!opt) return;
+        const value = opt.dataset.value;
+        $um('update-modal-status-label').textContent = value.toUpperCase();
+        renderStatusIndicator(value);
+        closeAllUmDropdowns();
     });
 
     // With Client toggle
@@ -163,15 +173,21 @@ function wireUpdateModalListeners() {
         $um('update-modal-spend-amount').classList.toggle('empty', !raw || raw === '0');
     });
 
-    // Month chip — cycle months
-    $um('update-modal-month-chip')?.addEventListener('click', () => {
-        const label = $um('update-modal-month-label');
-        const current = label.textContent.trim();
-        const idx = MONTHS.indexOf(current);
-        const next = MONTHS[(idx + 1) % MONTHS.length];
-        label.textContent = next;
+    // Month chip — open dropdown
+    $um('update-modal-month-chip')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleUmDropdown('month');
+    });
+
+    // Month menu — pick option
+    $um('update-modal-month-menu')?.addEventListener('click', (e) => {
+        const opt = e.target.closest('.custom-dropdown-option');
+        if (!opt) return;
+        const value = opt.dataset.value;
+        $um('update-modal-month-label').textContent = value;
         // Re-resolve which tracker record matches the new month
-        resolveTrackerForMonth(next);
+        resolveTrackerForMonth(value);
+        closeAllUmDropdowns();
     });
 
     // Submit
@@ -203,6 +219,7 @@ async function openUpdateModal(jobNumber) {
 }
 
 function closeUpdateModal() {
+    closeAllUmDropdowns();
     const overlay = $um('update-modal-overlay');
     overlay?.classList.remove('visible');
     updateModalState.open = false;
@@ -474,7 +491,7 @@ function renderToDate() {
 function renderStatusIndicator(status) {
     const el = $um('update-modal-status-indicator');
     if (!el) return;
-    const stroke = '#1A1A1A';
+    const stroke = '#ED1C24';
     const red = '#ED1C24';
     let svg = '';
     switch (status) {
@@ -604,6 +621,61 @@ async function submitUpdate() {
             submitBtn.disabled = false;
             submitBtn.textContent = 'UPDATE';
         }
+    }
+}
+
+// ===== DROPDOWN HELPERS =====
+const UM_DROPDOWN_CONFIG = {
+    live:   { btnId: 'update-modal-live-chip',   menuId: 'update-modal-live-menu' },
+    month:  { btnId: 'update-modal-month-chip',  menuId: 'update-modal-month-menu' },
+    status: { btnId: 'update-modal-status',      menuId: 'update-modal-status-menu' },
+};
+
+function toggleUmDropdown(which) {
+    const cfg = UM_DROPDOWN_CONFIG[which];
+    if (!cfg) return;
+    const btn = $um(cfg.btnId);
+    const menu = $um(cfg.menuId);
+    if (!btn || !menu) return;
+    const wasOpen = menu.classList.contains('open');
+    closeAllUmDropdowns();
+    if (!wasOpen) {
+        renderUmDropdownOptions(which);
+        btn.classList.add('open');
+        menu.classList.add('open');
+    }
+}
+
+function closeAllUmDropdowns() {
+    Object.values(UM_DROPDOWN_CONFIG).forEach(cfg => {
+        $um(cfg.btnId)?.classList.remove('open');
+        $um(cfg.menuId)?.classList.remove('open');
+    });
+}
+
+function renderUmDropdownOptions(which) {
+    if (which === 'live') {
+        const menu = $um('update-modal-live-menu');
+        const current = $um('update-modal-live-label').textContent.replace('Live · ', '').trim();
+        menu.innerHTML = LIVE_OPTIONS.map(opt => {
+            const sel = opt === current ? ' selected' : '';
+            return `<div class="custom-dropdown-option${sel}" data-value="${escapeAttr(opt)}">${escapeHtml(opt)}</div>`;
+        }).join('');
+    } else if (which === 'month') {
+        const menu = $um('update-modal-month-menu');
+        const current = $um('update-modal-month-label').textContent.trim();
+        menu.innerHTML = MONTHS.map(m => {
+            const sel = m === current ? ' selected' : '';
+            return `<div class="custom-dropdown-option${sel}" data-value="${escapeAttr(m)}">${escapeHtml(m)}</div>`;
+        }).join('');
+    } else if (which === 'status') {
+        const menu = $um('update-modal-status-menu');
+        const currentLabel = $um('update-modal-status-label').textContent.trim();
+        const currentCanonical = STATUSES.find(s => s.toUpperCase() === currentLabel) || currentLabel;
+        menu.innerHTML = STATUSES.map(s => {
+            const sel = s === currentCanonical ? ' selected' : '';
+            return `<div class="custom-dropdown-option${sel}" data-value="${escapeAttr(s)}">${escapeHtml(s)}</div>`;
+        }).join('');
     }
 }
 

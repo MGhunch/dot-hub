@@ -1262,14 +1262,17 @@
                     <div class="update-modal-chip-row">
                         <button class="update-modal-chip" id="update-modal-due-chip" type="button">
                             <span id="update-modal-due-label">Set due</span>
-                            <span class="chevron">▾</span>
+                            <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
                         </button>
                         <input type="date" class="update-modal-hidden-input" id="update-modal-due-input">
 
-                        <button class="update-modal-chip" id="update-modal-live-chip" type="button">
-                            <span id="update-modal-live-label">Live · TBC</span>
-                            <span class="chevron">▾</span>
-                        </button>
+                        <div class="custom-dropdown update-modal-dropdown">
+                            <button class="update-modal-chip" id="update-modal-live-chip" type="button">
+                                <span id="update-modal-live-label">Live · TBC</span>
+                                <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                            </button>
+                            <div class="custom-dropdown-menu" id="update-modal-live-menu"></div>
+                        </div>
                     </div>
 
                     <div class="update-modal-tracker">
@@ -1280,10 +1283,13 @@
                                 <span class="dollar">$</span>
                                 <input class="update-modal-spend-input" id="update-modal-spend-input" type="text" inputmode="numeric" placeholder="0">
                             </div>
-                            <button class="update-modal-chip" id="update-modal-month-chip" type="button">
-                                <span id="update-modal-month-label">May</span>
-                                <span class="chevron">▾</span>
-                            </button>
+                            <div class="custom-dropdown update-modal-dropdown">
+                                <button class="update-modal-chip" id="update-modal-month-chip" type="button">
+                                    <span id="update-modal-month-label">May</span>
+                                    <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                                </button>
+                                <div class="custom-dropdown-menu" id="update-modal-month-menu"></div>
+                            </div>
                             <button class="update-modal-tick-row" id="update-modal-ballpark" type="button">
                                 <span class="update-modal-tick">
                                     <svg viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
@@ -1306,11 +1312,13 @@
                             <span class="update-modal-toggle-label">WITH CLIENT</span>
                         </button>
 
-                        <button class="update-modal-status" id="update-modal-status" type="button">
-                            <span class="update-modal-status-indicator" id="update-modal-status-indicator"></span>
-                            <span id="update-modal-status-label">IN PROGRESS</span>
-                            <span class="chevron">▾</span>
-                        </button>
+                        <div class="custom-dropdown update-modal-dropdown update-modal-dropdown-up">
+                            <button class="update-modal-status" id="update-modal-status" type="button">
+                                <span class="update-modal-status-indicator" id="update-modal-status-indicator"></span>
+                                <span id="update-modal-status-label">IN PROGRESS</span>
+                            </button>
+                            <div class="custom-dropdown-menu" id="update-modal-status-menu"></div>
+                        </div>
                     </div>
 
                     <button class="update-modal-submit" id="update-modal-submit">UPDATE</button>
