@@ -250,6 +250,8 @@ async function renderClientList() {
         const res = await fetch(`${API_BASE}/clients`);
         if (!res.ok) throw new Error('Failed to fetch clients');
         clients = await res.json();
+        // Cache for resolveClientName() — used by hot-entry meta line
+        window._updateModalClientsCache = clients;
     } catch (e) {
         console.error('[update-modal] client fetch failed:', e);
         list.innerHTML = '<div class="update-modal-picker-empty">Could not load clients.</div>';
@@ -325,6 +327,9 @@ async function loadHotEntry(jobNumber) {
         return;
     }
     updateModalState.currentJob = job;
+
+    // Make sure we have client names cached so the meta line shows the real name, not the code
+    await ensureClientsCached();
 
     // Populate header
     const clientCode = job.clientCode || '';
@@ -674,6 +679,22 @@ function resolveClientName(clientCode) {
         if (c?.name) return c.name;
     }
     return clientCode || '';
+}
+
+async function ensureClientsCached() {
+    if (Array.isArray(window._updateModalClientsCache) && window._updateModalClientsCache.length > 0) {
+        return;
+    }
+    try {
+        const res = await fetch(`${API_BASE}/clients`);
+        if (!res.ok) return;
+        const clients = await res.json();
+        if (Array.isArray(clients)) {
+            window._updateModalClientsCache = clients;
+        }
+    } catch (e) {
+        console.warn('[update-modal] client cache fetch failed:', e);
+    }
 }
 
 function escapeHtml(str) {
