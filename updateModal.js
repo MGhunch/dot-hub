@@ -91,9 +91,8 @@ function wireUpdateModalListeners() {
         setTimeout(() => { ta?.focus(); autoGrow(ta); }, 50);
     });
 
-    // Auto-grow textareas
+    // Auto-grow update textarea (notes is single-line — no auto-grow)
     $um('update-modal-update-field')?.addEventListener('input', (e) => autoGrow(e.target));
-    $um('update-modal-tracker-notes')?.addEventListener('input', (e) => autoGrow(e.target));
 
     // Due chip → opens native date picker
     $um('update-modal-due-chip')?.addEventListener('click', () => {
@@ -359,7 +358,8 @@ async function loadHotEntry(jobNumber) {
     }
     $um('update-modal-hero').textContent = job.jobName || '';
     $um('update-modal-description').textContent = job.description || '';
-    $um('update-modal-meta').textContent = `${formatJobDisplay(job.jobNumber)}  |  ${resolveClientName(clientCode)}`;
+    const metaSecond = job.projectOwner || resolveClientName(clientCode);
+    $um('update-modal-meta').textContent = `${formatJobDisplay(job.jobNumber)}  |  ${metaSecond}`;
 
     // Latest update — pull from updateHistory if present, else fall back to .update text
     const display = $um('update-modal-update-display');
@@ -459,7 +459,6 @@ function resolveTrackerForMonth(monthName) {
         spendInput.value = spendNum > 0 ? spendNum.toLocaleString() : '';
         spendAmount.classList.toggle('empty', spendNum === 0);
         notes.value = entry.notes || '';
-        autoGrow(notes);
         updateModalState.ballpark = !!entry.ballpark;
         ballparkRow.classList.toggle('on', updateModalState.ballpark);
     } else {
@@ -468,7 +467,6 @@ function resolveTrackerForMonth(monthName) {
         spendInput.value = '';
         spendAmount.classList.add('empty');
         notes.value = '';
-        autoGrow(notes);
         updateModalState.ballpark = true; // default ON for new entries
         ballparkRow.classList.add('on');
     }
@@ -479,7 +477,15 @@ function renderToDate() {
     if (!el) return;
     const total = updateModalState.totalSpend;
     if (total > 0) {
-        el.textContent = `$${total.toLocaleString()} to date`;
+        // Build "(Mon/Mon/Mon)" suffix from entries with spend > 0
+        const monthAbbrev = { January:'Jan', February:'Feb', March:'Mar', April:'Apr',
+            May:'May', June:'Jun', July:'Jul', August:'Aug', September:'Sep',
+            October:'Oct', November:'Nov', December:'Dec' };
+        const months = (updateModalState.trackerEntries || [])
+            .filter(e => Number(e.spend) > 0 && e.month)
+            .map(e => monthAbbrev[e.month] || e.month);
+        const suffix = months.length > 0 ? ` (${months.join('/')})` : ' to date';
+        el.textContent = `$${total.toLocaleString()}${suffix}`;
         el.classList.remove('hidden');
     } else {
         el.textContent = '';

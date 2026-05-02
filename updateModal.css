@@ -204,7 +204,7 @@
   font-size: var(--um-type-hero);
   font-weight: 600;
   line-height: 1.2;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
   letter-spacing: -0.015em;
   color: var(--um-text-primary);
 }
@@ -463,12 +463,11 @@
 .update-modal-notes-box {
   background: var(--um-bg-soft);
   border-radius: 10px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   margin-bottom: 0;
   transition: background 0.15s;
   cursor: text;
   position: relative;
-  min-height: 56px;
 }
 .update-modal-notes-box:hover { background: var(--um-bg-soft-hover); }
 .update-modal-notes-box:focus-within { background: var(--um-bg-soft-hover); }
@@ -483,8 +482,8 @@
   line-height: 1.5;
   color: var(--um-text-secondary);
   resize: none;
-  min-height: 28px;
   padding: 0;
+  display: block;
 }
 .update-modal-notes-box textarea::placeholder { color: var(--um-text-tertiary); }
 
