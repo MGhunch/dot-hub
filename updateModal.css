@@ -849,18 +849,27 @@
   margin: 4px 12px;
 }
 
-/* "Choose another client" row — same shape as menu rows but red text, no logo */
-.update-modal-completion-menu-row.um-choose-client {
-  color: var(--um-red);
+/* Status filter rows ("On Hold (2)", "Incoming (4)", "Choose another client")
+   Same row template as job rows but no logo, plain primary-text colour, right-aligned chevron */
+.update-modal-completion-menu-row.um-status-row {
   font-size: var(--um-type-meta);
-  font-weight: 500;
+  color: var(--um-text-primary);
   padding: 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
-.update-modal-completion-menu-row.um-choose-client svg {
+.update-modal-completion-menu-row.um-status-row svg {
   width: 12px;
   height: 12px;
-  margin-left: auto;
+  color: var(--um-text-tertiary);
   flex-shrink: 0;
+}
+.um-status-row-label { display: inline-flex; align-items: center; gap: 6px; }
+.um-status-row-count {
+  color: var(--um-text-tertiary);
+  font-weight: 400;
 }
 
 .update-modal-completion-btn-filled {

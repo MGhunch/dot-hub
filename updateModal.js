@@ -240,7 +240,7 @@ function wireUpdateModalListeners() {
         toggleCompletionMenu();
     });
 
-    // Completion menu — click a row (job or "choose another client")
+    // Completion menu — click a row (job, status filter, or "choose another client")
     $um('update-modal-completion-menu')?.addEventListener('click', async (e) => {
         const row = e.target.closest('.update-modal-completion-menu-row');
         if (!row) return;
@@ -253,6 +253,29 @@ function wireUpdateModalListeners() {
             if (jobsEl) jobsEl.hidden = true;
             updateModalState.pickerStage = 'clients';
             renderClientList();
+            closeCompletionMenu();
+            showView('picker', 'back');
+            return;
+        }
+
+        if (row.dataset.action === 'filter-status') {
+            // Jump to picker(jobs) filtered to this status for the current client
+            const status = row.dataset.status;
+            const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
+            const currentJob = allJobs.find(j => j.jobNumber === updateModalState.nextJobNumber);
+            const clientCode = currentJob?.clientCode;
+            if (!clientCode || !status) return;
+
+            updateModalState.selectedClientCode = clientCode;
+            renderJobList(clientCode, status);
+
+            // Set picker DOM directly to jobs stage
+            const clientsEl = $um('update-modal-picker-clients');
+            const jobsEl = $um('update-modal-picker-jobs');
+            if (clientsEl) clientsEl.hidden = true;
+            if (jobsEl) jobsEl.hidden = false;
+            updateModalState.pickerStage = 'jobs';
+
             closeCompletionMenu();
             showView('picker', 'back');
             return;
@@ -487,7 +510,7 @@ async function renderClientList() {
     }).join('');
 }
 
-function renderJobList(clientCode) {
+function renderJobList(clientCode, statusFilter = null) {
     const titleEl = $um('update-modal-picker-jobs-title');
     const listEl = $um('update-modal-job-list');
     if (!listEl) return;
@@ -495,9 +518,14 @@ function renderJobList(clientCode) {
     const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
     const jobs = allJobs
         .filter(j => j.clientCode === clientCode)
+        .filter(j => statusFilter ? j.status === statusFilter : true)
         .sort((a, b) => clientRecencyValue(a.daysSinceUpdate) - clientRecencyValue(b.daysSinceUpdate));
 
-    if (titleEl) titleEl.textContent = 'Choose a job';
+    if (titleEl) {
+        titleEl.textContent = statusFilter
+            ? `Choose ${statusIndefiniteArticle(statusFilter)} ${statusFilter} job`
+            : 'Choose a job';
+    }
 
     if (jobs.length === 0) {
         listEl.innerHTML = '<div class="update-modal-picker-empty">No jobs to update.</div>';
@@ -519,6 +547,11 @@ function renderJobList(clientCode) {
           </button>
         `;
     }).join('');
+}
+
+// "a/an" picker for status titles. "Choose an On Hold job" / "Choose an Incoming job"
+function statusIndefiniteArticle(status) {
+    return /^[aeiouAEIOU]/.test(status || '') ? 'an' : 'a';
 }
 
 // ===== HOT ENTRY (load a job into populated view) =====
@@ -801,8 +834,6 @@ async function submitUpdate() {
             }
         }
 
-        if (typeof showToast === 'function') showToast('On it.', 'success');
-
         // Track this job as updated in this modal session (so it's not suggested as "next")
         updateModalState.sessionUpdatedJobs.add(job.jobNumber);
 
@@ -972,11 +1003,17 @@ function showCompletionView(savedJob, nextJob) {
 
     renderCompletionMenu(sameClientOthers, nextJob.clientCode);
 
-    // Chevron is only shown when there's a real menu to open
-    // (i.e. at least one other same-client job to choose from).
-    // If there's only "Choose another client" left, hide it — too thin to be a menu.
+    // Chevron is shown when there's anything else useful in the menu —
+    // either other same-client In-Progress jobs, or On Hold/Incoming jobs to filter to.
+    // (Choose-another-client alone isn't enough — too thin to be a menu.)
+    const hasOtherStatuses = allJobs.some(j =>
+        j.clientCode === nextJob.clientCode &&
+        (j.status === 'On Hold' || j.status === 'Incoming') &&
+        !session.has(j.jobNumber)
+    );
+    const hasMenu = sameClientOthers.length > 0 || hasOtherStatuses;
     const toggleEl = $um('update-modal-completion-next-toggle');
-    if (toggleEl) toggleEl.hidden = sameClientOthers.length === 0;
+    if (toggleEl) toggleEl.hidden = !hasMenu;
 
     // Always start with menu closed
     closeCompletionMenu();
@@ -992,6 +1029,7 @@ function renderCompletionMenu(sameClientJobs, currentClientCode) {
         ? getLogoUrl(currentClientCode)
         : `images/logos/${currentClientCode}.png`;
 
+    // Curated In-Progress rows for same client
     const jobRows = sameClientJobs.map(j => {
         const num = escapeAttr(j.jobNumber || '');
         const display = escapeHtml(formatJobDisplay(j.jobNumber));
@@ -1007,16 +1045,43 @@ function renderCompletionMenu(sameClientJobs, currentClientCode) {
         `;
     }).join('');
 
-    const divider = jobRows ? '<div class="update-modal-completion-menu-divider"></div>' : '';
+    // Count On Hold / Incoming for same client (excluding session)
+    const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
+    const session = updateModalState.sessionUpdatedJobs;
+    const countByStatus = (status) => allJobs.filter(j =>
+        j.clientCode === currentClientCode &&
+        j.status === status &&
+        !session.has(j.jobNumber)
+    ).length;
+    const onHoldCount = countByStatus('On Hold');
+    const incomingCount = countByStatus('Incoming');
+
+    const statusRows = [
+        onHoldCount > 0
+            ? `<button class="update-modal-completion-menu-row um-status-row" data-action="filter-status" data-status="On Hold" type="button">
+                 <span class="um-status-row-label">On Hold <span class="um-status-row-count">(${onHoldCount})</span></span>
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+               </button>`
+            : '',
+        incomingCount > 0
+            ? `<button class="update-modal-completion-menu-row um-status-row" data-action="filter-status" data-status="Incoming" type="button">
+                 <span class="um-status-row-label">Incoming <span class="um-status-row-count">(${incomingCount})</span></span>
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+               </button>`
+            : '',
+    ].filter(Boolean).join('');
 
     const chooseClientRow = `
-      <button class="update-modal-completion-menu-row um-choose-client" data-action="choose-client" type="button">
-        <span>Choose another client</span>
+      <button class="update-modal-completion-menu-row um-status-row" data-action="choose-client" type="button">
+        <span class="um-status-row-label">Choose another client</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
       </button>
     `;
 
-    menu.innerHTML = jobRows + divider + chooseClientRow;
+    // Divider only between curated job rows and the status/escape rows
+    const divider = jobRows ? '<div class="update-modal-completion-menu-divider"></div>' : '';
+
+    menu.innerHTML = jobRows + divider + statusRows + chooseClientRow;
 }
 
 function openCompletionMenu() {
