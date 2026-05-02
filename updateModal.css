@@ -1,0 +1,614 @@
+/* ===== UPDATE MODAL =====
+   Unified Update modal — replaces Edit Job + Tracker for the Plus menu path.
+   Companion file to updateModal.js. All styles scoped to .update-modal-overlay
+   and .update-modal-* to avoid collisions with existing Hub modal CSS. */
+
+.update-modal-overlay {
+  --um-bg-context: #F5F4EE;
+  --um-bg-soft: #F2F1EC;
+  --um-bg-soft-hover: #ECEBE5;
+  --um-border-soft: rgba(0, 0, 0, 0.08);
+  --um-text-primary: #1A1A1A;
+  --um-text-secondary: #6B6B6B;
+  --um-text-tertiary: #A0A0A0;
+  --um-red: #ED1C24;
+  --um-red-hover: #D6181F;
+  --um-type-hero: 22px;
+  --um-type-body: 15px;
+  --um-type-meta: 13px;
+  --um-type-eyebrow: 11px;
+
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-out;
+  padding: 24px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+.update-modal-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.update-modal {
+  background: #FFFFFF;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  transform: translateY(20px) scale(0.98);
+  transition: transform 0.25s ease-out;
+  position: relative;
+  color: var(--um-text-primary);
+}
+.update-modal-overlay.visible .update-modal {
+  transform: translateY(0) scale(1);
+}
+
+.update-modal *:focus { outline: none; }
+.update-modal button:focus-visible,
+.update-modal input:focus-visible,
+.update-modal textarea:focus-visible {
+  outline: 2px solid rgba(237, 28, 36, 0.35);
+  outline-offset: 2px;
+}
+
+.update-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: var(--um-text-tertiary);
+  cursor: pointer;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  z-index: 2;
+}
+.update-modal-close:hover {
+  background: var(--um-bg-soft);
+  color: var(--um-text-primary);
+}
+
+/* ===== PICKER ===== */
+.update-modal-picker { padding: 32px 28px 28px; }
+
+.update-modal-picker-title {
+  font-size: var(--um-type-hero);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  margin-bottom: 6px;
+  color: var(--um-text-primary);
+}
+
+.update-modal-picker-sub {
+  font-size: var(--um-type-meta);
+  color: var(--um-text-secondary);
+  margin-bottom: 24px;
+}
+
+.update-modal-picker-back {
+  background: none;
+  border: none;
+  color: var(--um-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--um-type-meta);
+  padding: 0;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s;
+}
+.update-modal-picker-back:hover { color: var(--um-text-primary); }
+
+.update-modal-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.update-modal-picker-row {
+  background: none;
+  border: none;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  transition: background 0.15s;
+  font-family: inherit;
+  width: 100%;
+}
+.update-modal-picker-row:hover { background: var(--um-bg-soft); }
+
+.update-modal-picker-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--um-bg-soft);
+}
+
+.update-modal-picker-content { flex: 1; min-width: 0; }
+
+.update-modal-picker-kicker {
+  font-size: var(--um-type-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--um-text-tertiary);
+  line-height: 1;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.update-modal-picker-name {
+  font-size: var(--um-type-body);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--um-text-primary);
+}
+
+.update-modal-picker-empty {
+  padding: 16px 14px;
+  font-size: var(--um-type-meta);
+  color: var(--um-text-tertiary);
+}
+
+/* ===== HEADER ===== */
+.update-modal-header {
+  background: var(--um-bg-context);
+  padding: 28px 28px 24px;
+  cursor: default;
+}
+
+.update-modal-header-row {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.update-modal-header-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--um-bg-soft);
+}
+
+.update-modal-header-text { flex: 1; min-width: 0; }
+
+.update-modal-hero {
+  font-size: var(--um-type-hero);
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 6px;
+  letter-spacing: -0.015em;
+  color: var(--um-text-primary);
+}
+
+.update-modal-description {
+  font-size: var(--um-type-meta);
+  color: var(--um-text-secondary);
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+
+.update-modal-meta {
+  font-size: var(--um-type-meta);
+  font-weight: 500;
+  color: var(--um-text-secondary);
+  line-height: 1.3;
+}
+
+/* ===== BODY ===== */
+.update-modal-body { padding: 24px 28px 28px; }
+
+/* Section eyebrows */
+.update-modal-section-eyebrow {
+  font-size: var(--um-type-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--um-text-tertiary);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+/* Update area — shows latest update by default, tap to edit */
+.update-modal-update-area {
+  background: var(--um-bg-soft);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  transition: background 0.15s;
+  cursor: text;
+  min-height: 80px;
+  position: relative;
+}
+.update-modal-update-area:hover { background: var(--um-bg-soft-hover); }
+.update-modal-update-area.editing {
+  background: var(--um-bg-soft-hover);
+  cursor: default;
+}
+
+.update-modal-pencil {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.update-modal-pencil svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--um-red);
+  stroke-width: 2;
+  fill: none;
+}
+.update-modal-update-area.editing .update-modal-pencil { opacity: 0; }
+
+.update-modal-update-display {
+  font-size: var(--um-type-meta);
+  color: var(--um-text-secondary);
+  line-height: 1.55;
+  padding-right: 28px;
+}
+.update-modal-update-display.placeholder { color: var(--um-text-tertiary); }
+.update-modal-update-display .update-date {
+  color: var(--um-text-secondary);
+  margin-right: 4px;
+}
+
+.update-modal-update-area textarea {
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: var(--um-type-meta);
+  line-height: 1.55;
+  color: var(--um-text-primary);
+  resize: none;
+  min-height: 56px;
+  padding: 0;
+  display: none;
+}
+.update-modal-update-area.editing textarea { display: block; }
+.update-modal-update-area.editing .update-modal-update-display { display: none; }
+.update-modal-update-area textarea::placeholder { color: var(--um-text-tertiary); }
+
+/* Chip row (Due + Live) */
+.update-modal-chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.update-modal-chip {
+  background: var(--um-bg-soft);
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: var(--um-type-meta);
+  color: var(--um-text-primary);
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+  line-height: 1.3;
+}
+.update-modal-chip:hover { background: var(--um-bg-soft-hover); }
+.update-modal-chip.empty { color: var(--um-text-tertiary); }
+.update-modal-chip .chevron {
+  color: var(--um-red);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.update-modal-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Tracker section */
+.update-modal-tracker {
+  margin-bottom: 18px;
+}
+
+.update-modal-spend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.update-modal-spend-amount {
+  display: inline-flex;
+  align-items: baseline;
+  background: var(--um-bg-soft);
+  border-radius: 999px;
+  padding: 9px 16px;
+  transition: background 0.15s;
+  cursor: pointer;
+}
+.update-modal-spend-amount:hover { background: var(--um-bg-soft-hover); }
+.update-modal-spend-amount:focus-within { background: var(--um-bg-soft-hover); }
+
+.update-modal-spend-amount .dollar {
+  font-size: var(--um-type-meta);
+  font-weight: 500;
+  color: var(--um-text-primary);
+  margin-right: 1px;
+}
+
+.update-modal-spend-amount.empty .dollar { color: var(--um-text-tertiary); }
+.update-modal-spend-amount.empty .update-modal-spend-input { color: var(--um-text-tertiary); }
+
+.update-modal-spend-input {
+  font-size: var(--um-type-meta);
+  font-weight: 500;
+  line-height: 1.3;
+  border: none;
+  background: none;
+  outline: none;
+  font-family: inherit;
+  width: 70px;
+  color: var(--um-text-primary);
+  padding: 0;
+}
+.update-modal-spend-input::placeholder { color: var(--um-text-tertiary); }
+
+/* Tick (checkbox style) — for Ballpark, no pill chrome */
+.update-modal-tick-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 4px;
+  background: none;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.update-modal-tick-row:hover { opacity: 0.7; }
+
+.update-modal-tick {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: white;
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.update-modal-tick svg {
+  width: 12px;
+  height: 12px;
+  stroke: white;
+  stroke-width: 3;
+  fill: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.update-modal-tick-row.on .update-modal-tick {
+  background: var(--um-red);
+  border-color: var(--um-red);
+}
+.update-modal-tick-row.on .update-modal-tick svg { opacity: 1; }
+
+.update-modal-tick-label {
+  font-size: var(--um-type-meta);
+  color: var(--um-text-primary);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.update-modal-to-date {
+  font-size: var(--um-type-eyebrow);
+  color: var(--um-text-secondary);
+  margin-bottom: 14px;
+  margin-top: 6px;
+  padding-left: 16px;
+}
+.update-modal-to-date.hidden { display: none; }
+
+/* Notes box */
+.update-modal-notes-box {
+  background: var(--um-bg-soft);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 0;
+  transition: background 0.15s;
+  cursor: text;
+  position: relative;
+  min-height: 56px;
+}
+.update-modal-notes-box:hover { background: var(--um-bg-soft-hover); }
+.update-modal-notes-box:focus-within { background: var(--um-bg-soft-hover); }
+.update-modal-notes-box:focus-within .update-modal-pencil { opacity: 0; }
+
+.update-modal-notes-box textarea {
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: var(--um-type-meta);
+  line-height: 1.5;
+  color: var(--um-text-secondary);
+  resize: none;
+  min-height: 28px;
+  padding: 0;
+  padding-right: 28px;
+}
+.update-modal-notes-box textarea::placeholder { color: var(--um-text-tertiary); }
+
+/* Bottom strip — With Client + Status */
+.update-modal-bottom-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+/* Slide toggle */
+.update-modal-toggle {
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--um-bg-soft);
+  border: 0.5px solid var(--um-border-soft);
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  display: inline-block;
+}
+.update-modal-toggle::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 1.5px;
+  left: 2px;
+  border: 0.5px solid var(--um-border-soft);
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.update-modal-toggle.on { background: var(--um-red); border-color: var(--um-red); }
+.update-modal-toggle.on::after {
+  transform: translateX(16px);
+  border-color: var(--um-red);
+}
+
+.update-modal-toggle-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+}
+.update-modal-toggle-label {
+  font-size: var(--um-type-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--um-text-tertiary);
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+.update-modal-toggle-pair.on .update-modal-toggle-label {
+  color: var(--um-text-primary);
+}
+
+/* Status statement */
+.update-modal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--um-type-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--um-text-primary);
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+.update-modal-status:hover { color: var(--um-red); }
+.update-modal-status .chevron {
+  color: var(--um-red);
+  font-size: 18px;
+  line-height: 1;
+}
+.update-modal-status-indicator {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.update-modal-status-indicator svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Submit */
+.update-modal-submit {
+  width: 100%;
+  background: var(--um-red);
+  color: white;
+  border: none;
+  padding: 18px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: var(--um-type-body);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 28px;
+  transition: background 0.15s, transform 0.1s;
+}
+.update-modal-submit:hover { background: var(--um-red-hover); }
+.update-modal-submit:active { transform: scale(0.99); }
+.update-modal-submit:disabled {
+  background: var(--um-text-tertiary);
+  cursor: wait;
+  transform: none;
+}
+
+/* Mobile tweaks */
+@media (max-width: 480px) {
+  .update-modal-header { padding: 24px 20px 20px; }
+  .update-modal-body { padding: 20px 20px 24px; }
+  .update-modal-picker { padding: 28px 20px 24px; }
+}

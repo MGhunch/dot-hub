@@ -1,7 +1,7 @@
 // ===== PLUS COMPONENT MODULE =====
 // Floating dock pinned to bottom-left (desktop) / bottom-centre (phone) of every page.
-// Owns the FAB and its four-action menu.
-// Depends on: openNewJobModal (newJobModal.js), showComingSoonModal (app.js)
+// Owns the FAB and its three-action menu.
+// Depends on: openNewJobModal (newJobModal.js), openUpdateModal (updateModal.js), showComingSoonModal (app.js)
 // Exposes: openPlusMenu, closePlusMenu, togglePlusMenu (window globals)
 
 (function setupPlusComponent() {
@@ -92,13 +92,13 @@ function firePlusAction(action) {
                 console.warn('[plus] openNewJobModal not available');
             }
             break;
-        case 'edit-job':
-            // Stub — picker UI lands in a future slice
-            window.showComingSoonModal?.('edit-job');
-            break;
-        case 'tracker':
-            // Stub — picker UI lands in a future slice
-            window.showComingSoonModal?.('tracker');
+        case 'update':
+            // Unified Update modal — replaces old edit-job + tracker pills
+            if (typeof window.openUpdateModal === 'function') {
+                window.openUpdateModal();
+            } else {
+                console.warn('[plus] openUpdateModal not available');
+            }
             break;
         case 'ask-dot':
             // Stub — real Ask Dot modal lands when chat-as-modal ships (B1)
