@@ -196,8 +196,9 @@
 
 /* ===== HEADER ===== */
 .update-modal-header {
-  background: var(--um-bg-context);
-  padding: 28px 28px 24px;
+  background: #FFFFFF;
+  padding: 28px 28px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   cursor: default;
 }
 
@@ -216,7 +217,11 @@
   background: var(--um-bg-soft);
 }
 
-.update-modal-header-text { flex: 1; min-width: 0; }
+.update-modal-header-text {
+  flex: 1;
+  min-width: 0;
+  padding-right: 24px;
+}
 
 .update-modal-hero {
   font-size: var(--um-type-hero);
@@ -232,6 +237,10 @@
   color: var(--um-text-secondary);
   line-height: 1.35;
   margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .update-modal-meta {
