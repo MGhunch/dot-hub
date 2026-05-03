@@ -1369,29 +1369,5 @@
         </div>
     </div>
 
-
-    <!-- ===== STAGE 1 PREVIEW SWITCHER (Phase D) =====
-         Temporary. Reads ?face=signin|sent|welcome|expired and shows
-         that face. Forces logged-out state so the overlay is visible
-         even if a session cookie is set. Bonus: ?name=Michael for the
-         welcome face.
-         REMOVE WHEN STAGE 2 WIRING LANDS. -->
-    <script>
-    (function() {
-        var params = new URLSearchParams(window.location.search);
-        var face = params.get('face');
-        if (!face) return;
-        document.body.classList.add('logged-out');
-        var faces = document.querySelectorAll('.auth-face');
-        for (var i = 0; i < faces.length; i++) {
-            faces[i].hidden = (faces[i].dataset.face !== face);
-        }
-        if (face === 'welcome') {
-            var fnEl = document.getElementById('auth-firstname');
-            if (fnEl) fnEl.textContent = params.get('name') || 'there';
-        }
-    })();
-    </script>
-
 </body>
 </html>

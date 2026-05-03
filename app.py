@@ -289,8 +289,8 @@ def handle_verify():
     if error or not user:
         return redirect(f"/?error=invalid")
     
-    # Success! Set cookie and redirect to Hub
-    response = make_response(redirect('/'))
+    # Success! Set cookie and redirect to Hub with welcome flag
+    response = make_response(redirect('/?welcome=1'))
     
     # Create a session token (signed, same approach)
     session_token = generate_token(

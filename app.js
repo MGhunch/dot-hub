@@ -132,15 +132,11 @@ function setupEventListeners() {
     setupTbcPill('job-edit-update-due', 'job-edit-tbc-pill');
     setupTbcPill('new-job-update-due', 'new-job-tbc-pill');
     
-    // Login form - Desktop
-    $('login-send')?.addEventListener('click', () => requestLogin('desktop'));
-    $('login-email')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') requestLogin('desktop'); });
-    $('login-try-again')?.addEventListener('click', () => resetLoginForm());
-    
-    // Login form - Phone
-    $('phone-login-send')?.addEventListener('click', () => requestLogin('phone'));
-    $('phone-login-email')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') requestLogin('phone'); });
-    $('phone-login-try-again')?.addEventListener('click', (e) => { e.preventDefault(); resetLoginForm(); });
+    // Auth overlay (Phase D)
+    $('auth-signin-form')?.addEventListener('submit', (e) => { e.preventDefault(); requestLogin(); });
+    $('auth-expired-form')?.addEventListener('submit', (e) => { e.preventDefault(); requestLogin('expired'); });
+    $('auth-welcome-form')?.addEventListener('submit', (e) => { e.preventDefault(); dismissWelcome(); });
+    $('auth-try-again')?.addEventListener('click', (e) => { e.preventDefault(); resetLoginForm(); });
 
     // Phone navigation
     $('phone-hamburger')?.addEventListener('click', togglePhoneMenu);
@@ -297,6 +293,8 @@ function clearSessionSilently() {
 
 // ===== AUTH HANDLING =====
 async function checkSession() {
+    const params = new URLSearchParams(window.location.search);
+
     // Check for existing session first - valid cookie always wins
     try {
         const response = await fetch('/api/check-session');
@@ -311,6 +309,15 @@ async function checkSession() {
                 accessLevel: data.user.accessLevel
             };
             unlockApp();
+
+            // If we just arrived from a magic-link verify, hold the Welcome face
+            // until the user taps GET STARTED. Overlay stays visible via body.auth-welcome.
+            if (params.get('welcome') === '1') {
+                document.body.classList.add('auth-welcome');
+                showAuthFace('welcome');
+                const fnEl = $('auth-firstname');
+                if (fnEl) fnEl.textContent = state.currentUser.name || 'there';
+            }
             return;
         }
     } catch (e) {
@@ -318,118 +325,127 @@ async function checkSession() {
     }
     
     // No valid session - check for URL error params from magic link
-    const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
     
     if (error) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        const errorMsg = error === 'expired' 
-            ? "Sorry, that link's run out of juice. Try again?"
-            : "That link didn't work. Try again?";
-        
-        const errorEl = $('login-error');
-        const phoneErrorEl = $('phone-login-error');
-        if (errorEl) errorEl.textContent = errorMsg;
-        if (phoneErrorEl) phoneErrorEl.textContent = errorMsg;
+        // Strip the error param so a refresh doesn't keep showing it
+        const cleanParams = new URLSearchParams(window.location.search);
+        cleanParams.delete('error');
+        const newUrl = window.location.pathname + (cleanParams.toString() ? '?' + cleanParams.toString() : '');
+        window.history.replaceState({}, document.title, newUrl);
+
+        // Both 'expired' and 'invalid' surface as the OOPS face
+        showAuthFace('expired');
     }
     
     // Auth check complete - show login
     document.body.classList.remove('loading');
 }
 
-async function requestLogin(source = 'desktop') {
-    const isPhone = source === 'phone';
-    const emailInput = isPhone ? $('phone-login-email') : $('login-email');
-    const errorEl = isPhone ? $('phone-login-error') : $('login-error');
-    const btn = isPhone ? $('phone-login-send') : $('login-send');
-    
+// ----- Auth overlay face helpers (Phase D) -----
+
+function showAuthFace(faceName) {
+    const faces = document.querySelectorAll('.auth-face');
+    for (let i = 0; i < faces.length; i++) {
+        faces[i].hidden = (faces[i].dataset.face !== faceName);
+    }
+}
+
+function showAuthError(faceName, message) {
+    const errorId = (faceName === 'expired') ? 'auth-error-expired' : 'auth-error';
+    const errorEl = $(errorId);
+    if (errorEl) errorEl.textContent = message || '';
+}
+
+function clearAuthErrors() {
+    const e1 = $('auth-error');
+    const e2 = $('auth-error-expired');
+    if (e1) e1.textContent = '';
+    if (e2) e2.textContent = '';
+}
+
+function dismissWelcome() {
+    document.body.classList.remove('auth-welcome');
+    // Strip ?welcome=1 from URL
+    const params = new URLSearchParams(window.location.search);
+    params.delete('welcome');
+    const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    window.history.replaceState({}, document.title, newUrl);
+    // Reset overlay back to signin face for next time
+    showAuthFace('signin');
+}
+
+// ----- Magic link request -----
+
+async function requestLogin(fromFace = 'signin') {
+    // Both signin and expired faces have an email input + submit button.
+    const emailInput = (fromFace === 'expired') ? $('auth-email-expired') : $('auth-email');
+    const btn = emailInput?.closest('form')?.querySelector('.auth-button');
+
     const email = emailInput?.value.trim().toLowerCase();
-    
+
     if (!email) {
-        if (errorEl) errorEl.textContent = 'Pop in your email address';
+        showAuthError(fromFace, 'Pop in your email address');
         return;
     }
-    
-    // Basic email validation
     if (!email.includes('@') || !email.includes('.')) {
-        if (errorEl) errorEl.textContent = "That doesn't look like an email";
+        showAuthError(fromFace, "That doesn't look like an email");
         return;
     }
-    
-    // Disable button while requesting
+
     if (btn) {
         btn.disabled = true;
         btn.textContent = 'Sending...';
     }
-    if (errorEl) errorEl.textContent = '';
-    
+    clearAuthErrors();
+
     try {
         const response = await fetch('/api/request-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
-            // Show "link sent" state on both phone and desktop
-            $('desktop-login-input')?.classList.add('hidden');
-            $('desktop-login-sent')?.classList.remove('hidden');
-            $('phone-login-input')?.classList.add('hidden');
-            $('phone-login-sent')?.classList.remove('hidden');
-            // Swap Dot image to "On it"
-            const dotImg = $('login-dot-img');
-            if (dotImg) dotImg.src = 'images/Onit.png';
+            showAuthFace('sent');
         } else {
-            if (errorEl) errorEl.textContent = data.message || "Something went wrong. Try again?";
+            showAuthError(fromFace, data.message || "Something went wrong. Try again?");
             if (btn) {
                 btn.disabled = false;
-                btn.textContent = 'Get a magic link';
+                btn.textContent = 'Get a link';
             }
         }
     } catch (e) {
         console.error('Login request failed:', e);
-        if (errorEl) errorEl.textContent = "Couldn't connect. Try again?";
+        showAuthError(fromFace, "Couldn't connect. Try again?");
         if (btn) {
             btn.disabled = false;
-            btn.textContent = 'Get a magic link';
+            btn.textContent = 'Get a link';
         }
     }
 }
 
 function resetLoginForm() {
-    // Reset both phone and desktop login forms
-    $('desktop-login-sent')?.classList.add('hidden');
-    $('desktop-login-input')?.classList.remove('hidden');
-    $('phone-login-sent')?.classList.add('hidden');
-    $('phone-login-input')?.classList.remove('hidden');
-    
-    // Swap Dot image back to "Hello"
-    const dotImg = $('login-dot-img');
-    if (dotImg) dotImg.src = 'images/Dotandhello.png';
-    
+    showAuthFace('signin');
+
     // Clear inputs and errors
-    const loginEmail = $('login-email');
-    const phoneLoginEmail = $('phone-login-email');
-    if (loginEmail) loginEmail.value = '';
-    if (phoneLoginEmail) phoneLoginEmail.value = '';
-    
-    $('login-error')?.textContent && ($('login-error').textContent = '');
-    $('phone-login-error')?.textContent && ($('phone-login-error').textContent = '');
-    
-    // Re-enable buttons
-    const loginSend = $('login-send');
-    const phoneLoginSend = $('phone-login-send');
-    if (loginSend) {
-        loginSend.disabled = false;
-        loginSend.textContent = 'Get a magic link';
-    }
-    if (phoneLoginSend) {
-        phoneLoginSend.disabled = false;
-        phoneLoginSend.textContent = 'Send link';
-    }
+    const e1 = $('auth-email');
+    const e2 = $('auth-email-expired');
+    if (e1) e1.value = '';
+    if (e2) e2.value = '';
+    clearAuthErrors();
+
+    // Re-enable buttons + restore label
+    document.querySelectorAll('.auth-button').forEach(btn => {
+        btn.disabled = false;
+        if (btn.id === 'auth-getstarted') {
+            btn.textContent = 'Get started';
+        } else {
+            btn.textContent = 'Get a link';
+        }
+    });
 }
 
 function unlockApp() {
@@ -2626,9 +2642,7 @@ function getWipFilteredJobs() {
         jobs = jobs.filter(j => j.clientCode === state.wipClient);
     }
     
-    // Exclude finance jobs from WIP (still visible in Tracker)
-    const financeNumbers = ['000', '001', '998', '999'];
-    return jobs.filter(j => { const num = j.jobNumber.split(' ')[1]; return !financeNumbers.includes(num); });
+    return jobs.filter(j => { const num = j.jobNumber.split(' ')[1]; return num !== '000' && num !== '999'; });
 }
 
 function getWipSectionLabels() {
