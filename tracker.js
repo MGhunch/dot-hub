@@ -20,6 +20,11 @@ const TRACKER_MONTHS = [
     'July', 'August', 'September'
 ];
 
+const MONTH_NUM = {
+    January: 1, February: 2, March: 3, April: 4, May: 5, June: 6,
+    July: 7, August: 8, September: 9, October: 10, November: 11, December: 12
+};
+
 const calendarQuarters = {
     'Q1-cal': { months: ['January', 'February', 'March'], label: 'Jan > Mar' },
     'Q2-cal': { months: ['April', 'May', 'June'], label: 'Apr > Jun' },
@@ -105,6 +110,66 @@ function getTrackerMonthSpend(client, month) {
 
 function getTrackerProjectsForMonth(client, month) {
     return trackerData.filter(d => d.client === client && d.month === month);
+}
+
+// ===== HISTORICALLY-CORRECT COMMITTED LOOKUP =====
+// Reads committedByMonth (from API, sourced from Budget History) so any
+// past/future view shows the right committed amount for that period.
+// Falls back to client.committed if the field is missing or the month is out
+// of range (e.g. very old data, brand new client).
+function getCommittedFor(client, year, monthName) {
+    if (!client) return 0;
+    const cbm = client.committedByMonth;
+    if (cbm) {
+        const monthNum = MONTH_NUM[monthName];
+        if (monthNum) {
+            const key = `${year}-${String(monthNum).padStart(2, '0')}`;
+            if (key in cbm) return cbm[key];
+        }
+    }
+    return client.committed || 0;
+}
+
+// Resolve which calendar year a given month name belongs to, given the
+// quarter currently being viewed. The chart uses chartMonths which carry
+// year explicitly; the table/stat-box logic uses month names alone, so we
+// derive the year from the chart range.
+function getYearForMonth(client, monthName) {
+    if (client?.chartMonths) {
+        const found = client.chartMonths.find(m => m.month === monthName);
+        if (found) return found.year;
+    }
+    // Fallback: best-effort from today's calendar year
+    const today = new Date();
+    return today.getFullYear();
+}
+
+// Build the natural-language rollover line from the structured object.
+// Returns an HTML string (already-formatted), or '' if amount is 0.
+function formatRolloverLine(rolloverObj) {
+    if (!rolloverObj || !rolloverObj.amount) return '';
+    const amt = formatTrackerCurrency(rolloverObj.amount);
+    const fromPrev = rolloverObj.fromPrevious || 0;
+    const variance = rolloverObj.variance || 0;
+    const dir = rolloverObj.varianceDirection;
+    const months = (rolloverObj.varianceMonths || []).join('/');
+    const prevQ = rolloverObj.previousQuarterLabel || '';
+
+    // No in-quarter movement — single source line
+    if (!variance || !dir) {
+        return `<strong>${amt}</strong> rollover from ${prevQ}`;
+    }
+
+    // In-quarter only (no carry from previous)
+    if (!fromPrev) {
+        return `<strong>${amt}</strong> rollover (${dir} in ${months})`;
+    }
+
+    // Both — full pattern
+    const verb = dir === 'over' ? 'less' : 'plus';
+    const fromAmt = formatTrackerCurrency(fromPrev);
+    const varAmt = formatTrackerCurrency(variance);
+    return `<strong>${amt}</strong> rollover (${fromAmt} from ${prevQ}, ${verb} ${varAmt} ${dir} in ${months})`;
 }
 
 // ===== DATA LOADING =====
@@ -402,31 +467,41 @@ function renderTrackerContent() {
         return;
     }
     
-    const committed = client.committed;
     const rollover = client.rollover || 0;
     const rolloverUseIn = client.rolloverUseIn || '';
+    const rolloverObject = client.rolloverObject;
     const qInfo = getQuarterInfoForMonth(state.trackerClient, trackerCurrentMonth);
     const prevQ = getPreviousQuarter(state.trackerClient);
-    
+
     const labelMap = { 'Jan > Mar': 'JAN-MAR', 'Apr > Jun': 'APR-JUN', 'Jul > Sep': 'JUL-SEP', 'Oct > Dec': 'OCT-DEC' };
     const viewedQuarterKey = labelMap[qInfo.label] || '';
-    
-    let toDate, projects, monthsInQuarter;
+
+    let toDate, projects, viewedMonths;
     if (trackerIsQuarterView) {
         toDate = qInfo.months.reduce((sum, m) => sum + getTrackerMonthSpend(state.trackerClient, m), 0);
         projects = trackerData.filter(d => d.client === state.trackerClient && qInfo.months.includes(d.month));
-        monthsInQuarter = qInfo.months.length;
+        viewedMonths = qInfo.months;
     } else {
         toDate = getTrackerMonthSpend(state.trackerClient, trackerCurrentMonth);
         projects = getTrackerProjectsForMonth(state.trackerClient, trackerCurrentMonth);
-        monthsInQuarter = 1;
+        viewedMonths = [trackerCurrentMonth];
     }
-    
-    const totalBudget = committed * monthsInQuarter;
+
+    // Total budget — sum of per-month committed values across the viewed period.
+    // Uses Budget History via committedByMonth so historical periods show
+    // their actual committed amounts, not today's rate.
+    const totalBudget = viewedMonths.reduce((sum, m) => {
+        const year = getYearForMonth(client, m);
+        return sum + getCommittedFor(client, year, m);
+    }, 0);
     const remaining = totalBudget - toDate;
     const progress = totalBudget > 0 ? Math.min((toDate / totalBudget) * 100, 100) : 0;
     const isOver = toDate > totalBudget;
-    const showRollover = rollover > 0 && rolloverUseIn && viewedQuarterKey === rolloverUseIn;
+    // New rollover behaviour: only show when actively in the current quarter.
+    // Old condition (rolloverUseIn === viewedQuarterKey) preserved as fallback.
+    const showRolloverNew = rolloverObject && rolloverObject.amount > 0 && viewedQuarterKey === rolloverUseIn;
+    const showRolloverOld = !rolloverObject && rollover > 0 && rolloverUseIn && viewedQuarterKey === rolloverUseIn;
+    const showRollover = showRolloverNew || showRolloverOld;
     
     const mainProjects = projects.filter(p => p.spendType === 'Project budget');
     const otherProjects = projects.filter(p => p.spendType === 'Extra budget' || p.spendType === 'Project on us');
@@ -473,7 +548,7 @@ function renderTrackerContent() {
             <div class="numbers-section">
                 <div class="numbers-grid">
                     <div class="stat-box">
-                        <div class="stat-value grey">${formatTrackerCurrency(committed * monthsInQuarter)}</div>
+                        <div class="stat-value grey">${formatTrackerCurrency(totalBudget)}</div>
                         <div class="stat-label">Committed</div>
                     </div>
                     <div class="stat-box">
@@ -491,7 +566,7 @@ function renderTrackerContent() {
                 ${showRollover ? `
                     <div class="rollover-credit">
                         <div class="rollover-label">Rollover</div>
-                        <div class="rollover-amount"><strong>+${formatTrackerCurrency(rollover)}</strong> credit from ${prevQ.quarter}</div>
+                        <div class="rollover-amount">${rolloverObject ? formatRolloverLine(rolloverObject) : `<strong>+${formatTrackerCurrency(rollover)}</strong> credit from ${prevQ.quarter}`}</div>
                     </div>
                 ` : ''}
             </div>
@@ -612,119 +687,147 @@ function renderTrackerContent() {
 function renderTrackerChart() {
     const client = trackerClients[state.trackerClient];
     if (!client) return;
-    
-    const committed = client.committed;
+
+    // ===== Path A: chartMonths from API (historically accurate) =====
+    // ===== Path B: legacy fallback if chartMonths missing =====
+    const useChartMonths = Array.isArray(client.chartMonths) && client.chartMonths.length === 6;
+
     const qInfo = getCurrentQuarterInfo(state.trackerClient);
     const prevQ = getPreviousQuarter(state.trackerClient);
     const chartHeight = 160;
-    const yMax = committed + 10000;
-    
-    const prevSpends = prevQ.months.map(m => 
-        trackerData.filter(d => d.client === state.trackerClient && d.month === m && d.spendType === 'Project budget')
-            .reduce((sum, d) => sum + d.spend, 0)
-    );
-    
-    const currentConfirmed = [], currentBallpark = [];
-    qInfo.months.forEach(m => {
-        const monthProjects = trackerData.filter(d => d.client === state.trackerClient && d.month === m && d.spendType === 'Project budget');
-        currentConfirmed.push(monthProjects.filter(d => !d.ballpark).reduce((sum, d) => sum + d.spend, 0));
-        currentBallpark.push(monthProjects.filter(d => d.ballpark).reduce((sum, d) => sum + d.spend, 0));
-    });
-    
+
+    // Build a unified array of 6 entries: { label, year, monthName, committed, isPrevious, isFuture }
+    let entries;
+    if (useChartMonths) {
+        const today = new Date();
+        const todayFirst = new Date(today.getFullYear(), today.getMonth(), 1);
+        entries = client.chartMonths.map(m => ({
+            label: m.month.substring(0, 3),
+            year: m.year,
+            monthName: m.month,
+            committed: m.committed,
+            isPrevious: m.isPrevious,
+            isFuture: m.isFuture !== undefined
+                ? m.isFuture
+                : (new Date(m.year, MONTH_NUM[m.month] - 1, 1) > todayFirst)
+        }));
+    } else {
+        const fallbackCommitted = client.committed || 0;
+        entries = [
+            ...prevQ.months.map(m => ({
+                label: m.substring(0, 3),
+                year: getYearForMonth(client, m),
+                monthName: m,
+                committed: fallbackCommitted,
+                isPrevious: true,
+                isFuture: false
+            })),
+            ...qInfo.months.map(m => {
+                const today = new Date();
+                const currentMonthName = today.toLocaleString('en-US', { month: 'long' });
+                const idx = qInfo.months.indexOf(m);
+                const currentIdx = qInfo.months.indexOf(currentMonthName);
+                return {
+                    label: m.substring(0, 3),
+                    year: getYearForMonth(client, m),
+                    monthName: m,
+                    committed: fallbackCommitted,
+                    isPrevious: false,
+                    isFuture: currentIdx !== -1 && idx > currentIdx
+                };
+            })
+        ];
+    }
+
+    // yMax based on the tallest committed bar so the chart accommodates rate changes.
+    const maxCommitted = Math.max(...entries.map(e => e.committed), 0);
+    const yMax = maxCommitted + 10000;
+
+    // Y-axis labels
     const yAxis = $('tracker-y-axis');
     if (yAxis) {
         yAxis.innerHTML = '';
         for (let i = 5; i >= 0; i--) {
-            const label = document.createElement('span');
-            label.className = 'y-label';
-            label.textContent = '$' + Math.round(yMax * i / 5 / 1000) + 'k';
-            yAxis.appendChild(label);
+            const lbl = document.createElement('span');
+            lbl.className = 'y-label';
+            lbl.textContent = '$' + Math.round(yMax * i / 5 / 1000) + 'k';
+            yAxis.appendChild(lbl);
         }
     }
-    
-    const greyBarHeight = chartHeight - (10000 / yMax * chartHeight);
-    const committedLine = $('tracker-committed-line');
-    if (committedLine) {
-        committedLine.style.bottom = (greyBarHeight + 20) + 'px';
-        committedLine.style.top = 'auto';
+
+    // Hide the old single committed line — we draw stepped per-bar lines below.
+    const committedLineEl = $('tracker-committed-line');
+    if (committedLineEl) {
+        committedLineEl.style.display = 'none';
     }
-    
+
     const container = $('tracker-chart-container');
     if (!container) return;
     container.innerHTML = '';
-    
-    const prevMonthLabels = prevQ.months.map(m => m.substring(0, 3));
-    const currMonthLabels = qInfo.months.map(m => m.substring(0, 3));
-    const today = new Date();
-    const currentMonthName = today.toLocaleString('en-US', { month: 'long' });
-    const currentMonthIndex = qInfo.months.indexOf(currentMonthName);
-    
-    prevMonthLabels.forEach((label, i) => {
+
+    // Helper to look up confirmed/ballpark spend for a month
+    const monthData = (monthName) => {
+        const projects = trackerData.filter(d =>
+            d.client === state.trackerClient &&
+            d.month === monthName &&
+            d.spendType === 'Project budget'
+        );
+        return {
+            confirmed: projects.filter(d => !d.ballpark).reduce((s, d) => s + d.spend, 0),
+            ballpark: projects.filter(d => d.ballpark).reduce((s, d) => s + d.spend, 0)
+        };
+    };
+
+    entries.forEach(entry => {
         const group = document.createElement('div');
         group.className = 'bar-group';
         const barStack = document.createElement('div');
         barStack.className = 'bar-stack';
-        barStack.style.height = greyBarHeight + 'px';
-        
+
+        // Each bar's stack height is its committed value as a fraction of yMax.
+        // This gives us per-bar grey heights (the stepped pattern visually).
+        const stackPx = (entry.committed / yMax) * chartHeight;
+        barStack.style.height = stackPx + 'px';
+
         const greyBar = document.createElement('div');
-        greyBar.className = 'bar-committed';
+        greyBar.className = entry.isFuture ? 'bar-committed future' : 'bar-committed';
         greyBar.style.height = '100%';
-        greyBar.title = 'Committed: ' + formatTrackerCurrency(committed);
+        greyBar.title = 'Committed: ' + formatTrackerCurrency(entry.committed);
         barStack.appendChild(greyBar);
-        
-        const redBar = document.createElement('div');
-        redBar.className = 'bar-spend';
-        redBar.style.height = (prevSpends[i] / committed * 100) + '%';
-        redBar.title = 'Actual: ' + formatTrackerCurrency(prevSpends[i]);
-        barStack.appendChild(redBar);
-        
-        const labelEl = document.createElement('span');
-        labelEl.className = 'bar-label';
-        labelEl.textContent = label;
-        
-        group.appendChild(barStack);
-        group.appendChild(labelEl);
-        container.appendChild(group);
-    });
-    
-    currMonthLabels.forEach((label, i) => {
-        const group = document.createElement('div');
-        group.className = 'bar-group';
-        const barStack = document.createElement('div');
-        barStack.className = 'bar-stack';
-        barStack.style.height = greyBarHeight + 'px';
-        
-        const isFuture = currentMonthIndex !== -1 && i > currentMonthIndex;
-        
-        const greyBar = document.createElement('div');
-        greyBar.className = isFuture ? 'bar-committed future' : 'bar-committed';
-        greyBar.style.height = '100%';
-        greyBar.title = 'Committed: ' + formatTrackerCurrency(committed);
-        barStack.appendChild(greyBar);
-        
-        const confirmedSpend = currentConfirmed[i] || 0;
-        if (!isFuture && confirmedSpend > 0) {
+
+        const { confirmed, ballpark } = monthData(entry.monthName);
+        const cmt = entry.committed || 1; // avoid divide-by-zero
+
+        if (confirmed > 0) {
             const redBar = document.createElement('div');
             redBar.className = 'bar-spend';
-            redBar.style.height = (confirmedSpend / committed * 100) + '%';
-            redBar.title = 'Actual: ' + formatTrackerCurrency(confirmedSpend);
+            // Spend bar is a percentage of the grey (committed) bar's height.
+            // Cap visually at 100% of the grey bar; overage shows as a full red bar.
+            redBar.style.height = Math.min(100, (confirmed / cmt) * 100) + '%';
+            redBar.title = 'Actual: ' + formatTrackerCurrency(confirmed);
             barStack.appendChild(redBar);
         }
-        
-        const ballparkSpend = currentBallpark[i] || 0;
-        if (ballparkSpend > 0) {
+
+        if (ballpark > 0) {
             const dashedBar = document.createElement('div');
             dashedBar.className = 'bar-ballpark';
-            dashedBar.style.height = (ballparkSpend / committed * 100) + '%';
-            dashedBar.style.bottom = (!isFuture && confirmedSpend > 0) ? (confirmedSpend / committed * 100) + '%' : '0';
-            dashedBar.title = 'Ballpark: ' + formatTrackerCurrency(ballparkSpend);
+            dashedBar.style.height = Math.min(100, (ballpark / cmt) * 100) + '%';
+            dashedBar.style.bottom = (confirmed > 0 && !entry.isFuture)
+                ? Math.min(100, (confirmed / cmt) * 100) + '%'
+                : '0';
+            dashedBar.title = 'Ballpark: ' + formatTrackerCurrency(ballpark);
             barStack.appendChild(dashedBar);
         }
-        
+
+        // Stepped committed line — draw a dashed cap on top of every bar.
+        const cap = document.createElement('div');
+        cap.className = 'bar-committed-cap';
+        barStack.appendChild(cap);
+
         const labelEl = document.createElement('span');
         labelEl.className = 'bar-label';
-        labelEl.textContent = label;
-        
+        labelEl.textContent = entry.label;
+
         group.appendChild(barStack);
         group.appendChild(labelEl);
         container.appendChild(group);

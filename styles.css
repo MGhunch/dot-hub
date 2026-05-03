@@ -2209,6 +2209,19 @@ body.logged-out .view-tracker {
     border-radius: 3px 3px 0 0;
 }
 
+/* Stepped committed line — drawn per bar so it tracks rate changes
+   between months (e.g. ONS step-down from $25K to $20K). */
+.bar-committed-cap {
+    position: absolute;
+    top: 0;
+    left: -2px;
+    right: -2px;
+    height: 0;
+    border-top: 2px dashed #c0c0c0;
+    z-index: 5;
+    pointer-events: none;
+}
+
 .bar-committed.future { opacity: 0.5; }
 
 .bar-spend {
