@@ -10,11 +10,13 @@ from flask import Flask, jsonify, request, send_from_directory, make_response, r
 from flask_cors import CORS
 import requests
 import os
-from datetime import datetime
+from datetime import datetime, date
 import re
 import hashlib  # NEW: For auth tokens
 import time     # NEW: For auth tokens
 import base64   # NEW: For auth tokens
+
+import tracker  # Tracker math (quarter, rollover, chart months)
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
@@ -30,6 +32,26 @@ HEADERS = {
 
 def get_airtable_url(table):
     return f'https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{table}'
+
+
+def parse_year_end_month(value):
+    """Parse Airtable Year end field — accepts ISO date string or month name.
+
+    Returns a month name (e.g. 'March') or None if unparseable.
+    Defensive because schema says Date but data may be stored either way.
+    """
+    if not value or not isinstance(value, str):
+        return None
+    # ISO date like "2024-03-31"
+    try:
+        d = date.fromisoformat(value)
+        return tracker.MONTH_NAME[d.month]
+    except (ValueError, KeyError):
+        pass
+    # Already a month name
+    if value in tracker.MONTH_NUM:
+        return value
+    return None
 
 
 # ===== AUTH CONFIGURATION (NEW) =====
@@ -1062,45 +1084,139 @@ def update_job_story(job_number):
 # ===== TRACKER =====
 @app.route('/api/tracker/clients')
 def get_tracker_clients():
-    """Get clients with tracker/budget info"""
+    """Get clients with tracker/budget info, including rollover and chart data.
+
+    Phase 2: returns `rolloverObject` and `chartMonths` additively.
+    Existing fields (rollover, rolloverUseIn, committed, yearEnd, currentQuarter)
+    are preserved unchanged so the frontend's old display path still works.
+    """
+    def parse_currency(val):
+        if isinstance(val, (int, float)):
+            return val
+        if isinstance(val, str):
+            return int(val.replace('$', '').replace(',', '') or 0)
+        return 0
+
     try:
-        url = get_airtable_url('Clients')
-        response = requests.get(url, headers=HEADERS)
-        response.raise_for_status()
-        
-        def parse_currency(val):
-            if isinstance(val, (int, float)):
-                return val
-            if isinstance(val, str):
-                return int(val.replace('$', '').replace(',', '') or 0)
-            return 0
-        
-        clients = []
-        for record in response.json().get('records', []):
-            fields = record.get('fields', {})
-            
-            monthly = parse_currency(fields.get('Monthly Committed', 0))
-            if monthly > 0:
-                # Rollover is now a formula field in Clients - number or 0
-                rollover = fields.get('Rollover', 0)
-                if isinstance(rollover, (int, float)):
-                    rollover = max(0, rollover)  # Ensure non-negative
-                else:
-                    rollover = 0
-                
-                clients.append({
-                    'code': fields.get('Client code', ''),
-                    'name': fields.get('Clients', ''),
-                    'committed': monthly,
-                    'rollover': rollover,
-                    'rolloverUseIn': fields.get('rolloverUseIn', '') if rollover > 0 else '',
-                    'yearEnd': fields.get('Year end', ''),
-                    'currentQuarter': fields.get('Current Quarter', '')
+        # ===== Fetch Clients =====
+        clients_url = get_airtable_url('Clients')
+        clients_response = requests.get(clients_url, headers=HEADERS)
+        clients_response.raise_for_status()
+        clients_records = clients_response.json().get('records', [])
+
+        # ===== Fetch Budget History =====
+        # Defensive: if table is missing or fetch fails, fall through to
+        # Clients.Monthly Committed for everything.
+        budget_history = []
+        try:
+            bh_url = get_airtable_url('Budget History')
+            bh_response = requests.get(bh_url, headers=HEADERS)
+            bh_response.raise_for_status()
+            for record in bh_response.json().get('records', []):
+                fields = record.get('fields', {})
+                budget_history.append({
+                    'Client': fields.get('Client', ''),
+                    'Effective From': fields.get('Effective From', ''),
+                    'Monthly Committed': parse_currency(fields.get('Monthly Committed', 0)),
                 })
-        
+        except Exception as e:
+            print(f'[Hub API] Budget History fetch failed (falling back to Clients): {e}')
+
+        # ===== Fetch all Tracker entries (paginated) =====
+        # Used for in-quarter variance computation across all retainer clients.
+        tracker_entries = []
+        try:
+            tracker_url = get_airtable_url('Tracker')
+            offset = None
+            while True:
+                params = {}
+                if offset:
+                    params['offset'] = offset
+                tr_response = requests.get(tracker_url, headers=HEADERS, params=params)
+                tr_response.raise_for_status()
+                data = tr_response.json()
+                for record in data.get('records', []):
+                    fields = record.get('fields', {})
+                    client_code = fields.get('Client Code', '')
+                    if isinstance(client_code, list):
+                        client_code = client_code[0] if client_code else ''
+                    spend = fields.get('Spend', 0)
+                    if isinstance(spend, str):
+                        spend = float(spend.replace('$', '').replace(',', '') or 0)
+                    tracker_entries.append({
+                        'client': client_code,
+                        'month': fields.get('Month', ''),
+                        'spendType': fields.get('Spend type', 'Project budget'),
+                        'ballpark': bool(fields.get('Ballpark', False)),
+                        'spend': spend,
+                    })
+                offset = data.get('offset')
+                if not offset:
+                    break
+        except Exception as e:
+            print(f'[Hub API] Tracker fetch failed (rollover/chart will be empty): {e}')
+
+        # ===== Build clients_fallback dict =====
+        # Used by tracker.get_committed when no Budget History entry applies.
+        clients_fallback = {}
+        for record in clients_records:
+            fields = record.get('fields', {})
+            code = fields.get('Client code', '')
+            committed = parse_currency(fields.get('Monthly Committed', 0))
+            if code:
+                clients_fallback[code] = committed
+
+        # ===== Build response =====
+        today = date.today()
+        clients = []
+        for record in clients_records:
+            fields = record.get('fields', {})
+
+            monthly = parse_currency(fields.get('Monthly Committed', 0))
+            if monthly <= 0:
+                continue  # skip non-retainer clients
+
+            code = fields.get('Client code', '')
+            year_end_raw = fields.get('Year end', '')
+            year_end_month = parse_year_end_month(year_end_raw)
+
+            # Existing fields preserved as-is
+            rollover = fields.get('Rollover', 0)
+            if isinstance(rollover, (int, float)):
+                rollover = max(0, rollover)
+            else:
+                rollover = 0
+
+            client_data = {
+                'code': code,
+                'name': fields.get('Clients', ''),
+                'committed': monthly,
+                'rollover': rollover,
+                'rolloverUseIn': fields.get('rolloverUseIn', '') if rollover > 0 else '',
+                'yearEnd': year_end_raw,
+                'currentQuarter': fields.get('Current Quarter', ''),
+            }
+
+            # New fields — additive. If tracker.py errors for any reason,
+            # the client gets the existing fields and frontend uses fallback.
+            if year_end_month and code:
+                try:
+                    client_data['rolloverObject'] = tracker.get_rollover(
+                        code, today, year_end_month,
+                        budget_history, clients_fallback, tracker_entries,
+                    )
+                    client_data['chartMonths'] = tracker.get_chart_months(
+                        year_end_month, today, code,
+                        budget_history, clients_fallback,
+                    )
+                except Exception as e:
+                    print(f'[Hub API] tracker.py error for {code}: {e}')
+
+            clients.append(client_data)
+
         clients.sort(key=lambda x: x['name'])
         return jsonify(clients)
-    
+
     except Exception as e:
         print(f'[Hub API] Error fetching tracker clients: {e}')
         return jsonify({'error': str(e)}), 500
