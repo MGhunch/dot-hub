@@ -753,7 +753,7 @@ async function submitUpdate() {
     updateModalState.submitting = true;
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'SAVING…';
+        submitBtn.textContent = 'SAVING';
     }
 
     try {
@@ -1059,13 +1059,13 @@ function renderCompletionMenu(sameClientJobs, currentClientCode) {
     const statusRows = [
         onHoldCount > 0
             ? `<button class="update-modal-completion-menu-row um-status-row" data-action="filter-status" data-status="On Hold" type="button">
-                 <span class="um-status-row-label">On Hold <span class="um-status-row-count">(${onHoldCount})</span></span>
+                 <span class="um-status-row-label">Jobs on hold <span class="um-status-row-count">(${onHoldCount})</span></span>
                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
                </button>`
             : '',
         incomingCount > 0
             ? `<button class="update-modal-completion-menu-row um-status-row" data-action="filter-status" data-status="Incoming" type="button">
-                 <span class="um-status-row-label">Incoming <span class="um-status-row-count">(${incomingCount})</span></span>
+                 <span class="um-status-row-label">Jobs incoming <span class="um-status-row-count">(${incomingCount})</span></span>
                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
                </button>`
             : '',

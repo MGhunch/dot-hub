@@ -230,6 +230,10 @@
   margin-bottom: 3px;
   letter-spacing: -0.015em;
   color: var(--um-text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .update-modal-description-area {
