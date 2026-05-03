@@ -277,6 +277,7 @@ def get_rollover(client_code: str, today: date,
     today_first = date(today.year, today.month, 1)
     rollover_remaining = carry_in
     bank = 0
+    months_banked = []  # only months where variance > 0 (under)
 
     for m in curr_q['months']:
         m_first = date(m['year'], m['month_num'], 1)
@@ -295,6 +296,7 @@ def get_rollover(client_code: str, today: date,
         if variance > 0:
             # Underspend: banks toward next quarter (does NOT repair rollover)
             bank += variance
+            months_banked.append(m['month_name'])
         elif variance < 0:
             # Overspend: chips current rollover, floored at 0
             # Excess (beyond rollover) is tracked and written off at quarter close
@@ -314,6 +316,7 @@ def get_rollover(client_code: str, today: date,
     if bank > 0:
         next_quarter = {
             'banking': bank,
+            'monthsBanked': months_banked,
         }
 
     return {

@@ -147,7 +147,7 @@ function getYearForMonth(client, monthName) {
 // Build the rollover block (two lines: last quarter + next quarter).
 // Returns HTML, or '' if nothing to show. New shape (3 May 2026):
 //   rolloverObj = { lastQuarter: {remaining, previousQuarterLabel, expiresOn} | null,
-//                   nextQuarter: {banking} | null }
+//                   nextQuarter: {banking, monthsBanked} | null }
 function formatRolloverBlock(rolloverObj) {
     if (!rolloverObj) return '';
     const lq = rolloverObj.lastQuarter;
@@ -165,14 +165,27 @@ function formatRolloverBlock(rolloverObj) {
         `);
     }
     if (nq && nq.banking > 0) {
+        const monthsList = formatMonthsList(nq.monthsBanked || []);
+        const fromClause = monthsList ? ` (from ${monthsList})` : '';
         rows.push(`
             <div class="rollover-row">
                 <span class="rollover-row-label">Next quarter:</span>
-                <span class="rollover-row-value">Currently tracking <strong>${formatTrackerCurrency(nq.banking)}</strong> under.</span>
+                <span class="rollover-row-value">Currently tracking <strong>${formatTrackerCurrency(nq.banking)}</strong> under${fromClause}.</span>
             </div>
         `);
     }
     return rows.join('');
+}
+
+// Join a list of month names with NZ-style "and" / commas (no Oxford comma).
+//   ['April']                  -> 'April'
+//   ['April', 'May']           -> 'April and May'
+//   ['April', 'May', 'June']   -> 'April, May and June'
+function formatMonthsList(months) {
+    if (!months || !months.length) return '';
+    if (months.length === 1) return months[0];
+    if (months.length === 2) return `${months[0]} and ${months[1]}`;
+    return `${months.slice(0, -1).join(', ')} and ${months[months.length - 1]}`;
 }
 
 function formatExpiryDate(iso) {

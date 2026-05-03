@@ -172,6 +172,30 @@ class TestRollover:
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
         assert result['lastQuarter']['remaining'] == 26000
         assert result['nextQuarter']['banking'] == 5000
+        assert result['nextQuarter']['monthsBanked'] == ['April']
+
+    def test_monthsBanked_skips_on_commit(self):
+        # April under, May exactly on commit, June not yet. Only April in banked list.
+        entries = sky_q3_underspend_26k() + [
+            {'client': 'SKY', 'month': 'April', 'spend': 7000,  'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'May',   'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+        ]
+        result = get_rollover('SKY', date(2026, 6, 15), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
+        assert result['nextQuarter']['banking'] == 3000
+        assert result['nextQuarter']['monthsBanked'] == ['April']  # May not in list
+
+    def test_monthsBanked_skips_overspend(self):
+        # April under, May over. Only April banked. May's overage chipped rollover.
+        entries = sky_q3_underspend_26k() + [
+            {'client': 'SKY', 'month': 'April', 'spend': 5000,  'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'May',   'spend': 15000, 'spendType': 'Project budget', 'ballpark': False},
+        ]
+        result = get_rollover('SKY', date(2026, 6, 15), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
+        assert result['nextQuarter']['banking'] == 5000
+        assert result['nextQuarter']['monthsBanked'] == ['April']
+        assert result['lastQuarter']['remaining'] == 21000  # 26000 - 5000 May overage
 
     def test_april_over_then_may_under_does_not_repair(self):
         # The asymmetry test: April -10, May +3.
