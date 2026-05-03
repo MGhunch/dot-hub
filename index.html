@@ -13,10 +13,80 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="modal-system.css">
     <link rel="stylesheet" href="updateModal.css">
+    <link rel="stylesheet" href="authOverlay.css">
 </head>
 <body class="logged-out">
     <!-- Toast notifications -->
     <div class="toast" id="toast"></div>
+
+
+    <!-- ===== AUTH OVERLAY (Phase D) ===== -->
+    <div class="auth-overlay" id="auth-overlay">
+        <div class="auth-stage">
+
+            <!-- SIGN IN — default cold-arrival face -->
+            <div class="auth-face" data-face="signin">
+                <div class="auth-graphic">
+                    <img src="images/Dotandhello.png" alt="Hello from Dot">
+                </div>
+                <div class="auth-content">
+                    <h1 class="auth-headline">What's your email?</h1>
+                    <p class="auth-sub">We'll flick you a link so you can get into it.</p>
+                    <form class="auth-form" id="auth-signin-form">
+                        <input type="email" class="auth-input" id="auth-email" placeholder="your@email.com" autocomplete="email">
+                        <button type="submit" class="auth-button" id="auth-submit">Get a link</button>
+                    </form>
+                    <p class="auth-error" id="auth-error"></p>
+                </div>
+            </div>
+
+            <!-- SENT — magic link sent, check inbox -->
+            <div class="auth-face" data-face="sent" hidden>
+                <div class="auth-graphic">
+                    <img src="images/Dotandhello.png" alt="Hello from Dot">
+                </div>
+                <div class="auth-content">
+                    <h1 class="auth-headline">Check your inbox</h1>
+                    <p class="auth-sub">Your magic link is on its way ✨</p>
+                    <p class="auth-retry">No dice? Check your spam or <a href="#" id="auth-try-again">try again</a></p>
+                </div>
+            </div>
+
+            <!-- WELCOME — magic-link return, valid token -->
+            <div class="auth-face" data-face="welcome" hidden>
+                <div class="auth-graphic">
+                    <img src="images/Dotandhello.png" alt="Hello from Dot">
+                </div>
+                <div class="auth-content">
+                    <h1 class="auth-headline">Hey <span id="auth-firstname">there</span></h1>
+                    <p class="auth-sub">Good to have you back.</p>
+                    <form class="auth-form" id="auth-welcome-form">
+                        <button type="submit" class="auth-button" id="auth-getstarted">Get started</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- EXPIRED — magic link no longer valid -->
+            <div class="auth-face" data-face="expired" hidden>
+                <div class="auth-graphic">
+                    <img src="images/dot_oops.png" alt="Oops from Dot">
+                </div>
+                <div class="auth-content">
+                    <h1 class="auth-headline">Was that an old link?</h1>
+                    <p class="auth-sub">Try again to get a shiny new one.</p>
+                    <form class="auth-form" id="auth-expired-form">
+                        <input type="email" class="auth-input" id="auth-email-expired" placeholder="your@email.com" autocomplete="email">
+                        <button type="submit" class="auth-button">Get a link</button>
+                    </form>
+                    <p class="auth-error" id="auth-error-expired"></p>
+                </div>
+            </div>
+
+            <div class="auth-ai2">
+                <img src="images/ai2-logo.png" alt="ai²">
+            </div>
+        </div>
+    </div>
 
 
     <!-- ===== PHONE LAYOUT (Mobile <900px) ===== -->
@@ -52,37 +122,7 @@
         
         <div class="overlay" id="phone-overlay"></div>
         
-        <!-- Phone Login -->
-        <main class="phone-login" id="phone-login">
-            <div class="login-content">
-                <!-- State 1: Email Input -->
-                <div class="login-state" id="phone-login-input">
-                    <div class="login-logo">
-                        <img src="images/Dotandhello.png" alt="Hello from Dot">
-                    </div>
-                    <p class="login-title">What's your email?</p>
-                    <p class="login-subtitle">We'll flick you a link so you can get into it.</p>
-                    <div class="login-form">
-                        <input type="email" class="login-email" id="phone-login-email" placeholder="your@email.com">
-                        <button class="login-btn" id="phone-login-send">Send link</button>
-                    </div>
-                    <p class="login-error" id="phone-login-error"></p>
-                </div>
-                
-                <!-- State 2: Link Sent -->
-                <div class="login-state hidden" id="phone-login-sent">
-                    <div class="login-logo">
-                        <img src="images/Onit.png" alt="On it">
-                    </div>
-                    <p class="login-title">Check your inbox</p>
-                    <p class="login-subtitle">Your magic link is on its way ✨</p>
-                    <p class="login-retry">No dice? Check your spam or <a href="#" id="phone-login-try-again">try again</a></p>
-                </div>
-            </div>
-            <footer class="phone-footer">
-                <img src="images/ai2-logo.png" alt="ai²" class="footer-logo">
-            </footer>
-        </main>
+        <!-- Phone Login: replaced by auth-overlay (Phase D) -->
         
         <!-- Phone Home (Ask Dot) -->
         <main class="phone-home" id="phone-home">
@@ -226,30 +266,7 @@
 
         <!-- Desktop Main Content -->
         <main class="desktop-main">
-            <!-- ===== LOGIN VIEW ===== -->
-            <section class="view view-login" id="view-login">
-                <div class="login-state" id="desktop-login-input">
-                    <div class="login-logo">
-                        <img src="images/Dotandhello.png" alt="Hello from Dot">
-                    </div>
-                    <p class="login-title">What's your email?</p>
-                    <p class="login-subtitle">We'll flick you a link so you can get into it.</p>
-                    <div class="login-form">
-                        <input type="email" class="login-email" id="login-email" placeholder="your@email.com">
-                        <button class="login-btn" id="login-send">Send link</button>
-                    </div>
-                    <p class="login-error" id="login-error"></p>
-                </div>
-                
-                <div class="login-state hidden" id="desktop-login-sent">
-                    <div class="login-logo">
-                        <img src="images/Onit.png" alt="On it">
-                    </div>
-                    <p class="login-title">Check your inbox</p>
-                    <p class="login-subtitle">Your magic link is on its way ✨</p>
-                    <p class="login-retry">No dice? Check your spam or <a href="#" id="login-try-again">try again</a></p>
-                </div>
-            </section>
+            <!-- Desktop Login: replaced by auth-overlay (Phase D) -->
 
             <!-- ===== HOME VIEW (Ask Dot) ===== -->
             <section class="view view-home active" id="view-home">
@@ -1351,6 +1368,30 @@
             </div>
         </div>
     </div>
+
+
+    <!-- ===== STAGE 1 PREVIEW SWITCHER (Phase D) =====
+         Temporary. Reads ?face=signin|sent|welcome|expired and shows
+         that face. Forces logged-out state so the overlay is visible
+         even if a session cookie is set. Bonus: ?name=Michael for the
+         welcome face.
+         REMOVE WHEN STAGE 2 WIRING LANDS. -->
+    <script>
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        var face = params.get('face');
+        if (!face) return;
+        document.body.classList.add('logged-out');
+        var faces = document.querySelectorAll('.auth-face');
+        for (var i = 0; i < faces.length; i++) {
+            faces[i].hidden = (faces[i].dataset.face !== face);
+        }
+        if (face === 'welcome') {
+            var fnEl = document.getElementById('auth-firstname');
+            if (fnEl) fnEl.textContent = params.get('name') || 'there';
+        }
+    })();
+    </script>
 
 </body>
 </html>
