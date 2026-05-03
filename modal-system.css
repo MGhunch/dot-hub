@@ -1,0 +1,360 @@
+/* ===== MODAL SYSTEM =====
+   Foundation layer for every modal in the Hub.
+
+   Provides:
+   - Design tokens (colours, type scale, rhythm)
+   - Primitive classes (overlay, shell, close, header, body, eyebrow, hero,
+     soft-box, soft-pill, chip, button-filled, row, divider)
+
+   Depends on:
+   - DM Sans loaded by index.html
+   - Nothing else
+
+   Consumed by (eventually):
+   - updateModal.css (retrofit in Phase C)
+   - newJobModal.css (Phase F)
+   - All other modals (Phase G)
+
+   Contract:
+   - Component CSS uses var(--modal-*) tokens for shared values
+   - Component CSS composes primitives by class — does not redeclare them
+   - Component CSS adds variations + component-specific layout only
+   - To bend the system, the system flexes — discuss before changing tokens
+
+   Loaded between styles.css and the *Modal.css component files in index.html.
+*/
+
+
+/* ===== TOKENS ===== */
+
+:root {
+  /* Type scale */
+  --modal-type-hero:    22px;
+  --modal-type-body:    15px;
+  --modal-type-meta:    13px;
+  --modal-type-eyebrow: 11px;
+
+  /* Surfaces */
+  --modal-bg:            #FFFFFF;
+  --modal-bg-soft:       #F2F1EC;
+  --modal-bg-soft-hover: #ECEBE5;
+
+  /* Text */
+  --modal-text-primary:   #1A1A1A;
+  --modal-text-secondary: #6B6B6B;
+  --modal-text-tertiary:  #A0A0A0;
+
+  /* Affordance */
+  --modal-red:       #ED1C24;
+  --modal-red-hover: #D6181F;
+
+  /* Rhythm */
+  --modal-padding:     28px;
+  --modal-radius:      16px;
+  --modal-row-radius:  10px;
+  --modal-pill-radius: 999px;
+  --modal-divider:     rgba(0, 0, 0, 0.06);
+  --modal-hairline:    rgba(0, 0, 0, 0.08);
+}
+
+
+/* ===== OVERLAY =====
+   Fixed, dimmed backdrop. Add .visible to fade in. */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-out;
+  padding: 24px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+.modal-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+
+/* ===== SHELL =====
+   White card. Pop-in transform tied to .modal-overlay.visible. */
+
+.modal-shell {
+  background: var(--modal-bg);
+  border-radius: var(--modal-radius);
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  transform: translateY(20px) scale(0.98);
+  transition: transform 0.25s ease-out;
+  position: relative;
+  color: var(--modal-text-primary);
+}
+.modal-overlay.visible .modal-shell {
+  transform: translateY(0) scale(1);
+}
+
+/* Focus discipline — outline visible only on keyboard nav */
+.modal-shell *:focus { outline: none; }
+.modal-shell button:focus-visible,
+.modal-shell input:focus-visible,
+.modal-shell textarea:focus-visible {
+  outline: 2px solid rgba(237, 28, 36, 0.35);
+  outline-offset: 2px;
+}
+
+
+/* ===== CLOSE =====
+   Top-right × button. */
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: var(--modal-text-tertiary);
+  cursor: pointer;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  z-index: 2;
+}
+.modal-close:hover {
+  background: var(--modal-bg-soft);
+  color: var(--modal-text-primary);
+}
+
+
+/* ===== HEADER =====
+   Padding + hairline beneath. */
+
+.modal-header {
+  background: var(--modal-bg);
+  padding: 28px var(--modal-padding) 20px;
+  border-bottom: 1px solid var(--modal-divider);
+}
+
+
+/* ===== BODY =====
+   Standard padding. */
+
+.modal-body {
+  padding: 24px var(--modal-padding) var(--modal-padding);
+}
+
+
+/* ===== TYPE =====
+   Eyebrow (uppercase tracked label) and hero (display title with 2-line clamp). */
+
+.modal-eyebrow {
+  font-size: var(--modal-type-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--modal-text-tertiary);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.modal-hero {
+  font-size: var(--modal-type-hero);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--modal-text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+
+/* ===== SURFACES =====
+   Cream box (rectangle) and cream pill — both with the standard hover shift.
+   Used as base for tap-to-edit areas, info containers, non-chip pills. */
+
+.modal-soft-box {
+  background: var(--modal-bg-soft);
+  border-radius: var(--modal-row-radius);
+  transition: background 0.15s;
+}
+.modal-soft-box:hover { background: var(--modal-bg-soft-hover); }
+
+.modal-soft-pill {
+  background: var(--modal-bg-soft);
+  border-radius: var(--modal-pill-radius);
+  transition: background 0.15s;
+}
+.modal-soft-pill:hover { background: var(--modal-bg-soft-hover); }
+
+/* Hairline divider — used between rows in lists. */
+.modal-divider {
+  height: 1px;
+  background: var(--modal-divider);
+}
+
+
+/* ===== CHIP =====
+   Cream pill with optional chevron. Self-contained so it's never broken
+   by missing the soft-pill base class. */
+
+.modal-chip {
+  background: var(--modal-bg-soft);
+  padding: 9px 16px;
+  border-radius: var(--modal-pill-radius);
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-primary);
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+  line-height: 1.3;
+}
+.modal-chip:hover { background: var(--modal-bg-soft-hover); }
+.modal-chip.empty { color: var(--modal-text-tertiary); }
+.modal-chip.open  { background: var(--modal-bg-soft-hover); }
+
+.modal-chip .chevron {
+  color: var(--modal-red);
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+.modal-chip .chevron svg {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+.modal-chip.open .chevron { transform: rotate(180deg); }
+
+
+/* ===== BUTTON — FILLED =====
+   Red pill, full-width, primary modal action. Submit + completion DONE etc. */
+
+.modal-button-filled {
+  width: 100%;
+  background: var(--modal-red);
+  color: #FFFFFF;
+  border: 2px solid var(--modal-red);
+  padding: 16px;
+  border-radius: var(--modal-pill-radius);
+  font-family: inherit;
+  font-size: var(--modal-type-body);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.modal-button-filled:hover {
+  background: var(--modal-red-hover);
+  border-color: var(--modal-red-hover);
+}
+.modal-button-filled:active { transform: scale(0.99); }
+.modal-button-filled:disabled {
+  background: var(--modal-text-tertiary);
+  border-color: var(--modal-text-tertiary);
+  cursor: wait;
+  transform: none;
+}
+
+
+/* ===== ROW =====
+   Logo + kicker + name (+ optional chevron). Default size used by pickers.
+   Add .compact for the smaller variant used in dropdown menus.
+
+   Markup:
+     <button class="modal-row">
+       <img class="modal-row-logo" src="...">
+       <div class="modal-row-content">
+         <div class="modal-row-kicker">SKY</div>
+         <div class="modal-row-name">Broadband launch</div>
+       </div>
+     </button>
+*/
+
+.modal-row {
+  background: none;
+  border: none;
+  padding: 12px 14px;
+  border-radius: var(--modal-row-radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  transition: background 0.15s;
+  font-family: inherit;
+  width: 100%;
+}
+.modal-row:hover { background: var(--modal-bg-soft); }
+
+.modal-row-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--modal-bg-soft);
+}
+
+.modal-row-content { flex: 1; min-width: 0; }
+
+.modal-row-kicker {
+  font-size: var(--modal-type-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--modal-text-tertiary);
+  line-height: 1;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.modal-row-name {
+  font-size: var(--modal-type-body);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--modal-text-primary);
+}
+
+/* Compact variant — 28px logo, meta-sized name, tighter padding. */
+.modal-row.compact {
+  padding: 10px 12px;
+  gap: 12px;
+}
+.modal-row.compact .modal-row-logo {
+  width: 28px;
+  height: 28px;
+}
+.modal-row.compact .modal-row-kicker {
+  margin-bottom: 3px;
+}
+.modal-row.compact .modal-row-name {
+  font-size: var(--modal-type-meta);
+}
+
+
+/* ===== MOBILE =====
+   Tightens horizontal + vertical padding on header and body. */
+
+@media (max-width: 480px) {
+  .modal-header { padding: 24px 20px 20px; }
+  .modal-body   { padding: 20px 20px 24px; }
+}
