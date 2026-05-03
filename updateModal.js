@@ -61,28 +61,24 @@ function wireUpdateModalListeners() {
     // X button
     $um('update-modal-close')?.addEventListener('click', closeUpdateModal);
 
-    // Picker — client list (event delegation)
-    $um('update-modal-client-list')?.addEventListener('click', (e) => {
-        const row = e.target.closest('.update-modal-picker-row');
-        if (!row) return;
-        const code = row.dataset.code;
-        updateModalState.selectedClientCode = code;
-        renderJobList(code);
-        showPickerStage('jobs');
-    });
-
-    // Picker — back button
-    $um('update-modal-picker-back')?.addEventListener('click', () => {
-        showPickerStage('clients');
-    });
-
-    // Picker — job list (event delegation)
-    $um('update-modal-job-list')?.addEventListener('click', (e) => {
-        const row = e.target.closest('.update-modal-picker-row');
-        if (!row) return;
-        const jobNumber = row.dataset.jobNumber;
-        loadHotEntry(jobNumber);
-    });
+    // Mount pickers (clientPicker + jobPicker handle their own clicks internally)
+    const clientsContainer = $um('update-modal-picker-clients');
+    const jobsContainer    = $um('update-modal-picker-jobs');
+    if (clientsContainer && window.clientPicker) {
+        window.clientPicker.mount(clientsContainer, {
+            onPick: (code) => {
+                updateModalState.selectedClientCode = code;
+                window.jobPicker?.setClient(code);
+                showPickerStage('jobs');
+            },
+        });
+    }
+    if (jobsContainer && window.jobPicker) {
+        window.jobPicker.mount(jobsContainer, {
+            onPick: (jobNumber) => loadHotEntry(jobNumber),
+            onBack: () => showPickerStage('clients'),
+        });
+    }
 
     // Update area tap-to-edit
     $um('update-modal-update-area')?.addEventListener('click', (e) => {
@@ -112,7 +108,7 @@ function wireUpdateModalListeners() {
         const job = updateModalState.currentJob;
         if (!job?.clientCode) return;
         updateModalState.selectedClientCode = job.clientCode;
-        renderJobList(job.clientCode);
+        window.jobPicker?.setClient(job.clientCode);
 
         // Set picker DOM directly to jobs stage (the outer view animation
         // carries the transition feel; no inner animation needed)
@@ -252,7 +248,7 @@ function wireUpdateModalListeners() {
             if (clientsEl) clientsEl.hidden = false;
             if (jobsEl) jobsEl.hidden = true;
             updateModalState.pickerStage = 'clients';
-            renderClientList();
+            window.clientPicker?.refresh();
             closeCompletionMenu();
             showView('picker', 'back');
             return;
@@ -267,7 +263,7 @@ function wireUpdateModalListeners() {
             if (!clientCode || !status) return;
 
             updateModalState.selectedClientCode = clientCode;
-            renderJobList(clientCode, status);
+            window.jobPicker?.setClient(clientCode, { statusFilter: status });
 
             // Set picker DOM directly to jobs stage
             const clientsEl = $um('update-modal-picker-clients');
@@ -324,7 +320,7 @@ async function openUpdateModal(jobNumber) {
     } else {
         // Cold entry — show picker
         showView('picker');
-        renderClientList();
+        window.clientPicker?.refresh();
         showPickerStage('clients');
     }
 
@@ -446,112 +442,6 @@ function showPickerStage(stage) {
         target.classList.add(enterCls);
         setTimeout(() => target.classList.remove(enterCls), DUR);
     }, DUR);
-}
-
-// ===== PICKER RENDERING =====
-async function renderClientList() {
-    const list = $um('update-modal-client-list');
-    if (!list) return;
-    list.innerHTML = '<div class="update-modal-picker-empty">Loading clients…</div>';
-
-    let clients = [];
-    try {
-        const res = await fetch(`${API_BASE}/clients`);
-        if (!res.ok) throw new Error('Failed to fetch clients');
-        clients = await res.json();
-        // Cache for resolveClientName() — used by hot-entry meta line
-        window._updateModalClientsCache = clients;
-    } catch (e) {
-        console.error('[update-modal] client fetch failed:', e);
-        list.innerHTML = '<div class="update-modal-picker-empty">Could not load clients.</div>';
-        return;
-    }
-
-    if (!Array.isArray(clients) || clients.length === 0) {
-        list.innerHTML = '<div class="update-modal-picker-empty">No clients found.</div>';
-        return;
-    }
-
-    // Filter to clients that have at least one active job, and compute their recency
-    // (min daysSinceUpdate across the client's jobs — smallest = most recently touched)
-    const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
-    const recencyByClient = {};
-    for (const j of allJobs) {
-        const code = j.clientCode;
-        if (!code) continue;
-        const days = clientRecencyValue(j.daysSinceUpdate);
-        if (recencyByClient[code] === undefined || days < recencyByClient[code]) {
-            recencyByClient[code] = days;
-        }
-    }
-
-    const visible = clients
-        .filter(c => recencyByClient[c.code] !== undefined)
-        .sort((a, b) => recencyByClient[a.code] - recencyByClient[b.code]);
-
-    if (visible.length === 0) {
-        list.innerHTML = '<div class="update-modal-picker-empty">No active jobs to update.</div>';
-        return;
-    }
-
-    list.innerHTML = visible.map(c => {
-        const code = escapeAttr(c.code || '');
-        const name = escapeHtml(c.name || c.code || '');
-        const logoUrl = (typeof getLogoUrl === 'function') ? getLogoUrl(c.code) : `images/logos/${c.code}.png`;
-        return `
-          <button class="update-modal-picker-row" data-code="${code}">
-            <img class="update-modal-picker-logo" src="${escapeAttr(logoUrl)}" alt="${code}" onerror="this.src='images/logos/Unknown.png'">
-            <div class="update-modal-picker-content">
-              <div class="update-modal-picker-kicker">${code}</div>
-              <div class="update-modal-picker-name">${name}</div>
-            </div>
-          </button>
-        `;
-    }).join('');
-}
-
-function renderJobList(clientCode, statusFilter = null) {
-    const titleEl = $um('update-modal-picker-jobs-title');
-    const listEl = $um('update-modal-job-list');
-    if (!listEl) return;
-
-    const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
-    const jobs = allJobs
-        .filter(j => j.clientCode === clientCode)
-        .filter(j => statusFilter ? j.status === statusFilter : true)
-        .sort((a, b) => clientRecencyValue(a.daysSinceUpdate) - clientRecencyValue(b.daysSinceUpdate));
-
-    if (titleEl) {
-        titleEl.textContent = statusFilter
-            ? `Choose ${statusIndefiniteArticle(statusFilter)} ${statusFilter} job`
-            : 'Choose a job';
-    }
-
-    if (jobs.length === 0) {
-        listEl.innerHTML = '<div class="update-modal-picker-empty">No jobs to update.</div>';
-        return;
-    }
-
-    const logoUrl = (typeof getLogoUrl === 'function') ? getLogoUrl(clientCode) : `images/logos/${clientCode}.png`;
-    listEl.innerHTML = jobs.map(j => {
-        const num = escapeAttr(j.jobNumber || '');
-        const display = escapeHtml(formatJobDisplay(j.jobNumber));
-        const name = escapeHtml(j.jobName || '');
-        return `
-          <button class="update-modal-picker-row" data-job-number="${num}">
-            <img class="update-modal-picker-logo" src="${escapeAttr(logoUrl)}" alt="${escapeAttr(clientCode)}" onerror="this.src='images/logos/Unknown.png'">
-            <div class="update-modal-picker-content">
-              <div class="update-modal-picker-kicker">${display}</div>
-              <div class="update-modal-picker-name">${name}</div>
-            </div>
-          </button>
-        `;
-    }).join('');
-}
-
-// "a/an" picker for status titles. "Choose an On Hold job" / "Choose an Incoming job"
-function statusIndefiniteArticle(status) {
-    return /^[aeiouAEIOU]/.test(status || '') ? 'an' : 'a';
 }
 
 // ===== HOT ENTRY (load a job into populated view) =====
