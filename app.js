@@ -2626,7 +2626,9 @@ function getWipFilteredJobs() {
         jobs = jobs.filter(j => j.clientCode === state.wipClient);
     }
     
-    return jobs.filter(j => { const num = j.jobNumber.split(' ')[1]; return num !== '000' && num !== '999'; });
+    // Exclude finance jobs from WIP (still visible in Tracker)
+    const financeNumbers = ['000', '001', '998', '999'];
+    return jobs.filter(j => { const num = j.jobNumber.split(' ')[1]; return !financeNumbers.includes(num); });
 }
 
 function getWipSectionLabels() {
