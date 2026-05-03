@@ -128,116 +128,77 @@ class TestGetCommitted:
         assert get_committed('SKY', 2023, 12, BUDGET_HISTORY, CLIENTS_FALLBACK) == 10000  # falls back
 
 
-# ===== Rollover — brief fixtures =====
+# ===== Rollover — asymmetric bucket model =====
 
 class TestRollover:
-    """All the test fixtures listed in TRACKER-ROLLOVER-BRIEF.md."""
+    """The asymmetric bucket model (3 May 2026 spec):
+
+    - Carry from previous quarter sits as `lastQuarter.remaining`.
+    - Monthly OVERSPENDS chip lastQuarter.remaining (floored at 0).
+    - Monthly UNDERSPENDS bank to nextQuarter.banking — they do NOT repair lastQuarter.
+    - Carry expires at quarter close. Bank becomes next quarter's carry.
+    """
 
     def test_q3_underspend_no_in_quarter_activity(self):
-        # Brief: SKY mid-Q4, $26K Q3 underspend, no in-quarter activity
-        # "No in-quarter activity" = no completed months yet in current quarter.
-        # April 15 2026: April is in flight, no completed months in Q4.
+        # SKY started Q4 with $26K rollover from Q3.
+        # April still in flight (today Apr 15) — no completed months in Q4.
         result = get_rollover(
             'SKY', date(2026, 4, 15), 'June',
             BUDGET_HISTORY, CLIENTS_FALLBACK,
             sky_q3_underspend_26k(),
         )
-        assert result['amount'] == 26000
-        assert result['fromPrevious'] == 26000
-        assert result['previousQuarterLabel'] == 'Q3'
-        assert result['variance'] == 0
-        assert result['varianceDirection'] is None
-        assert result['varianceMonths'] == []
+        assert result['lastQuarter'] is not None
+        assert result['lastQuarter']['remaining'] == 26000
+        assert result['lastQuarter']['previousQuarterLabel'] == 'Q3'
+        assert result['lastQuarter']['expiresOn'] == '2026-06-30'
+        assert result['nextQuarter'] is None
 
-    def test_april_overspent_5k(self):
-        # Brief: SKY mid-Q4, April overspent $5K
-        # April committed $10K, spent $15K = $5K over
+    def test_april_overspent_5k_chips_rollover(self):
+        # SKY: April overspent $5K. Carry chipped to $21K. Nothing banking.
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 15000, 'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        assert result['amount'] == 21000
-        assert result['fromPrevious'] == 26000
-        assert result['variance'] == 5000
-        assert result['varianceDirection'] == 'over'
-        assert result['varianceMonths'] == ['April']
+        assert result['lastQuarter']['remaining'] == 21000
+        assert result['nextQuarter'] is None
 
-    def test_april_underspent_5k(self):
-        # Brief: SKY mid-Q4, April underspent $5K
-        # April committed $10K, spent $5K = $5K under
+    def test_april_underspent_5k_banks_does_not_repair(self):
+        # SKY: April underspent $5K. Carry stays $26K. $5K banks for next quarter.
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        assert result['amount'] == 31000
-        assert result['fromPrevious'] == 26000
-        assert result['variance'] == 5000
-        assert result['varianceDirection'] == 'under'
-        assert result['varianceMonths'] == ['April']
+        assert result['lastQuarter']['remaining'] == 26000
+        assert result['nextQuarter']['banking'] == 5000
 
-    def test_april_over_3k_may_under_2k(self):
-        # Brief: SKY mid-Q4, April +$3K over, May -$2K under -> net $1K over
-        # Today must be June 1+ for May to be a completed month.
+    def test_april_over_then_may_under_does_not_repair(self):
+        # The asymmetry test: April -10, May +3.
+        # Old (net) model: $7K over net, lastQuarter would drop to $19K, nothing banks.
+        # New model: April chips by $10K → $16K. May banks $3K. They don't talk.
         entries = sky_q3_underspend_26k() + [
-            {'client': 'SKY', 'month': 'April', 'spend': 13000, 'spendType': 'Project budget', 'ballpark': False},
-            {'client': 'SKY', 'month': 'May',   'spend': 8000,  'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'April', 'spend': 20000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'May',   'spend': 7000,  'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 6, 15), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        assert result['amount'] == 25000  # 26000 + (-1000)
-        assert result['fromPrevious'] == 26000
-        assert result['variance'] == 1000
-        assert result['varianceDirection'] == 'over'
-        assert result['varianceMonths'] == ['April', 'May']
+        assert result['lastQuarter']['remaining'] == 16000  # 26000 - 10000
+        assert result['nextQuarter']['banking'] == 3000
 
-    def test_ons_uses_20k_post_renegotiation(self):
-        # Brief: ONS mid-Q1 2026 (post-renegotiation) uses $20K/month
-        # ONS today = May 3 2026 -> Q1 2026 (Apr-Jun), April done, all $20K committed
-        # Previous quarter = Q4 (Jan-Mar 2026), $20K each = $60K committed
-        # No tracker entries -> $0 spent
-        result = get_rollover('ONS', date(2026, 5, 3), 'March',
-                               BUDGET_HISTORY, CLIENTS_FALLBACK, [])
-        # fromPrevious = max(0, 60000 - 0) = 60000
-        # April committed $20K, spent $0 = $20K under
-        # amount = 60000 + 20000 = 80000
-        assert result['fromPrevious'] == 60000
-        assert result['variance'] == 20000
-        assert result['varianceDirection'] == 'under'
-        assert result['amount'] == 80000
-
-    def test_ons_pre_jan_2026_uses_25k(self):
-        # Brief: ONS pre-Jan 2026 month uses $25K/month
-        # If today is Dec 15 2025, ONS Q3 (current) = Oct-Dec 2025, Q2 (prev) = Jul-Sep 2025
-        # All previous quarter committed $25K (pre-renegotiation)
-        result = get_rollover('ONS', date(2025, 12, 15), 'March',
-                               BUDGET_HISTORY, CLIENTS_FALLBACK, [])
-        # Q3 = Oct-Dec 2025, Q2 = Jul-Sep 2025 (all $25K)
-        assert result['fromPrevious'] == 75000  # 3 * 25000
-        # Oct, Nov 2025 completed, Dec in flight
-        assert result['variance'] == 50000  # 2 * 25000
-        assert result['varianceDirection'] == 'under'
-
-    def test_net_zero_in_quarter_with_q3_credit(self):
-        # Brief: Net zero in-quarter, Q3 credit exists -> single-source line
-        # April -$2K under, May +$2K over -> net 0
+    def test_under_then_over_chips_only_overage(self):
+        # Reverse order: April +5, May -10. Same end state — bucket model is order-insensitive.
         entries = sky_q3_underspend_26k() + [
-            {'client': 'SKY', 'month': 'April', 'spend': 8000,  'spendType': 'Project budget', 'ballpark': False},
-            {'client': 'SKY', 'month': 'May',   'spend': 12000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'April', 'spend': 5000,  'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'May',   'spend': 20000, 'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 6, 15), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        assert result['amount'] == 26000
-        assert result['fromPrevious'] == 26000
-        assert result['variance'] == 0
-        assert result['varianceDirection'] is None
-        assert result['varianceMonths'] == []
+        assert result['lastQuarter']['remaining'] == 16000  # chipped by May's overage
+        assert result['nextQuarter']['banking'] == 5000     # April's under
 
-    def test_floor_at_zero_overage_exceeds_carry(self):
-        # Brief: Floor case: $5K Q3 credit, $10K in-quarter over -> amount=0
-        # SKY Q3 (Jan-Mar) committed $30K, spent $25K = $5K under
-        # April committed $10K, spent $20K = $10K over
+    def test_floor_at_zero_when_overage_exceeds_carry(self):
+        # SKY Q3 underspent $5K (not 26K). April overspent $10K. Chip floors at 0.
         entries = [
             {'client': 'SKY', 'month': 'January',  'spend': 9000, 'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'February', 'spend': 8000, 'spendType': 'Project budget', 'ballpark': False},
@@ -246,15 +207,25 @@ class TestRollover:
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        assert result['amount'] == 0
-        assert result['fromPrevious'] == 5000
-        assert result['variance'] == 10000
-        assert result['varianceDirection'] == 'over'
-        assert result['varianceMonths'] == ['April']
+        # Carry $5K, overage $10K → floored at 0 → lastQuarter hidden
+        assert result['lastQuarter'] is None
+        assert result['nextQuarter'] is None
 
-    def test_no_q3_credit_in_quarter_over(self):
-        # Brief: No Q3 credit, in-quarter over -> amount=0
-        # Q3 fully spent (no carry), April overspent
+    def test_no_carry_in_quarter_under_banks(self):
+        # No previous quarter underspend (Q3 fully spent). April underspent $3K.
+        entries = [
+            {'client': 'SKY', 'month': 'January',  'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'February', 'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'March',    'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'April',    'spend': 7000,  'spendType': 'Project budget', 'ballpark': False},
+        ]
+        result = get_rollover('SKY', date(2026, 5, 3), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
+        assert result['lastQuarter'] is None
+        assert result['nextQuarter']['banking'] == 3000
+
+    def test_no_carry_in_quarter_over_nothing_to_show(self):
+        # No carry, April overspent. Nothing chips, nothing banks.
         entries = [
             {'client': 'SKY', 'month': 'January',  'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'February', 'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
@@ -263,66 +234,85 @@ class TestRollover:
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        assert result['amount'] == 0
-        assert result['fromPrevious'] == 0
-        assert result['variance'] == 5000
-        assert result['varianceDirection'] == 'over'
+        assert result['lastQuarter'] is None
+        assert result['nextQuarter'] is None
 
     def test_brand_new_client_no_data(self):
-        # Brief: Brand new client, no prior data
         result = get_rollover('NEW', date(2026, 5, 3), 'March',
                                BUDGET_HISTORY, {'NEW': 5000}, [])
-        # No tracker entries, no spend, all months "under" by full committed
-        # Q4 prev (Jan-Mar 2026): 3*5000 = 15000 committed, $0 spent -> 15000 carry
-        # Q1 curr (Apr-Jun): April done, $5K under
-        assert result['fromPrevious'] == 15000
-        assert result['amount'] == 20000
-        assert result['variance'] == 5000
+        # No tracker entries → previous quarter calculated as full underspend → carry $15K
+        # Current quarter (Q1 Apr-Jun): April done with $0 spend → $5K under → banking $5K
+        assert result['lastQuarter']['remaining'] == 15000
+        assert result['lastQuarter']['previousQuarterLabel'] == 'Q4'
+        assert result['nextQuarter']['banking'] == 5000
 
     def test_brand_new_client_no_committed(self):
-        # No Budget History, no fallback -> 0 everywhere
+        # No Budget History, no fallback — all zeros.
         result = get_rollover('GHOST', date(2026, 5, 3), 'March',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, [])
-        assert result['amount'] == 0
-        assert result['fromPrevious'] == 0
-        assert result['variance'] == 0
-        assert result['varianceDirection'] is None
+        assert result['lastQuarter'] is None
+        assert result['nextQuarter'] is None
 
-    def test_ballpark_excluded_from_variance(self):
-        # Brief: Ballpark entries not included in variance math
-        # April: $5K confirmed, $7K ballpark. Variance should only see $5K spent.
+    def test_ons_uses_20k_post_renegotiation(self):
+        # ONS today May 3 2026, year-end March → Q1 (Apr-Jun)
+        # Prev Q4 = Jan-Mar 2026, $20K each, no spend → $60K carry
+        # April done, no spend, $20K under → banks $20K
+        result = get_rollover('ONS', date(2026, 5, 3), 'March',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, [])
+        assert result['lastQuarter']['remaining'] == 60000
+        assert result['lastQuarter']['previousQuarterLabel'] == 'Q4'
+        assert result['lastQuarter']['expiresOn'] == '2026-06-30'
+        assert result['nextQuarter']['banking'] == 20000
+
+    def test_ons_pre_jan_2026_uses_25k(self):
+        # ONS Dec 15 2025, year-end March → Q3 (Oct-Dec)
+        # Prev Q2 = Jul-Sep 2025, $25K each, no spend → $75K carry
+        # Oct + Nov done, no spend → bank $50K (Dec in flight)
+        result = get_rollover('ONS', date(2025, 12, 15), 'March',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, [])
+        assert result['lastQuarter']['remaining'] == 75000
+        assert result['nextQuarter']['banking'] == 50000
+
+    def test_ballpark_excluded(self):
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'April', 'spend': 7000, 'spendType': 'Project budget', 'ballpark': True},
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        # April committed $10K, confirmed $5K -> $5K under
-        assert result['variance'] == 5000
-        assert result['varianceDirection'] == 'under'
+        # Only $5K confirmed → April $5K under → banks $5K. Carry untouched.
+        assert result['lastQuarter']['remaining'] == 26000
+        assert result['nextQuarter']['banking'] == 5000
 
-    def test_project_on_us_excluded_from_variance(self):
-        # Brief: Project on us entries not included in variance math
+    def test_project_on_us_excluded(self):
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 5000,  'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'April', 'spend': 10000, 'spendType': 'Project on us', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        # April committed $10K, only $5K Project budget counts -> $5K under
-        assert result['variance'] == 5000
-        assert result['varianceDirection'] == 'under'
+        assert result['lastQuarter']['remaining'] == 26000
+        assert result['nextQuarter']['banking'] == 5000
 
-    def test_extra_budget_excluded_from_variance(self):
-        # Brief: Extra budget entries not included in variance math
+    def test_extra_budget_excluded(self):
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'April', 'spend': 8000, 'spendType': 'Extra budget',   'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        assert result['variance'] == 5000
-        assert result['varianceDirection'] == 'under'
+        assert result['lastQuarter']['remaining'] == 26000
+        assert result['nextQuarter']['banking'] == 5000
+
+    def test_on_commit_each_month_no_movement(self):
+        # April spent exactly $10K (committed). No chip, no bank.
+        entries = sky_q3_underspend_26k() + [
+            {'client': 'SKY', 'month': 'April', 'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+        ]
+        result = get_rollover('SKY', date(2026, 5, 3), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
+        assert result['lastQuarter']['remaining'] == 26000
+        assert result['nextQuarter'] is None  # nothing banking
 
 
 # ===== Chart months — historical accuracy =====

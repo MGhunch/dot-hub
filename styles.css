@@ -2015,6 +2015,22 @@ body.logged-out .view-tracker {
     color: var(--grey-600);
 }
 
+/* Two-line rollover block (last quarter / next quarter) */
+.rollover-row {
+    display: flex;
+    gap: 8px;
+    line-height: 1.5;
+}
+
+.rollover-row-label {
+    color: var(--grey-400);
+    flex-shrink: 0;
+}
+
+.rollover-row-value {
+    color: var(--grey-600);
+}
+
 /* Tracker Projects Table */
 .projects-section {
     background: var(--white);

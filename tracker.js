@@ -144,32 +144,59 @@ function getYearForMonth(client, monthName) {
     return today.getFullYear();
 }
 
-// Build the natural-language rollover line from the structured object.
-// Returns an HTML string (already-formatted), or '' if amount is 0.
+// Build the rollover block (two lines: last quarter + next quarter).
+// Returns HTML, or '' if nothing to show. New shape (3 May 2026):
+//   rolloverObj = { lastQuarter: {remaining, previousQuarterLabel, expiresOn} | null,
+//                   nextQuarter: {banking} | null }
+function formatRolloverBlock(rolloverObj) {
+    if (!rolloverObj) return '';
+    const lq = rolloverObj.lastQuarter;
+    const nq = rolloverObj.nextQuarter;
+    if (!lq && !nq) return '';
+
+    const rows = [];
+    if (lq && lq.remaining > 0) {
+        const expires = formatExpiryDate(lq.expiresOn);
+        rows.push(`
+            <div class="rollover-row">
+                <span class="rollover-row-label">Last quarter:</span>
+                <span class="rollover-row-value"><strong>${formatTrackerCurrency(lq.remaining)}</strong> remaining (use by ${expires}).</span>
+            </div>
+        `);
+    }
+    if (nq && nq.banking > 0) {
+        rows.push(`
+            <div class="rollover-row">
+                <span class="rollover-row-label">Next quarter:</span>
+                <span class="rollover-row-value">Currently tracking <strong>${formatTrackerCurrency(nq.banking)}</strong> under.</span>
+            </div>
+        `);
+    }
+    return rows.join('');
+}
+
+function formatExpiryDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    if (isNaN(d)) return iso;
+    const monthShort = d.toLocaleString('en-NZ', { month: 'short' });
+    return `${d.getDate()} ${monthShort}`;
+}
+
+// Legacy rollover formatter — kept as fallback if API returns the old shape.
+// Recognises old shape by presence of `amount` field.
 function formatRolloverLine(rolloverObj) {
-    if (!rolloverObj || !rolloverObj.amount) return '';
+    if (!rolloverObj || !('amount' in rolloverObj) || !rolloverObj.amount) return '';
     const amt = formatTrackerCurrency(rolloverObj.amount);
     const fromPrev = rolloverObj.fromPrevious || 0;
     const variance = rolloverObj.variance || 0;
     const dir = rolloverObj.varianceDirection;
     const months = (rolloverObj.varianceMonths || []).join('/');
     const prevQ = rolloverObj.previousQuarterLabel || '';
-
-    // No in-quarter movement — single source line
-    if (!variance || !dir) {
-        return `<strong>${amt}</strong> rollover from ${prevQ}`;
-    }
-
-    // In-quarter only (no carry from previous)
-    if (!fromPrev) {
-        return `<strong>${amt}</strong> rollover (${dir} in ${months})`;
-    }
-
-    // Both — full pattern
+    if (!variance || !dir) return `<strong>${amt}</strong> rollover from ${prevQ}`;
+    if (!fromPrev) return `<strong>${amt}</strong> rollover (${dir} in ${months})`;
     const verb = dir === 'over' ? 'less' : 'plus';
-    const fromAmt = formatTrackerCurrency(fromPrev);
-    const varAmt = formatTrackerCurrency(variance);
-    return `<strong>${amt}</strong> rollover (${fromAmt} from ${prevQ}, ${verb} ${varAmt} ${dir} in ${months})`;
+    return `<strong>${amt}</strong> rollover (${formatTrackerCurrency(fromPrev)} from ${prevQ}, ${verb} ${formatTrackerCurrency(variance)} ${dir} in ${months})`;
 }
 
 // ===== DATA LOADING =====
@@ -502,11 +529,15 @@ function renderTrackerContent() {
     const remaining = totalBudget - toDate;
     const progress = totalBudget > 0 ? Math.min((toDate / totalBudget) * 100, 100) : 0;
     const isOver = toDate > totalBudget;
-    // New rollover behaviour: only show when actively in the current quarter.
-    // Old condition (rolloverUseIn === viewedQuarterKey) preserved as fallback.
-    const showRolloverNew = rolloverObject && rolloverObject.amount > 0 && viewedQuarterKey === rolloverUseIn;
-    const showRolloverOld = !rolloverObject && rollover > 0 && rolloverUseIn && viewedQuarterKey === rolloverUseIn;
+    // Rollover block visibility:
+    //   - New shape: show when viewing current quarter and either bucket has data
+    //   - Old shape (fallback): preserve legacy condition
+    const isViewingCurrentQuarter = viewedQuarterKey === rolloverUseIn;
+    const hasNewRollover = rolloverObject && (rolloverObject.lastQuarter || rolloverObject.nextQuarter);
+    const showRolloverNew = hasNewRollover && isViewingCurrentQuarter;
+    const showRolloverOld = !rolloverObject && rollover > 0 && rolloverUseIn && isViewingCurrentQuarter;
     const showRollover = showRolloverNew || showRolloverOld;
+    const rolloverBlockHtml = hasNewRollover ? formatRolloverBlock(rolloverObject) : '';
     
     const mainProjects = projects.filter(p => p.spendType === 'Project budget');
     const otherProjects = projects.filter(p => p.spendType === 'Extra budget' || p.spendType === 'Project on us');
@@ -571,7 +602,11 @@ function renderTrackerContent() {
                 ${showRollover ? `
                     <div class="rollover-credit">
                         <div class="rollover-label">Rollover</div>
-                        <div class="rollover-amount">${rolloverObject ? formatRolloverLine(rolloverObject) : `<strong>+${formatTrackerCurrency(rollover)}</strong> credit from ${prevQ.quarter}`}</div>
+                        <div class="rollover-amount">${
+                            hasNewRollover
+                                ? rolloverBlockHtml
+                                : `<strong>+${formatTrackerCurrency(rollover)}</strong> credit from ${prevQ.quarter}`
+                        }</div>
                     </div>
                 ` : ''}
             </div>
