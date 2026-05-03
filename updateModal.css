@@ -4,20 +4,6 @@
    and .update-modal-* to avoid collisions with existing Hub modal CSS. */
 
 .update-modal-overlay {
-  --um-bg-context: #F5F4EE;
-  --um-bg-soft: #F2F1EC;
-  --um-bg-soft-hover: #ECEBE5;
-  --um-border-soft: rgba(0, 0, 0, 0.08);
-  --um-text-primary: #1A1A1A;
-  --um-text-secondary: #6B6B6B;
-  --um-text-tertiary: #A0A0A0;
-  --um-red: #ED1C24;
-  --um-red-hover: #D6181F;
-  --um-type-hero: 22px;
-  --um-type-body: 15px;
-  --um-type-meta: 13px;
-  --um-type-eyebrow: 11px;
-
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
@@ -48,7 +34,7 @@
   transform: translateY(20px) scale(0.98);
   transition: transform 0.25s ease-out;
   position: relative;
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
 }
 .update-modal-overlay.visible .update-modal {
   transform: translateY(0) scale(1);
@@ -76,7 +62,7 @@
   background: none;
   border: none;
   font-size: 22px;
-  color: var(--um-text-tertiary);
+  color: var(--modal-text-tertiary);
   cursor: pointer;
   line-height: 1;
   width: 32px;
@@ -89,25 +75,25 @@
   z-index: 2;
 }
 .update-modal-close:hover {
-  background: var(--um-bg-soft);
-  color: var(--um-text-primary);
+  background: var(--modal-bg-soft);
+  color: var(--modal-text-primary);
 }
 
 /* ===== PICKER ===== */
 .update-modal-picker { padding: 32px 28px 28px; }
 
 .update-modal-picker-title {
-  font-size: var(--um-type-hero);
+  font-size: var(--modal-type-hero);
   font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.15;
   margin-bottom: 22px;
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
 }
 
 .update-modal-picker-sub {
-  font-size: var(--um-type-meta);
-  color: var(--um-text-secondary);
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-secondary);
   margin-bottom: 24px;
 }
 
@@ -125,10 +111,10 @@
 .update-modal-picker-back {
   background: none;
   border: none;
-  color: var(--um-text-secondary);
+  color: var(--modal-text-secondary);
   cursor: pointer;
   font-family: inherit;
-  font-size: var(--um-type-meta);
+  font-size: var(--modal-type-meta);
   padding: 0;
   margin-bottom: 16px;
   display: flex;
@@ -136,7 +122,7 @@
   gap: 6px;
   transition: color 0.15s;
 }
-.update-modal-picker-back:hover { color: var(--um-text-primary); }
+.update-modal-picker-back:hover { color: var(--modal-text-primary); }
 
 .update-modal-picker-list {
   display: flex;
@@ -158,7 +144,7 @@
   font-family: inherit;
   width: 100%;
 }
-.update-modal-picker-row:hover { background: var(--um-bg-soft); }
+.update-modal-picker-row:hover { background: var(--modal-bg-soft); }
 
 .update-modal-picker-logo {
   width: 36px;
@@ -166,32 +152,32 @@
   border-radius: 50%;
   flex-shrink: 0;
   object-fit: cover;
-  background: var(--um-bg-soft);
+  background: var(--modal-bg-soft);
 }
 
 .update-modal-picker-content { flex: 1; min-width: 0; }
 
 .update-modal-picker-kicker {
-  font-size: var(--um-type-eyebrow);
+  font-size: var(--modal-type-eyebrow);
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--um-text-tertiary);
+  color: var(--modal-text-tertiary);
   line-height: 1;
   margin-bottom: 4px;
   text-transform: uppercase;
 }
 
 .update-modal-picker-name {
-  font-size: var(--um-type-body);
+  font-size: var(--modal-type-body);
   font-weight: 500;
   line-height: 1.2;
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
 }
 
 .update-modal-picker-empty {
   padding: 16px 14px;
-  font-size: var(--um-type-meta);
-  color: var(--um-text-tertiary);
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-tertiary);
 }
 
 /* ===== HEADER ===== */
@@ -214,7 +200,7 @@
   border-radius: 50%;
   flex-shrink: 0;
   object-fit: cover;
-  background: var(--um-bg-soft);
+  background: var(--modal-bg-soft);
 }
 
 .update-modal-header-text {
@@ -224,12 +210,12 @@
 }
 
 .update-modal-hero {
-  font-size: var(--um-type-hero);
+  font-size: var(--modal-type-hero);
   font-weight: 600;
   line-height: 1.2;
   margin-bottom: 3px;
   letter-spacing: -0.015em;
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -247,8 +233,8 @@
 .update-modal-description-area.editing { background: rgba(0, 0, 0, 0.04); cursor: default; }
 
 .update-modal-description {
-  font-size: var(--um-type-meta);
-  color: var(--um-text-secondary);
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-secondary);
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -262,9 +248,9 @@
   border: none;
   outline: none;
   font-family: inherit;
-  font-size: var(--um-type-meta);
+  font-size: var(--modal-type-meta);
   line-height: 1.35;
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
   resize: none;
   padding: 0;
   margin: 0;
@@ -273,30 +259,30 @@
 }
 .update-modal-description-area.editing textarea { display: block; }
 .update-modal-description-area.editing .update-modal-description { display: none; }
-.update-modal-description-area textarea::placeholder { color: var(--um-text-tertiary); }
+.update-modal-description-area textarea::placeholder { color: var(--modal-text-tertiary); }
 
 .update-modal-meta {
-  font-size: var(--um-type-eyebrow);
+  font-size: var(--modal-type-eyebrow);
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--um-text-tertiary);
+  color: var(--modal-text-tertiary);
   text-transform: uppercase;
   line-height: 1;
   cursor: pointer;
   transition: color 0.15s;
   display: inline-block;
 }
-.update-modal-meta:hover { color: var(--um-red); }
+.update-modal-meta:hover { color: var(--modal-red); }
 
 /* ===== BODY ===== */
 .update-modal-body { padding: 24px 28px 28px; }
 
 /* Section eyebrows */
 .update-modal-section-eyebrow {
-  font-size: var(--um-type-eyebrow);
+  font-size: var(--modal-type-eyebrow);
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--um-text-tertiary);
+  color: var(--modal-text-tertiary);
   text-transform: uppercase;
   margin-bottom: 8px;
   line-height: 1;
@@ -304,7 +290,7 @@
 
 /* Update area — shows latest update by default, tap to edit */
 .update-modal-update-area {
-  background: var(--um-bg-soft);
+  background: var(--modal-bg-soft);
   border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 14px;
@@ -313,20 +299,20 @@
   min-height: 80px;
   position: relative;
 }
-.update-modal-update-area:hover { background: var(--um-bg-soft-hover); }
+.update-modal-update-area:hover { background: var(--modal-bg-soft-hover); }
 .update-modal-update-area.editing {
-  background: var(--um-bg-soft-hover);
+  background: var(--modal-bg-soft-hover);
   cursor: default;
 }
 
 .update-modal-update-display {
-  font-size: var(--um-type-meta);
-  color: var(--um-text-secondary);
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-secondary);
   line-height: 1.55;
 }
-.update-modal-update-display.placeholder { color: var(--um-text-tertiary); }
+.update-modal-update-display.placeholder { color: var(--modal-text-tertiary); }
 .update-modal-update-display .update-date {
-  color: var(--um-text-secondary);
+  color: var(--modal-text-secondary);
   margin-right: 4px;
 }
 
@@ -336,9 +322,9 @@
   border: none;
   outline: none;
   font-family: inherit;
-  font-size: var(--um-type-meta);
+  font-size: var(--modal-type-meta);
   line-height: 1.55;
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
   resize: none;
   min-height: 56px;
   padding: 0;
@@ -346,7 +332,7 @@
 }
 .update-modal-update-area.editing textarea { display: block; }
 .update-modal-update-area.editing .update-modal-update-display { display: none; }
-.update-modal-update-area textarea::placeholder { color: var(--um-text-tertiary); }
+.update-modal-update-area textarea::placeholder { color: var(--modal-text-tertiary); }
 
 /* Chip row (Due + Live) */
 .update-modal-chip-row {
@@ -358,11 +344,11 @@
 }
 
 .update-modal-chip {
-  background: var(--um-bg-soft);
+  background: var(--modal-bg-soft);
   padding: 9px 16px;
   border-radius: 999px;
-  font-size: var(--um-type-meta);
-  color: var(--um-text-primary);
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-primary);
   font-family: inherit;
   border: none;
   cursor: pointer;
@@ -372,10 +358,10 @@
   transition: background 0.15s;
   line-height: 1.3;
 }
-.update-modal-chip:hover { background: var(--um-bg-soft-hover); }
-.update-modal-chip.empty { color: var(--um-text-tertiary); }
+.update-modal-chip:hover { background: var(--modal-bg-soft-hover); }
+.update-modal-chip.empty { color: var(--modal-text-tertiary); }
 .update-modal-chip .chevron {
-  color: var(--um-red);
+  color: var(--modal-red);
   display: inline-flex;
   align-items: center;
   transition: transform 0.2s ease;
@@ -385,7 +371,7 @@
   height: 10px;
   display: block;
 }
-.update-modal-chip.open { background: var(--um-bg-soft-hover); }
+.update-modal-chip.open { background: var(--modal-bg-soft-hover); }
 .update-modal-chip.open .chevron { transform: rotate(180deg); }
 
 .update-modal-hidden-input {
@@ -432,27 +418,27 @@
 .update-modal-spend-amount {
   display: inline-flex;
   align-items: baseline;
-  background: var(--um-bg-soft);
+  background: var(--modal-bg-soft);
   border-radius: 999px;
   padding: 9px 16px;
   transition: background 0.15s;
   cursor: pointer;
 }
-.update-modal-spend-amount:hover { background: var(--um-bg-soft-hover); }
-.update-modal-spend-amount:focus-within { background: var(--um-bg-soft-hover); }
+.update-modal-spend-amount:hover { background: var(--modal-bg-soft-hover); }
+.update-modal-spend-amount:focus-within { background: var(--modal-bg-soft-hover); }
 
 .update-modal-spend-amount .dollar {
-  font-size: var(--um-type-meta);
+  font-size: var(--modal-type-meta);
   font-weight: 500;
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
   margin-right: 1px;
 }
 
-.update-modal-spend-amount.empty .dollar { color: var(--um-text-tertiary); }
-.update-modal-spend-amount.empty .update-modal-spend-input { color: var(--um-text-tertiary); }
+.update-modal-spend-amount.empty .dollar { color: var(--modal-text-tertiary); }
+.update-modal-spend-amount.empty .update-modal-spend-input { color: var(--modal-text-tertiary); }
 
 .update-modal-spend-input {
-  font-size: var(--um-type-meta);
+  font-size: var(--modal-type-meta);
   font-weight: 500;
   line-height: 1.3;
   border: none;
@@ -460,10 +446,10 @@
   outline: none;
   font-family: inherit;
   width: 70px;
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
   padding: 0;
 }
-.update-modal-spend-input::placeholder { color: var(--um-text-tertiary); }
+.update-modal-spend-input::placeholder { color: var(--modal-text-tertiary); }
 
 /* Tick (checkbox style) — for Ballpark, no pill chrome */
 .update-modal-tick-row {
@@ -501,21 +487,21 @@
   transition: opacity 0.15s;
 }
 .update-modal-tick-row.on .update-modal-tick {
-  background: var(--um-red);
-  border-color: var(--um-red);
+  background: var(--modal-red);
+  border-color: var(--modal-red);
 }
 .update-modal-tick-row.on .update-modal-tick svg { opacity: 1; }
 
 .update-modal-tick-label {
-  font-size: var(--um-type-meta);
-  color: var(--um-text-primary);
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-primary);
   font-weight: 500;
   letter-spacing: 0.02em;
 }
 
 .update-modal-to-date {
-  font-size: var(--um-type-eyebrow);
-  color: var(--um-text-secondary);
+  font-size: var(--modal-type-eyebrow);
+  color: var(--modal-text-secondary);
   margin-bottom: 14px;
   margin-top: 6px;
   padding-left: 16px;
@@ -524,7 +510,7 @@
 
 /* Notes box */
 .update-modal-notes-box {
-  background: var(--um-bg-soft);
+  background: var(--modal-bg-soft);
   border-radius: 10px;
   padding: 12px 16px;
   margin-bottom: 0;
@@ -532,8 +518,8 @@
   cursor: text;
   position: relative;
 }
-.update-modal-notes-box:hover { background: var(--um-bg-soft-hover); }
-.update-modal-notes-box:focus-within { background: var(--um-bg-soft-hover); }
+.update-modal-notes-box:hover { background: var(--modal-bg-soft-hover); }
+.update-modal-notes-box:focus-within { background: var(--modal-bg-soft-hover); }
 
 .update-modal-notes-box textarea {
   width: 100%;
@@ -541,14 +527,14 @@
   border: none;
   outline: none;
   font-family: inherit;
-  font-size: var(--um-type-meta);
+  font-size: var(--modal-type-meta);
   line-height: 1.5;
-  color: var(--um-text-secondary);
+  color: var(--modal-text-secondary);
   resize: none;
   padding: 0;
   display: block;
 }
-.update-modal-notes-box textarea::placeholder { color: var(--um-text-tertiary); }
+.update-modal-notes-box textarea::placeholder { color: var(--modal-text-tertiary); }
 
 /* Bottom strip — With Client + Status */
 .update-modal-bottom-strip {
@@ -565,8 +551,8 @@
   width: 38px;
   height: 22px;
   border-radius: 999px;
-  background: var(--um-bg-soft);
-  border: 0.5px solid var(--um-border-soft);
+  background: var(--modal-bg-soft);
+  border: 0.5px solid var(--modal-hairline);
   position: relative;
   cursor: pointer;
   padding: 0;
@@ -583,14 +569,14 @@
   position: absolute;
   top: 1.5px;
   left: 2px;
-  border: 0.5px solid var(--um-border-soft);
+  border: 0.5px solid var(--modal-hairline);
   transition: transform 0.2s;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
-.update-modal-toggle.on { background: var(--um-red); border-color: var(--um-red); }
+.update-modal-toggle.on { background: var(--modal-red); border-color: var(--modal-red); }
 .update-modal-toggle.on::after {
   transform: translateX(16px);
-  border-color: var(--um-red);
+  border-color: var(--modal-red);
 }
 
 .update-modal-toggle-pair {
@@ -604,15 +590,15 @@
   font-family: inherit;
 }
 .update-modal-toggle-label {
-  font-size: var(--um-type-eyebrow);
+  font-size: var(--modal-type-eyebrow);
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--um-text-tertiary);
+  color: var(--modal-text-tertiary);
   text-transform: uppercase;
   transition: color 0.15s;
 }
 .update-modal-toggle-pair.on .update-modal-toggle-label {
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
 }
 
 /* Status statement */
@@ -625,15 +611,15 @@
   padding: 0;
   cursor: pointer;
   font-family: inherit;
-  font-size: var(--um-type-eyebrow);
+  font-size: var(--modal-type-eyebrow);
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
   text-transform: uppercase;
   transition: color 0.15s;
 }
-.update-modal-status:hover { color: var(--um-red); }
-.update-modal-status.open { color: var(--um-red); }
+.update-modal-status:hover { color: var(--modal-red); }
+.update-modal-status.open { color: var(--modal-red); }
 .update-modal-status-indicator {
   width: 22px;
   height: 22px;
@@ -648,13 +634,13 @@
 /* Submit */
 .update-modal-submit {
   width: 100%;
-  background: var(--um-red);
+  background: var(--modal-red);
   color: white;
   border: none;
   padding: 18px;
   border-radius: 999px;
   font-family: inherit;
-  font-size: var(--um-type-body);
+  font-size: var(--modal-type-body);
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -662,10 +648,10 @@
   margin-top: 28px;
   transition: background 0.15s, transform 0.1s;
 }
-.update-modal-submit:hover { background: var(--um-red-hover); }
+.update-modal-submit:hover { background: var(--modal-red-hover); }
 .update-modal-submit:active { transform: scale(0.99); }
 .update-modal-submit:disabled {
-  background: var(--um-text-tertiary);
+  background: var(--modal-text-tertiary);
   cursor: wait;
   transform: none;
 }
@@ -678,10 +664,10 @@
 }
 
 .update-modal-completion-eyebrow {
-  font-size: var(--um-type-eyebrow);
+  font-size: var(--modal-type-eyebrow);
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--um-text-tertiary);
+  color: var(--modal-text-tertiary);
   text-transform: uppercase;
   line-height: 1;
   margin-bottom: 8px;
@@ -696,19 +682,19 @@
 }
 
 .update-modal-completion-title {
-  font-size: var(--um-type-hero);
+  font-size: var(--modal-type-hero);
   font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.2;
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
   margin-bottom: 28px;
 }
 
 .update-modal-completion-section-eyebrow {
-  font-size: var(--um-type-eyebrow);
+  font-size: var(--modal-type-eyebrow);
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--um-text-tertiary);
+  color: var(--modal-text-tertiary);
   text-transform: uppercase;
   line-height: 1;
   margin-bottom: 10px;
@@ -716,7 +702,7 @@
 
 /* Two-zone card: main load-this-job button + chevron toggle */
 .update-modal-completion-next-card {
-  background: var(--um-bg-soft);
+  background: var(--modal-bg-soft);
   border-radius: 10px;
   display: flex;
   align-items: stretch;
@@ -738,7 +724,7 @@
   text-align: left;
   transition: background 0.15s;
 }
-.update-modal-completion-next-main:hover { background: var(--um-bg-soft-hover); }
+.update-modal-completion-next-main:hover { background: var(--modal-bg-soft-hover); }
 
 .update-modal-completion-next-logo {
   width: 36px;
@@ -746,26 +732,26 @@
   border-radius: 50%;
   flex-shrink: 0;
   object-fit: cover;
-  background: var(--um-bg-soft-hover);
+  background: var(--modal-bg-soft-hover);
 }
 
 .update-modal-completion-next-content { flex: 1; min-width: 0; }
 
 .update-modal-completion-next-kicker {
-  font-size: var(--um-type-eyebrow);
+  font-size: var(--modal-type-eyebrow);
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--um-text-tertiary);
+  color: var(--modal-text-tertiary);
   line-height: 1;
   margin-bottom: 4px;
   text-transform: uppercase;
 }
 
 .update-modal-completion-next-name {
-  font-size: var(--um-type-body);
+  font-size: var(--modal-type-body);
   font-weight: 500;
   line-height: 1.2;
-  color: var(--um-text-primary);
+  color: var(--modal-text-primary);
 }
 
 .update-modal-completion-next-toggle {
@@ -777,7 +763,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--um-red);
+  color: var(--modal-red);
   transition: background 0.15s;
 }
 .update-modal-completion-next-toggle svg {
@@ -818,7 +804,7 @@
   text-align: left;
   transition: background 0.15s;
 }
-.update-modal-completion-menu-row:hover { background: var(--um-bg-soft); }
+.update-modal-completion-menu-row:hover { background: var(--modal-bg-soft); }
 
 .update-modal-completion-menu-logo {
   width: 28px;
@@ -826,24 +812,24 @@
   border-radius: 50%;
   flex-shrink: 0;
   object-fit: cover;
-  background: var(--um-bg-soft-hover);
+  background: var(--modal-bg-soft-hover);
 }
 
 .update-modal-completion-menu-content { flex: 1; min-width: 0; }
 
 .update-modal-completion-menu-kicker {
-  font-size: var(--um-type-eyebrow);
+  font-size: var(--modal-type-eyebrow);
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--um-text-tertiary);
+  color: var(--modal-text-tertiary);
   line-height: 1;
   margin-bottom: 3px;
   text-transform: uppercase;
 }
 
 .update-modal-completion-menu-name {
-  font-size: var(--um-type-meta);
-  color: var(--um-text-primary);
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-primary);
   line-height: 1.2;
 }
 
@@ -856,8 +842,8 @@
 /* Status filter rows ("On Hold (2)", "Incoming (4)", "Choose another client")
    Same row template as job rows but no logo, plain primary-text colour, right-aligned chevron */
 .update-modal-completion-menu-row.um-status-row {
-  font-size: var(--um-type-meta);
-  color: var(--um-text-primary);
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-primary);
   padding: 12px 12px;
   display: flex;
   align-items: center;
@@ -867,12 +853,12 @@
 .update-modal-completion-menu-row.um-status-row svg {
   width: 12px;
   height: 12px;
-  color: var(--um-text-tertiary);
+  color: var(--modal-text-tertiary);
   flex-shrink: 0;
 }
 .um-status-row-label { display: inline-flex; align-items: center; gap: 6px; }
 .um-status-row-count {
-  color: var(--um-text-tertiary);
+  color: var(--modal-text-tertiary);
   font-weight: 400;
 }
 
@@ -881,19 +867,19 @@
   padding: 16px;
   border-radius: 999px;
   font-family: inherit;
-  font-size: var(--um-type-body);
+  font-size: var(--modal-type-body);
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   cursor: pointer;
-  background: var(--um-red);
+  background: var(--modal-red);
   color: #FFFFFF;
-  border: 2px solid var(--um-red);
+  border: 2px solid var(--modal-red);
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
 }
 .update-modal-completion-btn-filled:hover {
-  background: var(--um-red-hover);
-  border-color: var(--um-red-hover);
+  background: var(--modal-red-hover);
+  border-color: var(--modal-red-hover);
 }
 .update-modal-completion-btn-filled:active { transform: scale(0.99); }
 
