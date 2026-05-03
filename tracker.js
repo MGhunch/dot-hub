@@ -198,13 +198,18 @@ function populateTrackerClients(data) {
     
     filteredData.forEach(c => {
         trackerClients[c.code] = {
+            code: c.code,
             name: c.name,
             committed: c.committed,
             quarterlyCommitted: c.committed * 3,
             rollover: c.rollover || 0,
             rolloverUseIn: c.rolloverUseIn || '',
             yearEnd: c.yearEnd,
-            currentQuarter: c.currentQuarter
+            currentQuarter: c.currentQuarter,
+            // Phase 2/3 additions — historically-accurate budget data
+            committedByMonth: c.committedByMonth,
+            rolloverObject: c.rolloverObject,
+            chartMonths: c.chartMonths
         };
     });
     
