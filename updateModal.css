@@ -3,50 +3,9 @@
    Companion file to updateModal.js. All styles scoped to .update-modal-overlay
    and .update-modal-* to avoid collisions with existing Hub modal CSS. */
 
-.update-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease-out;
-  padding: 24px;
-  font-family: 'DM Sans', system-ui, sans-serif;
-}
-.update-modal-overlay.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
+/* .update-modal-overlay layout/visibility provided by .modal-overlay primitive.
+   Class kept on the element as a hook for the input focus rules below. */
 
-.update-modal {
-  background: #FFFFFF;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 400px;
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
-  overflow-x: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-  transform: translateY(20px) scale(0.98);
-  transition: transform 0.25s ease-out;
-  position: relative;
-  color: var(--modal-text-primary);
-}
-.update-modal-overlay.visible .update-modal {
-  transform: translateY(0) scale(1);
-}
-
-.update-modal *:focus { outline: none; }
-.update-modal button:focus-visible,
-.update-modal input:focus-visible,
-.update-modal textarea:focus-visible {
-  outline: 2px solid rgba(237, 28, 36, 0.35);
-  outline-offset: 2px;
-}
 /* Inputs inside soft containers — the container handles focus state visually,
    so the inner outline is redundant noise. */
 .update-modal-update-area textarea:focus-visible,
@@ -55,29 +14,7 @@
   outline: none;
 }
 
-.update-modal-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: none;
-  border: none;
-  font-size: 22px;
-  color: var(--modal-text-tertiary);
-  cursor: pointer;
-  line-height: 1;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-  z-index: 2;
-}
-.update-modal-close:hover {
-  background: var(--modal-bg-soft);
-  color: var(--modal-text-primary);
-}
+/* Close-button rules provided by .modal-close primitive. */
 
 /* ===== PICKER ===== */
 .update-modal-picker { padding: 32px 28px 28px; }
@@ -130,49 +67,7 @@
   gap: 4px;
 }
 
-.update-modal-picker-row {
-  background: none;
-  border: none;
-  padding: 12px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  text-align: left;
-  transition: background 0.15s;
-  font-family: inherit;
-  width: 100%;
-}
-.update-modal-picker-row:hover { background: var(--modal-bg-soft); }
-
-.update-modal-picker-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  object-fit: cover;
-  background: var(--modal-bg-soft);
-}
-
-.update-modal-picker-content { flex: 1; min-width: 0; }
-
-.update-modal-picker-kicker {
-  font-size: var(--modal-type-eyebrow);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--modal-text-tertiary);
-  line-height: 1;
-  margin-bottom: 4px;
-  text-transform: uppercase;
-}
-
-.update-modal-picker-name {
-  font-size: var(--modal-type-body);
-  font-weight: 500;
-  line-height: 1.2;
-  color: var(--modal-text-primary);
-}
+/* Picker row + sub-elements provided by .modal-row primitive. */
 
 .update-modal-picker-empty {
   padding: 16px 14px;
@@ -180,11 +75,10 @@
   color: var(--modal-text-tertiary);
 }
 
-/* ===== HEADER ===== */
+/* ===== HEADER =====
+   Layout/padding/border provided by .modal-header primitive.
+   Component only sets cursor (header is a stable region, not clickable). */
 .update-modal-header {
-  background: #FFFFFF;
-  padding: 28px 28px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   cursor: default;
 }
 
@@ -210,16 +104,8 @@
 }
 
 .update-modal-hero {
-  font-size: var(--modal-type-hero);
-  font-weight: 600;
-  line-height: 1.2;
+  /* Type/clamp/colour provided by .modal-hero primitive. */
   margin-bottom: 3px;
-  letter-spacing: -0.015em;
-  color: var(--modal-text-primary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .update-modal-description-area {
@@ -262,44 +148,31 @@
 .update-modal-description-area textarea::placeholder { color: var(--modal-text-tertiary); }
 
 .update-modal-meta {
-  font-size: var(--modal-type-eyebrow);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--modal-text-tertiary);
-  text-transform: uppercase;
-  line-height: 1;
+  /* Type/colour/transform provided by .modal-eyebrow primitive.
+     Component adds clickability + hover-red. */
   cursor: pointer;
   transition: color 0.15s;
   display: inline-block;
 }
 .update-modal-meta:hover { color: var(--modal-red); }
 
-/* ===== BODY ===== */
-.update-modal-body { padding: 24px 28px 28px; }
+/* ===== BODY =====
+   Padding provided by .modal-body primitive. */
 
-/* Section eyebrows */
+/* Section eyebrows — type provided by .modal-eyebrow primitive */
 .update-modal-section-eyebrow {
-  font-size: var(--modal-type-eyebrow);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--modal-text-tertiary);
-  text-transform: uppercase;
   margin-bottom: 8px;
-  line-height: 1;
 }
 
-/* Update area — shows latest update by default, tap to edit */
+/* Update area — shows latest update by default, tap to edit.
+   Base bg/radius/transition/hover provided by .modal-soft-box primitive. */
 .update-modal-update-area {
-  background: var(--modal-bg-soft);
-  border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 14px;
-  transition: background 0.15s;
   cursor: text;
   min-height: 80px;
   position: relative;
 }
-.update-modal-update-area:hover { background: var(--modal-bg-soft-hover); }
 .update-modal-update-area.editing {
   background: var(--modal-bg-soft-hover);
   cursor: default;
@@ -343,36 +216,7 @@
   margin-bottom: 18px;
 }
 
-.update-modal-chip {
-  background: var(--modal-bg-soft);
-  padding: 9px 16px;
-  border-radius: 999px;
-  font-size: var(--modal-type-meta);
-  color: var(--modal-text-primary);
-  font-family: inherit;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: background 0.15s;
-  line-height: 1.3;
-}
-.update-modal-chip:hover { background: var(--modal-bg-soft-hover); }
-.update-modal-chip.empty { color: var(--modal-text-tertiary); }
-.update-modal-chip .chevron {
-  color: var(--modal-red);
-  display: inline-flex;
-  align-items: center;
-  transition: transform 0.2s ease;
-}
-.update-modal-chip .chevron svg {
-  width: 10px;
-  height: 10px;
-  display: block;
-}
-.update-modal-chip.open { background: var(--modal-bg-soft-hover); }
-.update-modal-chip.open .chevron { transform: rotate(180deg); }
+/* Chip + chevron rules provided by .modal-chip primitive. */
 
 .update-modal-hidden-input {
   position: absolute;
@@ -416,15 +260,12 @@
 }
 
 .update-modal-spend-amount {
+  /* Base bg/radius/transition/hover provided by .modal-soft-pill primitive. */
   display: inline-flex;
   align-items: baseline;
-  background: var(--modal-bg-soft);
-  border-radius: 999px;
   padding: 9px 16px;
-  transition: background 0.15s;
   cursor: pointer;
 }
-.update-modal-spend-amount:hover { background: var(--modal-bg-soft-hover); }
 .update-modal-spend-amount:focus-within { background: var(--modal-bg-soft-hover); }
 
 .update-modal-spend-amount .dollar {
@@ -508,17 +349,13 @@
 }
 .update-modal-to-date.hidden { display: none; }
 
-/* Notes box */
+/* Notes box — base bg/radius/transition/hover provided by .modal-soft-box primitive. */
 .update-modal-notes-box {
-  background: var(--modal-bg-soft);
-  border-radius: 10px;
   padding: 12px 16px;
   margin-bottom: 0;
-  transition: background 0.15s;
   cursor: text;
   position: relative;
 }
-.update-modal-notes-box:hover { background: var(--modal-bg-soft-hover); }
 .update-modal-notes-box:focus-within { background: var(--modal-bg-soft-hover); }
 
 .update-modal-notes-box textarea {
@@ -631,29 +468,11 @@
   display: block;
 }
 
-/* Submit */
+/* Submit — base provided by .modal-button-filled primitive.
+   Component overrides padding (18px vs 16px) + adds top margin. */
 .update-modal-submit {
-  width: 100%;
-  background: var(--modal-red);
-  color: white;
-  border: none;
   padding: 18px;
-  border-radius: 999px;
-  font-family: inherit;
-  font-size: var(--modal-type-body);
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  cursor: pointer;
   margin-top: 28px;
-  transition: background 0.15s, transform 0.1s;
-}
-.update-modal-submit:hover { background: var(--modal-red-hover); }
-.update-modal-submit:active { transform: scale(0.99); }
-.update-modal-submit:disabled {
-  background: var(--modal-text-tertiary);
-  cursor: wait;
-  transform: none;
 }
 
 /* ===== COMPLETION VIEW =====
@@ -664,12 +483,8 @@
 }
 
 .update-modal-completion-eyebrow {
-  font-size: var(--modal-type-eyebrow);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--modal-text-tertiary);
-  text-transform: uppercase;
-  line-height: 1;
+  /* Type/colour/transform provided by .modal-eyebrow primitive.
+     Component adds inline-flex for the leading icon. */
   margin-bottom: 8px;
   display: inline-flex;
   align-items: center;
@@ -682,21 +497,12 @@
 }
 
 .update-modal-completion-title {
-  font-size: var(--modal-type-hero);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
-  color: var(--modal-text-primary);
+  /* Type/clamp/colour provided by .modal-hero primitive. */
   margin-bottom: 28px;
 }
 
 .update-modal-completion-section-eyebrow {
-  font-size: var(--modal-type-eyebrow);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--modal-text-tertiary);
-  text-transform: uppercase;
-  line-height: 1;
+  /* Type/colour/transform provided by .modal-eyebrow primitive. */
   margin-bottom: 10px;
 }
 
@@ -790,67 +596,40 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.update-modal-completion-menu-row {
-  background: none;
-  border: none;
-  width: 100%;
-  padding: 10px 12px;
+/* Job rows inside the menu use .modal-row.compact (logo + kicker + name).
+   The menu container sets a 10px radius; rows inside use a sub-radius. */
+.update-modal-completion-menu .modal-row.compact {
   border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-family: inherit;
-  text-align: left;
-  transition: background 0.15s;
-}
-.update-modal-completion-menu-row:hover { background: var(--modal-bg-soft); }
-
-.update-modal-completion-menu-logo {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  object-fit: cover;
-  background: var(--modal-bg-soft-hover);
 }
 
-.update-modal-completion-menu-content { flex: 1; min-width: 0; }
-
-.update-modal-completion-menu-kicker {
-  font-size: var(--modal-type-eyebrow);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--modal-text-tertiary);
-  line-height: 1;
-  margin-bottom: 3px;
-  text-transform: uppercase;
-}
-
-.update-modal-completion-menu-name {
-  font-size: var(--modal-type-meta);
-  color: var(--modal-text-primary);
-  line-height: 1.2;
-}
-
+/* Hairline divider between job rows and status/escape rows.
+   Base h:1px + bg provided by .modal-divider primitive. */
 .update-modal-completion-menu-divider {
-  height: 1px;
-  background: rgba(0, 0, 0, 0.06);
   margin: 4px 12px;
 }
 
 /* Status filter rows ("On Hold (2)", "Incoming (4)", "Choose another client")
-   Same row template as job rows but no logo, plain primary-text colour, right-aligned chevron */
-.update-modal-completion-menu-row.um-status-row {
+   Standalone — no logo, plain primary-text colour, right-aligned chevron.
+   Self-sufficient since it doesn't fit the .modal-row template. */
+.um-status-row {
+  background: none;
+  border: none;
+  width: 100%;
+  padding: 12px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.15s;
   font-size: var(--modal-type-meta);
   color: var(--modal-text-primary);
-  padding: 12px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
-.update-modal-completion-menu-row.um-status-row svg {
+.um-status-row:hover { background: var(--modal-bg-soft); }
+.um-status-row svg {
   width: 12px;
   height: 12px;
   color: var(--modal-text-tertiary);
@@ -862,31 +641,11 @@
   font-weight: 400;
 }
 
-.update-modal-completion-btn-filled {
-  width: 100%;
-  padding: 16px;
-  border-radius: 999px;
-  font-family: inherit;
-  font-size: var(--modal-type-body);
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  cursor: pointer;
-  background: var(--modal-red);
-  color: #FFFFFF;
-  border: 2px solid var(--modal-red);
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
-}
-.update-modal-completion-btn-filled:hover {
-  background: var(--modal-red-hover);
-  border-color: var(--modal-red-hover);
-}
-.update-modal-completion-btn-filled:active { transform: scale(0.99); }
+/* DONE button — fully provided by .modal-button-filled primitive. */
 
-/* Mobile tweaks */
+/* Mobile tweaks — header/body mobile padding provided by primitives.
+   Picker and completion have their own padding so stay component-specific. */
 @media (max-width: 480px) {
-  .update-modal-header { padding: 24px 20px 20px; }
-  .update-modal-body { padding: 20px 20px 24px; }
   .update-modal-picker { padding: 28px 20px 24px; }
   .update-modal-completion { padding: 28px 20px 24px; }
 }

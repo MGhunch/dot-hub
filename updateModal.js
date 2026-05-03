@@ -238,7 +238,7 @@ function wireUpdateModalListeners() {
 
     // Completion menu — click a row (job, status filter, or "choose another client")
     $um('update-modal-completion-menu')?.addEventListener('click', async (e) => {
-        const row = e.target.closest('.update-modal-completion-menu-row');
+        const row = e.target.closest('button[data-job-number], button[data-action]');
         if (!row) return;
 
         if (row.dataset.action === 'choose-client') {
@@ -925,11 +925,11 @@ function renderCompletionMenu(sameClientJobs, currentClientCode) {
         const display = escapeHtml(formatJobDisplay(j.jobNumber));
         const name = escapeHtml(j.jobName || '');
         return `
-          <button class="update-modal-completion-menu-row" data-job-number="${num}" type="button">
-            <img class="update-modal-completion-menu-logo" src="${escapeAttr(logoUrl)}" alt="" onerror="this.src='images/logos/Unknown.png'">
-            <div class="update-modal-completion-menu-content">
-              <div class="update-modal-completion-menu-kicker">${display}</div>
-              <div class="update-modal-completion-menu-name">${name}</div>
+          <button class="modal-row compact" data-job-number="${num}" type="button">
+            <img class="modal-row-logo" src="${escapeAttr(logoUrl)}" alt="" onerror="this.src='images/logos/Unknown.png'">
+            <div class="modal-row-content">
+              <div class="modal-row-kicker">${display}</div>
+              <div class="modal-row-name">${name}</div>
             </div>
           </button>
         `;
@@ -948,13 +948,13 @@ function renderCompletionMenu(sameClientJobs, currentClientCode) {
 
     const statusRows = [
         onHoldCount > 0
-            ? `<button class="update-modal-completion-menu-row um-status-row" data-action="filter-status" data-status="On Hold" type="button">
+            ? `<button class="um-status-row" data-action="filter-status" data-status="On Hold" type="button">
                  <span class="um-status-row-label">Jobs on hold <span class="um-status-row-count">(${onHoldCount})</span></span>
                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
                </button>`
             : '',
         incomingCount > 0
-            ? `<button class="update-modal-completion-menu-row um-status-row" data-action="filter-status" data-status="Incoming" type="button">
+            ? `<button class="um-status-row" data-action="filter-status" data-status="Incoming" type="button">
                  <span class="um-status-row-label">Jobs incoming <span class="um-status-row-count">(${incomingCount})</span></span>
                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
                </button>`
@@ -962,14 +962,14 @@ function renderCompletionMenu(sameClientJobs, currentClientCode) {
     ].filter(Boolean).join('');
 
     const chooseClientRow = `
-      <button class="update-modal-completion-menu-row um-status-row" data-action="choose-client" type="button">
+      <button class="um-status-row" data-action="choose-client" type="button">
         <span class="um-status-row-label">Choose another client</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
       </button>
     `;
 
     // Divider only between curated job rows and the status/escape rows
-    const divider = jobRows ? '<div class="update-modal-completion-menu-divider"></div>' : '';
+    const divider = jobRows ? '<div class="modal-divider update-modal-completion-menu-divider"></div>' : '';
 
     menu.innerHTML = jobRows + divider + statusRows + chooseClientRow;
 }

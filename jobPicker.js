@@ -82,7 +82,7 @@
 
         // Job rows — event delegation
         listClickHandler = (e) => {
-            const row = e.target.closest('.update-modal-picker-row');
+            const row = e.target.closest('.modal-row');
             if (!row || !listEl.contains(row)) return;
             const jobNumber = row.dataset.jobNumber;
             if (jobNumber) onPickFn(jobNumber);
@@ -130,11 +130,11 @@
             const display = escapeHtml(formatJobDisplay(j.jobNumber));
             const name = escapeHtml(j.jobName || '');
             return `
-              <button class="update-modal-picker-row" data-job-number="${num}">
-                <img class="update-modal-picker-logo" src="${escapeAttr(logoUrl)}" alt="${escapeAttr(clientCode)}" onerror="this.src='images/logos/Unknown.png'">
-                <div class="update-modal-picker-content">
-                  <div class="update-modal-picker-kicker">${display}</div>
-                  <div class="update-modal-picker-name">${name}</div>
+              <button class="modal-row" data-job-number="${num}">
+                <img class="modal-row-logo" src="${escapeAttr(logoUrl)}" alt="${escapeAttr(clientCode)}" onerror="this.src='images/logos/Unknown.png'">
+                <div class="modal-row-content">
+                  <div class="modal-row-kicker">${display}</div>
+                  <div class="modal-row-name">${name}</div>
                 </div>
               </button>
             `;

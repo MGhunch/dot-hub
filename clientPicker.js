@@ -58,7 +58,7 @@
 
         // Event delegation — one listener for all rows
         clickHandler = (e) => {
-            const row = e.target.closest('.update-modal-picker-row');
+            const row = e.target.closest('.modal-row');
             if (!row || !listEl.contains(row)) return;
             const code = row.dataset.code;
             if (code) onPickFn(code);
@@ -126,11 +126,11 @@
                 ? getLogoUrl(c.code)
                 : `images/logos/${c.code}.png`;
             return `
-              <button class="update-modal-picker-row" data-code="${code}">
-                <img class="update-modal-picker-logo" src="${escapeAttr(logoUrl)}" alt="${code}" onerror="this.src='images/logos/Unknown.png'">
-                <div class="update-modal-picker-content">
-                  <div class="update-modal-picker-kicker">${code}</div>
-                  <div class="update-modal-picker-name">${name}</div>
+              <button class="modal-row" data-code="${code}">
+                <img class="modal-row-logo" src="${escapeAttr(logoUrl)}" alt="${code}" onerror="this.src='images/logos/Unknown.png'">
+                <div class="modal-row-content">
+                  <div class="modal-row-kicker">${code}</div>
+                  <div class="modal-row-name">${name}</div>
                 </div>
               </button>
             `;

@@ -1223,9 +1223,9 @@
          Unified Update modal — Plus menu's Update action lands here.
          Cold entry shows picker (clients → jobs); hot entry skips to populated view.
          See updateModal.js / updateModal.css. -->
-    <div class="update-modal-overlay" id="update-modal-overlay" role="dialog" aria-modal="true" aria-label="Update job">
-        <div class="update-modal" id="update-modal">
-            <button class="update-modal-close" id="update-modal-close" aria-label="Close">×</button>
+    <div class="modal-overlay update-modal-overlay" id="update-modal-overlay" role="dialog" aria-modal="true" aria-label="Update job">
+        <div class="modal-shell update-modal" id="update-modal">
+            <button class="modal-close update-modal-close" id="update-modal-close" aria-label="Close">×</button>
 
             <!-- PICKER VIEW -->
             <div class="update-modal-picker" id="update-modal-picker">
@@ -1235,36 +1235,36 @@
 
             <!-- POPULATED VIEW -->
             <div class="update-modal-populated" id="update-modal-populated" style="display:none">
-                <div class="update-modal-header" id="update-modal-header">
+                <div class="modal-header update-modal-header" id="update-modal-header">
                     <div class="update-modal-header-row">
                         <img class="update-modal-header-logo" id="update-modal-header-logo" src="images/logos/Unknown.png" alt="">
                         <div class="update-modal-header-text">
-                            <div class="update-modal-hero" id="update-modal-hero"></div>
+                            <div class="modal-hero update-modal-hero" id="update-modal-hero"></div>
                             <div class="update-modal-description-area" id="update-modal-description-area">
                                 <div class="update-modal-description" id="update-modal-description"></div>
                                 <textarea id="update-modal-description-input" placeholder="What's this job about?" rows="2"></textarea>
                             </div>
-                            <div class="update-modal-meta" id="update-modal-meta"></div>
+                            <div class="modal-eyebrow update-modal-meta" id="update-modal-meta"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="update-modal-body">
-                    <div class="update-modal-section-eyebrow">UPDATE</div>
-                    <div class="update-modal-update-area" id="update-modal-update-area">
+                <div class="modal-body update-modal-body">
+                    <div class="modal-eyebrow update-modal-section-eyebrow">UPDATE</div>
+                    <div class="modal-soft-box update-modal-update-area" id="update-modal-update-area">
                         <div class="update-modal-update-display" id="update-modal-update-display"></div>
                         <textarea id="update-modal-update-field" placeholder="What's happening?" rows="2"></textarea>
                     </div>
 
                     <div class="update-modal-chip-row">
-                        <button class="update-modal-chip" id="update-modal-due-chip" type="button">
+                        <button class="modal-chip update-modal-chip" id="update-modal-due-chip" type="button">
                             <span id="update-modal-due-label">Set due</span>
                             <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
                         </button>
                         <input type="date" class="update-modal-hidden-input" id="update-modal-due-input">
 
                         <div class="custom-dropdown update-modal-dropdown">
-                            <button class="update-modal-chip" id="update-modal-live-chip" type="button">
+                            <button class="modal-chip update-modal-chip" id="update-modal-live-chip" type="button">
                                 <span id="update-modal-live-label">Live · TBC</span>
                                 <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
                             </button>
@@ -1273,15 +1273,15 @@
                     </div>
 
                     <div class="update-modal-tracker">
-                        <div class="update-modal-section-eyebrow">TRACKER</div>
+                        <div class="modal-eyebrow update-modal-section-eyebrow">TRACKER</div>
 
                         <div class="update-modal-spend-row">
-                            <div class="update-modal-spend-amount" id="update-modal-spend-amount">
+                            <div class="modal-soft-pill update-modal-spend-amount" id="update-modal-spend-amount">
                                 <span class="dollar">$</span>
                                 <input class="update-modal-spend-input" id="update-modal-spend-input" type="text" inputmode="numeric" placeholder="0">
                             </div>
                             <div class="custom-dropdown update-modal-dropdown">
-                                <button class="update-modal-chip" id="update-modal-month-chip" type="button">
+                                <button class="modal-chip update-modal-chip" id="update-modal-month-chip" type="button">
                                     <span id="update-modal-month-label">May</span>
                                     <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
                                 </button>
@@ -1298,7 +1298,7 @@
                         </div>
                         <div class="update-modal-to-date hidden" id="update-modal-to-date"></div>
 
-                        <div class="update-modal-notes-box">
+                        <div class="modal-soft-box update-modal-notes-box">
                             <textarea id="update-modal-tracker-notes" placeholder="What's the spend for?" rows="1"></textarea>
                         </div>
                     </div>
@@ -1318,19 +1318,19 @@
                         </div>
                     </div>
 
-                    <button class="update-modal-submit" id="update-modal-submit">UPDATE</button>
+                    <button class="modal-button-filled update-modal-submit" id="update-modal-submit">UPDATE</button>
                 </div>
             </div>
 
             <!-- COMPLETION VIEW -->
             <div class="update-modal-completion" id="update-modal-completion" style="display:none">
-                <div class="update-modal-completion-eyebrow">
+                <div class="modal-eyebrow update-modal-completion-eyebrow">
                     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 8 7 12 13 4"/></svg>
                     <span>UPDATED</span>
                 </div>
-                <div class="update-modal-completion-title" id="update-modal-completion-title"></div>
+                <div class="modal-hero update-modal-completion-title" id="update-modal-completion-title"></div>
 
-                <div class="update-modal-completion-section-eyebrow">NEXT UP</div>
+                <div class="modal-eyebrow update-modal-completion-section-eyebrow">NEXT UP</div>
 
                 <div class="update-modal-completion-next-card" id="update-modal-completion-next-card">
                     <button class="update-modal-completion-next-main" id="update-modal-completion-next-main" type="button">
@@ -1347,7 +1347,7 @@
 
                 <div class="update-modal-completion-menu" id="update-modal-completion-menu" hidden></div>
 
-                <button class="update-modal-completion-btn-filled" id="update-modal-completion-btn-done" type="button">DONE</button>
+                <button class="modal-button-filled update-modal-completion-btn-filled" id="update-modal-completion-btn-done" type="button">DONE</button>
             </div>
         </div>
     </div>
