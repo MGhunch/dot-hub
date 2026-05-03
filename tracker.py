@@ -128,6 +128,29 @@ def get_committed(client_code: str, year: int, month_num: int,
     return int(clients_fallback.get(client_code, 0))
 
 
+def get_committed_by_month(client_code: str, today: date,
+                           budget_history: list,
+                           clients_fallback: dict,
+                           months_back: int = 24,
+                           months_forward: int = 3) -> dict:
+    """Return {'YYYY-MM': committed_amount} covering a range around today.
+
+    Default range: 24 months back, current month, 3 months forward (28 entries).
+    Used as a lookup table for any UI surface that displays committed values
+    for a specific period.
+    """
+    result = {}
+    start = _add_months(date(today.year, today.month, 1), -months_back)
+    total_months = months_back + months_forward + 1
+    for i in range(total_months):
+        d = _add_months(start, i)
+        key = f'{d.year:04d}-{d.month:02d}'
+        result[key] = get_committed(
+            client_code, d.year, d.month, budget_history, clients_fallback,
+        )
+    return result
+
+
 def get_current_quarter(year_end_month: str, today: date) -> dict:
     """Return {'label': 'Qn', 'months': [...]} for the quarter containing today."""
     quarter_num, quarter_first = _quarter_from_today(year_end_month, today)

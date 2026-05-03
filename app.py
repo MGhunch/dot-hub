@@ -1209,6 +1209,9 @@ def get_tracker_clients():
                         year_end_month, today, code,
                         budget_history, clients_fallback,
                     )
+                    client_data['committedByMonth'] = tracker.get_committed_by_month(
+                        code, today, budget_history, clients_fallback,
+                    )
                 except Exception as e:
                     print(f'[Hub API] tracker.py error for {code}: {e}')
 

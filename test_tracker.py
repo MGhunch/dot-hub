@@ -407,5 +407,89 @@ class TestChartMonths:
         assert [e['committed'] for e in chart] == [7500] * 6
 
 
+# ===== committedByMonth — broader historical lookup table =====
+
+from tracker import get_committed_by_month
+
+
+class TestCommittedByMonth:
+    """Lookup table consumed by stat boxes/totals so any viewed period reads the
+    historically-correct committed value."""
+
+    def test_default_range_is_28_months(self):
+        # 24 back + current + 3 forward = 28
+        result = get_committed_by_month(
+            'SKY', date(2026, 5, 3), BUDGET_HISTORY, CLIENTS_FALLBACK,
+        )
+        assert len(result) == 28
+
+    def test_keys_are_yyyy_mm_format(self):
+        result = get_committed_by_month(
+            'SKY', date(2026, 5, 3), BUDGET_HISTORY, CLIENTS_FALLBACK,
+        )
+        # Earliest = 24 months back from May 2026 = May 2024
+        # Latest = 3 months forward = August 2026
+        assert '2024-05' in result
+        assert '2026-05' in result
+        assert '2026-08' in result
+        # Boundary check
+        assert '2024-04' not in result
+        assert '2026-09' not in result
+
+    def test_sky_all_10k_across_range(self):
+        result = get_committed_by_month(
+            'SKY', date(2026, 5, 3), BUDGET_HISTORY, CLIENTS_FALLBACK,
+        )
+        assert all(v == 10000 for v in result.values())
+
+    def test_ons_spans_renegotiation(self):
+        # ONS: $25K through Dec 2025, $20K from Jan 2026 onwards
+        result = get_committed_by_month(
+            'ONS', date(2026, 5, 3), BUDGET_HISTORY, CLIENTS_FALLBACK,
+        )
+        # Pre-renegotiation
+        assert result['2024-06'] == 25000
+        assert result['2025-12'] == 25000
+        # Renegotiation effective Jan 1 2026
+        assert result['2026-01'] == 20000
+        assert result['2026-05'] == 20000
+        # Forward months (no further changes scheduled)
+        assert result['2026-08'] == 20000
+
+    def test_brand_new_client_uses_fallback(self):
+        result = get_committed_by_month(
+            'NEW', date(2026, 5, 3), BUDGET_HISTORY, {'NEW': 7500},
+        )
+        assert all(v == 7500 for v in result.values())
+
+    def test_custom_range(self):
+        # 6 back + current + 0 forward = 7 entries
+        result = get_committed_by_month(
+            'SKY', date(2026, 5, 3), BUDGET_HISTORY, CLIENTS_FALLBACK,
+            months_back=6, months_forward=0,
+        )
+        assert len(result) == 7
+        assert '2025-11' in result  # 6 months back
+        assert '2026-05' in result  # current
+        assert '2026-06' not in result  # 0 forward
+
+    def test_stat_box_use_case_ons_q3_2025(self):
+        # Stat box for ONS Q3 2025 (Jul-Sep 2025) should show $75K
+        # User is looking at this from today (May 2026)
+        result = get_committed_by_month(
+            'ONS', date(2026, 5, 3), BUDGET_HISTORY, CLIENTS_FALLBACK,
+        )
+        q_total = result['2025-07'] + result['2025-08'] + result['2025-09']
+        assert q_total == 75000  # 3 * 25000 (pre-renegotiation)
+
+    def test_stat_box_use_case_ons_q1_2026(self):
+        # Stat box for ONS Q1 2026 (Apr-Jun) should show $60K (post-renegotiation)
+        result = get_committed_by_month(
+            'ONS', date(2026, 5, 3), BUDGET_HISTORY, CLIENTS_FALLBACK,
+        )
+        q_total = result['2026-04'] + result['2026-05'] + result['2026-06']
+        assert q_total == 60000  # 3 * 20000
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
