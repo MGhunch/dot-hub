@@ -86,10 +86,12 @@
 
 /* Section eyebrows sit above the soft-box / chip group below them. */
 .new-job-section-eyebrow {
-  margin-top: 18px;
+  margin-top: 22px;
   margin-bottom: 8px;
 }
-.new-job-section-eyebrow:first-child { margin-top: 0; }
+/* Only the body's first eyebrow (CLIENT) loses top margin — nested
+   first-children like the TRACKER eyebrow inside .new-job-tracker keep theirs. */
+.new-job-body > .new-job-section-eyebrow:first-child { margin-top: 0; }
 
 /* ===== OWNER (soft-box trigger) =====
    Full-width clickable cream rectangle styled like a chip — placeholder text
@@ -285,7 +287,7 @@
 
 /* Notes — same soft-box treatment as description */
 .new-job-notes-box {
-  padding: 12px 18px;
+  padding: 14px 18px;
   margin-top: 4px;
 }
 .new-job-notes-box textarea {
