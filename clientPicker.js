@@ -6,6 +6,13 @@
 // Depends on (window globals): API_BASE, state, getLogoUrl
 // Reads/writes: window._updateModalClientsCache (shared cache, kept as-is)
 // Exposes: window.clientPicker = { mount, refresh, getClients, destroy }
+//
+// Mount opts:
+//   onPick(code)      — required. Called when a row is clicked.
+//   title             — optional. Heading text. Default: 'Choose a client'.
+//   filter            — optional. 'active' (default) or 'all'.
+//                       'active' = clients with at least one job (Update modal).
+//                       'all'    = every client, top-clients first then a-z (New Job modal).
 
 (function () {
     'use strict';
@@ -28,6 +35,10 @@
         return Number.isFinite(n) ? n : Infinity;
     }
 
+    // Canonical order for the top of the 'all' filter list.
+    // Mirrors the legacy New Job dropdown ordering.
+    const TOP_CLIENT_CODES = ['ONE', 'ONS', 'ONB', 'SKY', 'TOW', 'FIS', 'HUN'];
+
     // ===== PICKER INSTANCE STATE =====
     // One module-level instance is fine — Update modal mounts once per page.
     // (If New Job modal in Phase F mounts a second instance, we'll revisit
@@ -37,6 +48,7 @@
     let listEl = null;
     let onPickFn = null;
     let clickHandler = null;
+    let filterMode = 'active';
 
     // ===== MOUNT =====
     function mount(container, opts = {}) {
@@ -49,6 +61,7 @@
         containerEl = container;
         onPickFn = opts.onPick || (() => {});
         const title = opts.title || 'Choose a client';
+        filterMode = opts.filter === 'all' ? 'all' : 'active';
 
         containerEl.innerHTML = `
           <h2 class="update-modal-picker-title">${escapeHtml(title)}</h2>
@@ -97,26 +110,41 @@
             return;
         }
 
-        // Filter to clients that have at least one active job, ordered by recency
-        // (smallest daysSinceUpdate across the client's jobs = most recently touched).
-        const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
-        const recencyByClient = {};
-        for (const j of allJobs) {
-            const code = j.clientCode;
-            if (!code) continue;
-            const days = clientRecencyValue(j.daysSinceUpdate);
-            if (recencyByClient[code] === undefined || days < recencyByClient[code]) {
-                recencyByClient[code] = days;
+        let visible;
+
+        if (filterMode === 'all') {
+            // 'all' mode (New Job): top clients in canonical order, then everything else a-z.
+            const topMap = new Map(TOP_CLIENT_CODES.map((c, i) => [c, i]));
+            visible = [...clients].sort((a, b) => {
+                const aTop = topMap.has(a.code);
+                const bTop = topMap.has(b.code);
+                if (aTop && bTop) return topMap.get(a.code) - topMap.get(b.code);
+                if (aTop) return -1;
+                if (bTop) return 1;
+                return (a.name || a.code || '').localeCompare(b.name || b.code || '');
+            });
+        } else {
+            // 'active' mode (Update): clients with at least one active job, ordered by recency
+            // (smallest daysSinceUpdate across the client's jobs = most recently touched).
+            const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
+            const recencyByClient = {};
+            for (const j of allJobs) {
+                const code = j.clientCode;
+                if (!code) continue;
+                const days = clientRecencyValue(j.daysSinceUpdate);
+                if (recencyByClient[code] === undefined || days < recencyByClient[code]) {
+                    recencyByClient[code] = days;
+                }
             }
-        }
 
-        const visible = clients
-            .filter(c => recencyByClient[c.code] !== undefined)
-            .sort((a, b) => recencyByClient[a.code] - recencyByClient[b.code]);
+            visible = clients
+                .filter(c => recencyByClient[c.code] !== undefined)
+                .sort((a, b) => recencyByClient[a.code] - recencyByClient[b.code]);
 
-        if (visible.length === 0) {
-            listEl.innerHTML = '<div class="update-modal-picker-empty">No active jobs to update.</div>';
-            return;
+            if (visible.length === 0) {
+                listEl.innerHTML = '<div class="update-modal-picker-empty">No active jobs to update.</div>';
+                return;
+            }
         }
 
         listEl.innerHTML = visible.map(c => {
@@ -158,6 +186,7 @@
         listEl = null;
         onPickFn = null;
         clickHandler = null;
+        filterMode = 'active';
     }
 
     // ===== EXPOSE TO WINDOW =====

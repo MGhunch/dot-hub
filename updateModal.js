@@ -61,24 +61,9 @@ function wireUpdateModalListeners() {
     // X button
     $um('update-modal-close')?.addEventListener('click', closeUpdateModal);
 
-    // Mount pickers (clientPicker + jobPicker handle their own clicks internally)
-    const clientsContainer = $um('update-modal-picker-clients');
-    const jobsContainer    = $um('update-modal-picker-jobs');
-    if (clientsContainer && window.clientPicker) {
-        window.clientPicker.mount(clientsContainer, {
-            onPick: (code) => {
-                updateModalState.selectedClientCode = code;
-                window.jobPicker?.setClient(code);
-                showPickerStage('jobs');
-            },
-        });
-    }
-    if (jobsContainer && window.jobPicker) {
-        window.jobPicker.mount(jobsContainer, {
-            onPick: (jobNumber) => loadHotEntry(jobNumber),
-            onBack: () => showPickerStage('clients'),
-        });
-    }
+    // NOTE: clientPicker + jobPicker mounts moved into openUpdateModal so this
+    // modal coexists with other modals that mount the same single-instance
+    // pickers (e.g. New Job modal in Phase F). Mount-on-open is cheap.
 
     // Update area tap-to-edit
     $um('update-modal-update-area')?.addEventListener('click', (e) => {
@@ -305,6 +290,26 @@ async function openUpdateModal(jobNumber) {
         return;
     }
     resetState();
+
+    // Mount pickers (single-instance singletons — must be re-mounted on every open
+    // so the modal coexists cleanly with other modals that mount the same pickers).
+    const clientsContainer = $um('update-modal-picker-clients');
+    const jobsContainer    = $um('update-modal-picker-jobs');
+    if (clientsContainer && window.clientPicker) {
+        window.clientPicker.mount(clientsContainer, {
+            onPick: (code) => {
+                updateModalState.selectedClientCode = code;
+                window.jobPicker?.setClient(code);
+                showPickerStage('jobs');
+            },
+        });
+    }
+    if (jobsContainer && window.jobPicker) {
+        window.jobPicker.mount(jobsContainer, {
+            onPick: (jobNumber) => loadHotEntry(jobNumber),
+            onBack: () => showPickerStage('clients'),
+        });
+    }
 
     // Hard reset view display so showView's animation logic skips on first open
     const pickerEl = $um('update-modal-picker');
