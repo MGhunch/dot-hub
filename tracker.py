@@ -274,6 +274,13 @@ def get_rollover(client_code: str, today: date,
     # (a net-over previous quarter writes off — doesn't carry as negative).
     prev_committed_total = 0
     prev_spent_total = 0
+    prev_entry_count = 0  # how many tracker entries exist in prev quarter at all
+    prev_month_names = {m['month_name'] for m in prev_q['months']}
+    for row in tracker_entries:
+        if row.get('client') != client_code:
+            continue
+        if row.get('month') in prev_month_names:
+            prev_entry_count += 1
     for m in prev_q['months']:
         prev_committed_total += get_committed(
             client_code, m['year'], m['month_num'],
@@ -286,7 +293,18 @@ def get_rollover(client_code: str, today: date,
     # banking, but to keep this calc tractable across multiple historical
     # quarters we use net for prior-quarter rollup. This matches today's
     # behaviour and isn't visible to clients.
-    carry_in = max(0, prev_committed_total - prev_spent_total)
+    #
+    # Pre-system suppression: if the previous quarter has ZERO tracker entries
+    # for this client, that quarter pre-dates the tracker system being live for
+    # them. A retainer client with system live in that quarter would have at
+    # minimum the "Always on" monthly entries (~$1K each, $3K/quarter), so zero
+    # entries = system wasn't tracking them yet. Don't manufacture a phantom
+    # carry from "underspend = full committed amount".
+    prev_quarter_has_data = prev_entry_count > 0
+    if prev_quarter_has_data:
+        carry_in = max(0, prev_committed_total - prev_spent_total)
+    else:
+        carry_in = 0
 
     # ----- Walk completed months in current quarter -----
     today_first = date(today.year, today.month, 1)
@@ -323,8 +341,11 @@ def get_rollover(client_code: str, today: date,
     #   when there's nothing to say.
     # For CLOSED (historic retrospective): always populate both buckets so
     #   the story is complete — "$X from Q1, $Y to Q3" — even if values are 0.
+    # Pre-system override: if prev quarter had no data at all (system wasn't
+    #   live yet), hide the lastQuarter line entirely in BOTH modes — showing
+    #   "$0 from Q4" would be technically correct but misleading.
     last_quarter = None
-    if is_closed or rollover_remaining > 0:
+    if prev_quarter_has_data and (is_closed or rollover_remaining > 0):
         last_quarter = {
             'remaining': rollover_remaining,
             'inherited': carry_in,
