@@ -127,16 +127,11 @@ async function openTrackerEditModal(jobNumber, month) {
     $('tracker-edit-modal')?.classList.add('visible');
 }
 
-// Helper: open the right modal for Tracker based on access level
+// Helper: open Update modal pre-loaded with this job + month
+// (Phase G1 — was branching to legacy tracker-edit-modal / Job Bag; both legacy.
+// Role gating returns in Phase E via Update modal's own access-level handling.)
 function openTrackerDetail(jobNumber, month) {
-    if (state.currentUser?.accessLevel === 'Full') {
-        openTrackerEditModal(jobNumber, month);
-    } else {
-        // openJobBag is in app.js, access via window
-        if (typeof openJobBag === 'function') {
-            openJobBag(jobNumber);
-        }
-    }
+    openUpdateModal(jobNumber, month);
 }
 
 function closeTrackerModal() {

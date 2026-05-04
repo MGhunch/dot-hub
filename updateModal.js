@@ -283,7 +283,7 @@ function wireUpdateModalListeners() {
 }
 
 // ===== OPEN / CLOSE =====
-async function openUpdateModal(jobNumber) {
+async function openUpdateModal(jobNumber, month) {
     const overlay = $um('update-modal-overlay');
     if (!overlay) {
         console.warn('[update-modal] overlay element missing');
@@ -321,7 +321,7 @@ async function openUpdateModal(jobNumber) {
 
     if (jobNumber) {
         // Hot entry — open straight to populated view
-        await loadHotEntry(jobNumber);
+        await loadHotEntry(jobNumber, month);
     } else {
         // Cold entry — show picker
         showView('picker');
@@ -450,7 +450,7 @@ function showPickerStage(stage) {
 }
 
 // ===== HOT ENTRY (load a job into populated view) =====
-async function loadHotEntry(jobNumber) {
+async function loadHotEntry(jobNumber, month) {
     const allJobs = (typeof state !== 'undefined' && state.allJobs) ? state.allJobs : [];
     const job = allJobs.find(j => j.jobNumber === jobNumber);
     if (!job) {
@@ -534,19 +534,19 @@ async function loadHotEntry(jobNumber) {
     wcToggle.classList.toggle('on', updateModalState.withClient);
 
     // Tracker — fetch budget data for this job
-    await loadTrackerForJob(job.jobNumber);
+    await loadTrackerForJob(job.jobNumber, month);
 
     showView('populated');
 }
 
 // ===== TRACKER LOADING =====
-async function loadTrackerForJob(jobNumber) {
+async function loadTrackerForJob(jobNumber, month) {
     // Reset tracker UI to loading-ish state
     updateModalState.trackerEntries = [];
     updateModalState.totalSpend = 0;
     updateModalState.currentMonthTrackerId = null;
 
-    const currentMonth = MONTHS[new Date().getMonth()];
+    const targetMonth = month || MONTHS[new Date().getMonth()];
 
     try {
         const res = await fetch(`${API_BASE}/job/${encodeURIComponent(jobNumber)}/budget`);
@@ -559,9 +559,9 @@ async function loadTrackerForJob(jobNumber) {
         console.warn('[update-modal] budget fetch failed:', e);
     }
 
-    // Default to current calendar month
-    $um('update-modal-month-label').textContent = currentMonth;
-    resolveTrackerForMonth(currentMonth);
+    // Default to target month (clicked row's month, or current calendar month)
+    $um('update-modal-month-label').textContent = targetMonth;
+    resolveTrackerForMonth(targetMonth);
 
     // To-date
     renderToDate();

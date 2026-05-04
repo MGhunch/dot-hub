@@ -659,7 +659,7 @@ function closeJobSummary() {
 function openJobDetail(jobNumber) {
     // Track as recent
     trackRecentJob(jobNumber);
-    openJobBag(jobNumber);
+    openUpdateModal(jobNumber);
 }
 
 // ===== JOB BAG =====
