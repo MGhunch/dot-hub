@@ -1,0 +1,388 @@
+/* ===== NEW JOB MODAL =====
+   Companion file to newJobModal.js. Built on modal-system.css primitives —
+   .modal-overlay / .modal-shell / .modal-close / .modal-header / .modal-body
+   / .modal-eyebrow / .modal-soft-box / .modal-soft-pill / .modal-chip
+   / .modal-button-filled / .modal-row.
+
+   Mirrors patterns from updateModal.css for toggle / tick / spend pill —
+   duplicated by design; primitive extraction is Phase G retrofit work.
+
+   All rules scoped to .new-job-* to avoid collisions. */
+
+/* .new-job-modal-overlay layout/visibility provided by .modal-overlay primitive.
+   Class kept on element as a hook for any future scoped rules. */
+
+/* Inputs inside soft containers — container handles focus visually so the
+   inner outline is redundant noise. Mirrors update-modal pattern. */
+.new-job-description-area textarea:focus-visible,
+.new-job-notes-box textarea:focus-visible,
+.new-job-spend-amount input:focus-visible,
+.new-job-hero-input:focus-visible {
+  outline: none;
+}
+
+/* ===== PICKER ===== */
+.new-job-picker { padding: 32px 28px 28px; }
+
+/* Picker title / list / row styles all come from updateModal.css since the
+   client picker emits the same DOM (.update-modal-picker-title /
+   .update-modal-picker-list / .modal-row). updateModal.css is loaded before
+   this file. No duplication needed. */
+
+/* ===== HEADER ===== */
+.new-job-header {
+  cursor: default;
+}
+
+.new-job-header-row {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.new-job-header-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--modal-bg-soft);
+}
+
+.new-job-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Hero as an input — visually identical to .modal-hero, but editable.
+   Cannot extend .modal-hero directly because hero uses -webkit-line-clamp
+   which doesn't apply to inputs. */
+.new-job-hero-input {
+  font-family: inherit;
+  font-size: var(--modal-type-hero);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--modal-text-primary);
+  border: none;
+  background: transparent;
+  padding: 0;
+  width: 100%;
+  outline: none;
+  margin-bottom: 6px;
+}
+.new-job-hero-input::placeholder { color: var(--modal-text-tertiary); }
+.new-job-hero-input.input-error {
+  outline: 2px solid var(--modal-red);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.new-job-meta {
+  margin-top: 4px;
+}
+
+/* ===== BODY ===== */
+
+/* Section eyebrows sit above the soft-box / chip group below them. */
+.new-job-section-eyebrow {
+  margin-top: 18px;
+  margin-bottom: 8px;
+}
+.new-job-section-eyebrow:first-child { margin-top: 0; }
+
+/* ===== OWNER (soft-box trigger) =====
+   Full-width clickable cream rectangle styled like a chip — placeholder text
+   on the left, red chevron on the right. Sits under CLIENT eyebrow. */
+.new-job-owner-dropdown {
+  display: block;
+  width: 100%;
+}
+.new-job-owner-dropdown .custom-dropdown-menu {
+  left: 0;
+  right: 0;
+  min-width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.new-job-owner-trigger {
+  /* base bg/radius/transition/hover provided by .modal-soft-box primitive */
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border: none;
+  font-family: inherit;
+  font-size: var(--modal-type-body);
+  color: var(--modal-text-primary);
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.3;
+}
+.new-job-owner-trigger.empty { color: var(--modal-text-tertiary); }
+.new-job-owner-trigger.open  { background: var(--modal-bg-soft-hover); }
+
+.new-job-owner-trigger .chevron {
+  color: var(--modal-red);
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+.new-job-owner-trigger .chevron svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+.new-job-owner-trigger.open .chevron { transform: rotate(180deg); }
+
+/* ===== DESCRIPTION =====
+   Tap-to-edit pattern not needed here — the textarea is always visible. */
+.new-job-description-area {
+  padding: 14px 18px;
+}
+.new-job-description-area textarea {
+  width: 100%;
+  border: none;
+  background: none;
+  resize: none;
+  font-family: inherit;
+  font-size: var(--modal-type-body);
+  line-height: 1.4;
+  color: var(--modal-text-primary);
+  padding: 0;
+  min-height: 1.4em;
+}
+.new-job-description-area textarea::placeholder {
+  color: var(--modal-text-tertiary);
+}
+
+/* ===== CHIP ROW (Due + Live) ===== */
+.new-job-chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 14px;
+  margin-bottom: 4px;
+}
+
+.new-job-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Dropdown wrappers — reuse global .custom-dropdown-menu so the click-outside
+   handler in app.js closes them. */
+.new-job-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+.new-job-dropdown .custom-dropdown-menu {
+  min-width: 140px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* ===== TRACKER ===== */
+.new-job-tracker {
+  margin-top: 4px;
+}
+
+.new-job-spend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.new-job-spend-amount {
+  /* base bg/radius/hover provided by .modal-soft-pill primitive */
+  display: inline-flex;
+  align-items: baseline;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+.new-job-spend-amount:focus-within { background: var(--modal-bg-soft-hover); }
+
+.new-job-spend-amount .dollar {
+  font-size: var(--modal-type-meta);
+  font-weight: 500;
+  color: var(--modal-text-primary);
+  margin-right: 1px;
+}
+.new-job-spend-amount.empty .dollar { color: var(--modal-text-tertiary); }
+.new-job-spend-amount.empty .new-job-spend-input { color: var(--modal-text-tertiary); }
+
+.new-job-spend-input {
+  font-size: var(--modal-type-meta);
+  font-weight: 500;
+  line-height: 1.3;
+  border: none;
+  background: none;
+  outline: none;
+  font-family: inherit;
+  width: 70px;
+  color: var(--modal-text-primary);
+  padding: 0;
+}
+.new-job-spend-input::placeholder { color: var(--modal-text-tertiary); }
+
+/* Tick (Ballpark check) — mirrors update-modal-tick verbatim with renamed scope */
+.new-job-tick-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 4px;
+  background: none;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.new-job-tick-row:hover { opacity: 0.7; }
+
+.new-job-tick {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: white;
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.new-job-tick svg {
+  width: 12px;
+  height: 12px;
+  stroke: white;
+  stroke-width: 3;
+  fill: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.new-job-tick-row.on .new-job-tick {
+  background: var(--modal-red);
+  border-color: var(--modal-red);
+}
+.new-job-tick-row.on .new-job-tick svg { opacity: 1; }
+
+.new-job-tick-label {
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-primary);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* Notes — same soft-box treatment as description */
+.new-job-notes-box {
+  padding: 12px 18px;
+  margin-top: 4px;
+}
+.new-job-notes-box textarea {
+  width: 100%;
+  border: none;
+  background: none;
+  resize: none;
+  font-family: inherit;
+  font-size: var(--modal-type-meta);
+  line-height: 1.4;
+  color: var(--modal-text-primary);
+  padding: 0;
+  min-height: 1.4em;
+}
+.new-job-notes-box textarea::placeholder {
+  color: var(--modal-text-tertiary);
+}
+
+/* ===== BOTTOM STRIP (toggles) =====
+   Mirrors update-modal-bottom-strip but holds two toggle pairs instead of
+   toggle + status pill. Spaced so two fit comfortably on a 400px shell. */
+.new-job-bottom-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+/* Toggle visuals — mirrored verbatim from updateModal.css with renamed scope */
+.new-job-toggle {
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--modal-bg-soft);
+  border: 0.5px solid var(--modal-hairline);
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  display: inline-block;
+}
+.new-job-toggle::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 1.5px;
+  left: 2px;
+  border: 0.5px solid var(--modal-hairline);
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.new-job-toggle.on { background: var(--modal-red); border-color: var(--modal-red); }
+.new-job-toggle.on::after {
+  transform: translateX(16px);
+  border-color: var(--modal-red);
+}
+
+.new-job-toggle-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+}
+.new-job-toggle-label {
+  font-size: var(--modal-type-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--modal-text-tertiary);
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+.new-job-toggle-pair.on .new-job-toggle-label {
+  color: var(--modal-text-primary);
+}
+
+/* ===== SUBMIT =====
+   Layout/colour all from .modal-button-filled. Just adds top spacing. */
+.new-job-submit {
+  margin-top: 4px;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 480px) {
+  .new-job-picker { padding: 28px 20px 24px; }
+  .new-job-header-row { gap: 14px; }
+  .new-job-header-logo { width: 52px; height: 52px; }
+  .new-job-hero-input { font-size: 20px; }
+  .new-job-bottom-strip { gap: 12px; }
+}

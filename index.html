@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="modal-system.css">
     <link rel="stylesheet" href="updateModal.css">
+    <link rel="stylesheet" href="newJobModal.css">
     <link rel="stylesheet" href="authOverlay.css">
     <link rel="stylesheet" href="welcomeModal.css">
 </head>
@@ -603,163 +604,106 @@
     </div>
 
     <!-- New Job Modal -->
-    <div class="job-modal-overlay" id="new-job-modal">
-        <div class="job-modal new-job-modal">
-            <!-- Job Form -->
-            <div id="new-job-form" class="new-job-step">
-                <div class="job-modal-header">
-                    <div class="job-modal-header-left">
-                        <img class="job-modal-logo" id="new-job-logo" src="images/logos/Unknown.png" alt="">
-                        <h2 class="job-modal-title">New Job<span id="new-job-number-wrapper" style="display: none;"> <svg class="title-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#ED1C24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> <span id="new-job-number"></span></span></h2>
-                    </div>
-                    <button class="job-modal-close" onclick="closeNewJobModal()">&times;</button>
-                </div>
-                <div class="job-modal-body">
-                    <!-- Client dropdown -->
-                    <div class="job-form-group">
-                        <label class="job-form-label">Client <span class="required">*</span></label>
-                        <div class="custom-dropdown form-dropdown" id="new-job-client-dropdown">
-                            <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="new-job-client-trigger" onclick="toggleNewJobDropdown('client')">
-                                <span>Select client...</span>
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                            <div class="custom-dropdown-menu" id="new-job-client-menu">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Job Name (required) -->
-                    <div class="job-form-group">
-                        <label class="job-form-label">Job Name <span class="required">*</span></label>
-                        <input type="text" class="job-form-input" id="new-job-name" placeholder="e.g. Summer Campaign">
-                    </div>
-                    
-                    <!-- Description -->
-                    <div class="job-form-group">
-                        <label class="job-form-label">Description</label>
-                        <textarea class="job-form-input job-form-textarea" id="new-job-description" placeholder="What's this job about?" rows="2"></textarea>
-                    </div>
-                    
-                    <div class="job-modal-divider"></div>
-                    
-                    <!-- Owner -->
-                    <div class="job-form-group">
-                        <label class="job-form-label">Owner</label>
-                        <div class="custom-dropdown form-dropdown" id="new-job-owner-dropdown">
-                            <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="new-job-owner-trigger" onclick="toggleNewJobDropdown('owner')">
-                                <span>Select client first...</span>
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                            <div class="custom-dropdown-menu" id="new-job-owner-menu">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Status + Ballpark row -->
-                    <div class="job-form-row">
-                        <div class="job-form-group">
-                            <label class="job-form-label">Status</label>
-                            <div class="custom-dropdown form-dropdown" id="new-job-status-dropdown">
-                                <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="new-job-status-trigger" onclick="toggleNewJobDropdown('status')">
-                                    <span>Incoming</span>
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                                </button>
-                                <div class="custom-dropdown-menu" id="new-job-status-menu">
-                                    <div class="custom-dropdown-option selected" data-value="Incoming">Incoming</div>
-                                    <div class="custom-dropdown-option" data-value="In Progress">In Progress</div>
-                                    <div class="custom-dropdown-option" data-value="On Hold">On Hold</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="job-form-group">
-                            <label class="job-form-label">Ballpark</label>
-                            <div class="custom-dropdown form-dropdown" id="new-job-ballpark-dropdown">
-                                <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="new-job-ballpark-trigger" onclick="toggleNewJobDropdown('ballpark')">
-                                    <span>$5,000</span>
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                                </button>
-                                <div class="custom-dropdown-menu" id="new-job-ballpark-menu">
-                                    <div class="custom-dropdown-option" data-value="2500">$2,500</div>
-                                    <div class="custom-dropdown-option selected" data-value="5000">$5,000</div>
-                                    <div class="custom-dropdown-option" data-value="7500">$7,500</div>
-                                    <div class="custom-dropdown-option" data-value="10000">$10,000</div>
-                                    <div class="custom-dropdown-option" data-value="15000">$15,000</div>
-                                    <div class="custom-dropdown-option" data-value="20000">$20,000</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Update Due + Live row -->
-                    <div class="job-form-row">
-                        <div class="job-form-group">
-                            <label class="job-form-label">Update Due</label>
-                            <div class="date-input-row">
-                                <input type="date" class="job-form-input" id="new-job-update-due">
-                                <button type="button" class="tbc-pill" id="new-job-tbc-pill">TBC</button>
-                            </div>
-                        </div>
-                        <div class="job-form-group">
-                            <label class="job-form-label">Live</label>
-                            <div class="custom-dropdown form-dropdown" id="new-job-live-dropdown">
-                                <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="new-job-live-trigger" onclick="toggleNewJobDropdown('live')">
-                                    <span>Tbc</span>
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                                </button>
-                                <div class="custom-dropdown-menu" id="new-job-live-menu">
-                                    <div class="custom-dropdown-option selected" data-value="Tbc">Tbc</div>
-                                    <div class="custom-dropdown-option" data-value="Jan">January</div>
-                                    <div class="custom-dropdown-option" data-value="Feb">February</div>
-                                    <div class="custom-dropdown-option" data-value="Mar">March</div>
-                                    <div class="custom-dropdown-option" data-value="Apr">April</div>
-                                    <div class="custom-dropdown-option" data-value="May">May</div>
-                                    <div class="custom-dropdown-option" data-value="Jun">June</div>
-                                    <div class="custom-dropdown-option" data-value="Jul">July</div>
-                                    <div class="custom-dropdown-option" data-value="Aug">August</div>
-                                    <div class="custom-dropdown-option" data-value="Sep">September</div>
-                                    <div class="custom-dropdown-option" data-value="Oct">October</div>
-                                    <div class="custom-dropdown-option" data-value="Nov">November</div>
-                                    <div class="custom-dropdown-option" data-value="Dec">December</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="job-modal-footer">
-                    <div class="with-client-toggle">
-                        <label class="toggle">
-                            <input type="checkbox" id="new-job-with-client">
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span class="with-client-label">With Client</span>
-                    </div>
-                    <label class="teams-checkbox">
-                        <input type="checkbox" id="new-job-setup-teams" checked>
-                        <span class="teams-checkmark">&#10003;</span>
-                        <span class="teams-label">Teams</span>
-                    </label>
-                    <button class="job-btn job-btn-primary" id="new-job-create-btn" onclick="submitNewJob()">CREATE JOB</button>
-                </div>
+    <div class="modal-overlay new-job-modal-overlay" id="new-job-modal-overlay" role="dialog" aria-modal="true" aria-label="New job">
+        <div class="modal-shell new-job-modal" id="new-job-modal">
+            <button class="modal-close new-job-modal-close" id="new-job-modal-close" aria-label="Close">&times;</button>
+
+            <!-- PICKER VIEW -->
+            <div class="new-job-picker" id="new-job-picker">
+                <div id="new-job-picker-clients"></div>
             </div>
-            
-            <!-- Step 3: Confirmation -->
-            <div id="new-job-step-3" class="new-job-step" style="display: none;">
-                <div class="job-modal-header">
-                    <div class="job-modal-header-left">
-                        <img class="job-modal-logo" id="new-job-confirm-logo" src="" alt="">
-                        <h2 class="job-modal-title" id="new-job-confirm-title">JOB CREATED</h2>
+
+            <!-- POPULATED VIEW -->
+            <div class="new-job-populated" id="new-job-populated" style="display:none">
+                <div class="modal-header new-job-header">
+                    <div class="new-job-header-row">
+                        <img class="new-job-header-logo" id="new-job-header-logo" src="images/logos/Unknown.png" alt="">
+                        <div class="new-job-header-text">
+                            <input class="new-job-hero-input" id="new-job-hero-input" type="text" placeholder="New job name" maxlength="80" autocomplete="off">
+                            <div class="modal-eyebrow new-job-meta" id="new-job-meta"></div>
+                        </div>
                     </div>
-                    <button class="job-modal-close" onclick="closeNewJobModal()">&times;</button>
                 </div>
-                <div class="job-modal-body new-job-confirmation">
-                    <div class="new-job-success-icon">&#10003;</div>
-                    <p class="new-job-confirm-text" id="new-job-confirm-text">Job created</p>
-                    <p class="new-job-confirm-subtext" id="new-job-confirm-subtext">Teams & Files not set up</p>
-                </div>
-                <div class="job-modal-footer">
-                    <button class="job-btn job-btn-primary" onclick="closeNewJobModal()">DONE</button>
+
+                <div class="modal-body new-job-body">
+                    <!-- CLIENT (owner) -->
+                    <div class="modal-eyebrow new-job-section-eyebrow">CLIENT</div>
+                    <div class="custom-dropdown new-job-dropdown new-job-owner-dropdown">
+                        <button class="modal-soft-box new-job-owner-trigger empty" id="new-job-owner-trigger" type="button">
+                            <span id="new-job-owner-label">Choose project owner...</span>
+                            <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                        </button>
+                        <div class="custom-dropdown-menu" id="new-job-owner-menu"></div>
+                    </div>
+
+                    <!-- DESCRIPTION -->
+                    <div class="modal-eyebrow new-job-section-eyebrow">DESCRIPTION</div>
+                    <div class="modal-soft-box new-job-description-area">
+                        <textarea id="new-job-description-input" placeholder="What's it about?" rows="2"></textarea>
+                    </div>
+
+                    <!-- DUE + LIVE CHIPS -->
+                    <div class="new-job-chip-row">
+                        <button class="modal-chip new-job-chip empty" id="new-job-due-chip" type="button">
+                            <span id="new-job-due-label">Set due</span>
+                            <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                        </button>
+                        <input type="date" class="new-job-hidden-input" id="new-job-due-input">
+
+                        <div class="custom-dropdown new-job-dropdown">
+                            <button class="modal-chip new-job-chip empty" id="new-job-live-chip" type="button">
+                                <span id="new-job-live-label">Live · TBC</span>
+                                <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                            </button>
+                            <div class="custom-dropdown-menu" id="new-job-live-menu"></div>
+                        </div>
+                    </div>
+
+                    <!-- TRACKER -->
+                    <div class="new-job-tracker">
+                        <div class="modal-eyebrow new-job-section-eyebrow">TRACKER</div>
+
+                        <div class="new-job-spend-row">
+                            <div class="modal-soft-pill new-job-spend-amount" id="new-job-spend-amount">
+                                <span class="dollar">$</span>
+                                <input class="new-job-spend-input" id="new-job-spend-input" type="text" inputmode="numeric" placeholder="0" value="5,000">
+                            </div>
+                            <div class="custom-dropdown new-job-dropdown">
+                                <button class="modal-chip new-job-chip" id="new-job-month-chip" type="button">
+                                    <span id="new-job-month-label">May</span>
+                                    <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                                </button>
+                                <div class="custom-dropdown-menu" id="new-job-month-menu"></div>
+                            </div>
+                            <button class="new-job-tick-row on" id="new-job-ballpark" type="button">
+                                <span class="new-job-tick">
+                                    <svg viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
+                                        <polyline points="2,6 5,9 10,3"></polyline>
+                                    </svg>
+                                </span>
+                                <span class="new-job-tick-label">Ballpark</span>
+                            </button>
+                        </div>
+
+                        <div class="modal-soft-box new-job-notes-box">
+                            <textarea id="new-job-notes-input" placeholder="What's the spend for?" rows="1"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- WITH CLIENT + INCOMING -->
+                    <div class="new-job-bottom-strip">
+                        <button class="new-job-toggle-pair" id="new-job-with-client" type="button">
+                            <span class="new-job-toggle" id="new-job-with-client-toggle"></span>
+                            <span class="new-job-toggle-label">WITH CLIENT</span>
+                        </button>
+
+                        <button class="new-job-toggle-pair on" id="new-job-incoming" type="button">
+                            <span class="new-job-toggle on" id="new-job-incoming-toggle"></span>
+                            <span class="new-job-toggle-label">INCOMING</span>
+                        </button>
+                    </div>
+
+                    <button class="modal-button-filled new-job-submit" id="new-job-submit" type="button">CREATE JOB</button>
                 </div>
             </div>
         </div>
@@ -970,11 +914,11 @@
     <script src="tracker.js"></script>
     <script src="trackerEditModal.js"></script>
     <script src="todolist.js"></script>
-    <script src="newJobModal.js"></script>
     <script src="editJobModal.js"></script>
     <script src="clientPicker.js"></script>
     <script src="jobPicker.js"></script>
     <script src="updateModal.js"></script>
+    <script src="newJobModal.js"></script>
     <script src="welcomeModal.js"></script>
     <script src="plusComponent.js"></script>
     <!-- Story Edit Modal -->

@@ -1,419 +1,584 @@
-// ===== NEW JOB MODAL =====
-// Extracted from app.js - owns the New Job modal flow
-// Depends on: $, loadingDots, getLogoUrl, setTbcPillState, showToast, state, loadJobs
-// Exposes: openNewJobModal, onClientSelected, toggleNewJobDropdown, selectNewJobOption, submitNewJob, closeNewJobModal
+// ===== NEW JOB MODAL MODULE =====
+// Modal-system-based New Job modal — replaces the legacy form-style modal.
+// Flow: client picker → populated form → submit to dot-workers /setup → close + refresh.
+//
+// Depends on: state, API_BASE, getLogoUrl, showToast, loadJobs (from app.js),
+//             window.clientPicker (clientPicker.js)
+// Exposes:    openNewJobModal, closeNewJobModal (window globals — same surface as before)
 
-let newJobState = {
+(function setupNewJobModal() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wireNewJobModalListeners);
+    } else {
+        wireNewJobModalListeners();
+    }
+})();
+
+// ===== STATE =====
+const newJobModalState = {
+    open: false,
+    view: 'picker', // 'picker' | 'populated'
     clientCode: null,
     clientName: null,
-    jobNumber: null,
-    owner: '',
-    status: 'Incoming',
-    ballpark: '5000',
-    live: 'Tbc'
+    jobNumber: null,        // previewed (not yet reserved)
+    owner: '',              // selected client-side person name
+    submitting: false,
+    // Toggles default for a fresh job: not with client, status = Incoming
+    withClient: false,
+    incoming: true,
 };
 
-// Helper to set dropdown value
-function setNewJobDropdown(id, value, label) {
-    const trigger = $(`new-job-${id}-trigger`);
-    const menu = $(`new-job-${id}-menu`);
-    if (trigger) trigger.querySelector('span').textContent = label || value;
-    if (menu) {
-        menu.querySelectorAll('.custom-dropdown-option').forEach(opt => {
-            opt.classList.toggle('selected', opt.dataset.value === value);
-        });
-    }
+const SETUP_WORKER_URL = 'https://dot-workers.up.railway.app/setup';
+
+const NJ_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December'];
+const NJ_LIVE_OPTIONS = ['TBC', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// ===== DOM HELPERS =====
+function $nj(id) { return document.getElementById(id); }
+
+function njEscapeHtml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
-// Helper to get dropdown value
-function getNewJobDropdownValue(id) {
-    const menu = $(`new-job-${id}-menu`);
-    if (!menu) return '';
-    const selected = menu.querySelector('.custom-dropdown-option.selected');
-    return selected ? selected.dataset.value : '';
+function njAutoGrow(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
 }
 
-// Toggle dropdown open/close
-function toggleNewJobDropdown(id) {
-    const dropdown = $(`new-job-${id}-dropdown`);
-    const trigger = $(`new-job-${id}-trigger`);
-    const menu = $(`new-job-${id}-menu`);
-    
-    if (!dropdown || !trigger || !menu) return;
-    
-    const isOpen = menu.classList.contains('open');
-    
-    // Close all other dropdowns first
-    document.querySelectorAll('.new-job-modal .custom-dropdown-menu.open').forEach(m => {
-        m.classList.remove('open');
-        m.previousElementSibling?.classList.remove('open');
-    });
-    
-    if (!isOpen) {
-        trigger.classList.add('open');
-        menu.classList.add('open');
-    }
-}
-
-// Select dropdown option
-function selectNewJobOption(id, value, label) {
-    const menu = $(`new-job-${id}-menu`);
-    const trigger = $(`new-job-${id}-trigger`);
-    
-    // Update selected state
-    menu.querySelectorAll('.custom-dropdown-option').forEach(opt => {
-        opt.classList.toggle('selected', opt.dataset.value === value);
-    });
-    
-    // Update trigger text
-    trigger.querySelector('span').textContent = label;
-    
-    // Close dropdown
-    trigger.classList.remove('open');
-    menu.classList.remove('open');
-    
-    // Update state
-    if (id === 'client') {
-        newJobState.clientCode = value;
-        newJobState.clientName = label;
-        onClientSelected(value, label);
-    } else if (id === 'owner') {
-        newJobState.owner = value;
-    } else if (id === 'status') {
-        newJobState.status = value;
-    } else if (id === 'ballpark') {
-        newJobState.ballpark = value;
-    } else if (id === 'live') {
-        newJobState.live = value;
-    }
-}
-
-// Close dropdowns when clicking outside
-document.addEventListener('click', (e) => {
-    if (!e.target.closest('.new-job-modal .custom-dropdown')) {
-        document.querySelectorAll('.new-job-modal .custom-dropdown-menu.open').forEach(m => {
-            m.classList.remove('open');
-            m.previousElementSibling?.classList.remove('open');
-        });
-    }
-});
-
-async function openNewJobModal() {
-    const modal = $('new-job-modal');
-    if (!modal) return;
-    
-    // Reset state
-    newJobState = { 
-        clientCode: null, 
-        clientName: null, 
-        jobNumber: null,
-        owner: '',
-        status: 'Incoming',
-        ballpark: '5000',
-        live: 'Tbc'
-    };
-    
-    // Reset form inputs
-    $('new-job-name').value = '';
-    $('new-job-description').value = '';
-    $('new-job-with-client').checked = false;
-    $('new-job-logo').src = 'images/logos/Unknown.png';
-    $('new-job-number-wrapper').style.display = 'none';
-    
-    // Reset create button (in case previous attempt was interrupted)
-    const createBtn = $('new-job-create-btn');
-    if (createBtn) {
-        createBtn.disabled = false;
-        createBtn.textContent = 'CREATE JOB';
-    }
-    
-    // Reset dropdowns
-    $('new-job-client-trigger').querySelector('span').textContent = 'Select client...';
-    $('new-job-client-menu').innerHTML = loadingDots('small');
-    $('new-job-owner-trigger').querySelector('span').textContent = 'Select client first...';
-    $('new-job-owner-menu').innerHTML = '';
-    setNewJobDropdown('status', 'Incoming', 'Incoming');
-    setNewJobDropdown('ballpark', '5000', '$5,000');
-    setNewJobDropdown('live', 'Tbc', 'Tbc');
-    
-    // Set default update due (+5 working days)
-    const updateDue = getWorkingDaysFromNow(5);
-    $('new-job-update-due').value = updateDue;
-    setTbcPillState('new-job-tbc-pill', false);
-    
-    // Show form and confirmation hidden
-    $('new-job-form').style.display = 'block';
-    $('new-job-step-3').style.display = 'none';
-    
-    modal.classList.add('visible');
-    
-    // Load clients into dropdown
+function njFormatDueLabel(iso) {
+    if (!iso) return 'Set due';
     try {
-        const response = await fetch('/api/clients');
-        const clients = await response.json();
-        
-        // Top clients to show first
-        const topClientCodes = ['ONE', 'ONS', 'ONB', 'SKY', 'TOW', 'FIS', 'HUN'];
-        const topClients = [];
-        const otherClients = [];
-        
-        clients.forEach(c => {
-            if (topClientCodes.includes(c.code)) {
-                topClients.push(c);
-            } else {
-                otherClients.push(c);
-            }
-        });
-        
-        // Sort top clients by the order in topClientCodes
-        topClients.sort((a, b) => topClientCodes.indexOf(a.code) - topClientCodes.indexOf(b.code));
-        
-        let html = '';
-        
-        // Add top clients
-        topClients.forEach(c => {
-            html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectNewJobOption('client', '${c.code}', '${c.name.replace(/'/g, "\\'")}')"><img src="${getLogoUrl(c.code)}" alt="${c.code}" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;" onerror="this.src='images/logos/Unknown.png'">${c.name}</div>`;
-        });
-        
-        // Add other clients with header
-        if (otherClients.length > 0) {
-            html += '<div class="custom-dropdown-option section-header">Other</div>';
-            otherClients.forEach(c => {
-                html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectNewJobOption('client', '${c.code}', '${c.name.replace(/'/g, "\\'")}')"><img src="${getLogoUrl(c.code)}" alt="${c.code}" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;" onerror="this.src='images/logos/Unknown.png'">${c.name}</div>`;
-            });
-        }
-        
-        $('new-job-client-menu').innerHTML = html;
-    } catch (err) {
-        console.error('Error loading clients:', err);
-        $('new-job-client-menu').innerHTML = '<div class="custom-dropdown-option" style="color: var(--red)">Failed to load</div>';
-    }
-    
-    // Add click handlers for static dropdowns
-    setupStaticDropdownHandlers();
-}
-
-function setupStaticDropdownHandlers() {
-    // Status options
-    $('new-job-status-menu').querySelectorAll('.custom-dropdown-option').forEach(opt => {
-        opt.onclick = () => selectNewJobOption('status', opt.dataset.value, opt.textContent);
-    });
-    
-    // Ballpark options
-    $('new-job-ballpark-menu').querySelectorAll('.custom-dropdown-option').forEach(opt => {
-        opt.onclick = () => selectNewJobOption('ballpark', opt.dataset.value, opt.textContent);
-    });
-    
-    // Live options
-    $('new-job-live-menu').querySelectorAll('.custom-dropdown-option').forEach(opt => {
-        opt.onclick = () => selectNewJobOption('live', opt.dataset.value, opt.textContent);
-    });
-}
-
-async function onClientSelected(code, name) {
-    if (!code) {
-        // Reset if no client selected
-        newJobState.clientCode = null;
-        newJobState.clientName = null;
-        newJobState.jobNumber = null;
-        $('new-job-logo').src = 'images/logos/Unknown.png';
-        $('new-job-number-wrapper').style.display = 'none';
-        $('new-job-owner-trigger').querySelector('span').textContent = 'Select client first...';
-        $('new-job-owner-menu').innerHTML = '';
-        return;
-    }
-    
-    newJobState.clientCode = code;
-    newJobState.clientName = name;
-    
-    // Update logo
-    const logo = $('new-job-logo');
-    logo.src = getLogoUrl(code);
-    logo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
-    
-    // Show number wrapper with loading state
-    $('new-job-number').textContent = '...';
-    $('new-job-number-wrapper').style.display = 'inline';
-    
-    // Preview job number
-    try {
-        const response = await fetch(`/api/preview-job-number/${code}`);
-        const data = await response.json();
-        
-        if (data.error) {
-            $('new-job-number').textContent = 'Error';
-            console.error('Preview error:', data.error);
-        } else {
-            newJobState.jobNumber = data.previewJobNumber;
-            $('new-job-number').textContent = data.previewJobNumber;
-        }
-    } catch (err) {
-        console.error('Error previewing job number:', err);
-        $('new-job-number').textContent = 'Error';
-    }
-    
-    // Load owners for this client
-    $('new-job-owner-trigger').querySelector('span').textContent = 'Loading...';
-    $('new-job-owner-menu').innerHTML = '';
-    
-    try {
-        const response = await fetch(`/api/people/${code}`);
-        const people = await response.json();
-        
-        let html = `<div class="custom-dropdown-option" data-value="" onclick="selectNewJobOption('owner', '', 'Select...')">Select...</div>`;
-        people.forEach(p => {
-            html += `<div class="custom-dropdown-option" data-value="${p.name}" onclick="selectNewJobOption('owner', '${p.name.replace(/'/g, "\\'")}', '${p.name.replace(/'/g, "\\'")}')">${p.name}</div>`;
-        });
-        
-        $('new-job-owner-menu').innerHTML = html;
-        $('new-job-owner-trigger').querySelector('span').textContent = 'Select...';
-        newJobState.owner = '';
-    } catch (err) {
-        console.error('Error loading owners:', err);
-        $('new-job-owner-trigger').querySelector('span').textContent = 'Failed to load';
+        const d = new Date(iso + 'T00:00:00');
+        const day = d.getDate();
+        const month = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+        return `Due ${day} ${month}`;
+    } catch (e) {
+        return 'Set due';
     }
 }
 
-async function submitNewJob() {
-    // Prevent double submit
-    const createBtn = $('new-job-create-btn');
-    if (createBtn.disabled) return;
-    
-    // Validate client selected
-    if (!newJobState.clientCode) {
-        $('new-job-client-trigger').classList.add('input-error');
-        setTimeout(() => $('new-job-client-trigger').classList.remove('input-error'), 2000);
-        return;
-    }
-    
-    // Validate job name
-    const jobName = $('new-job-name').value.trim();
-    if (!jobName) {
-        $('new-job-name').focus();
-        $('new-job-name').classList.add('input-error');
-        setTimeout(() => $('new-job-name').classList.remove('input-error'), 2000);
-        return;
-    }
-    
-    createBtn.disabled = true;
-    createBtn.textContent = 'CREATING...';
-    
-    // Show processing toast
-    showToast('Setting up job...', 'info');
-    
-    // Get form values
-    const description = $('new-job-description').value.trim();
-    const ballpark = parseInt(newJobState.ballpark, 10);
-    
-    // Build brief object for Setup Worker
-    // Map form fields → brief fields (Worker expects brief format from Claude extraction)
-    // Form uses UI-friendly names, brief uses extraction schema names
-    const brief = {
-        jobName: jobName,           // same
-        theJob: description || null, // form: description → brief: theJob
-        owner: newJobState.owner || null,  // same
-        costs: ballpark ? `$${ballpark.toLocaleString()}` : null,  // form: ballpark (number) → brief: costs (string)
-        when: newJobState.live || null,    // form: live → brief: when
-        updateDue: $('new-job-update-due').value || null  // same
-    };
-    
-    // Build payload for Setup Worker
-    const payload = {
-        clientCode: newJobState.clientCode,
-        clientName: newJobState.clientName,
-        senderEmail: `${state.currentUser?.name?.toLowerCase() || 'hub'}@hunch.co.nz`,
-        senderName: state.currentUser?.fullName || state.currentUser?.name || 'Hub User',
-        subjectLine: `New job: ${jobName}`,
-        brief: brief
-    };
-    
-    try {
-        // Call Setup Worker directly - it handles everything
-        const response = await fetch('https://dot-workers.up.railway.app/setup', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        const data = await response.json();
-        
-        if (!data.success) {
-            alert('Error creating job: ' + (data.error || 'Unknown error'));
-            createBtn.disabled = false;
-            createBtn.textContent = 'CREATE JOB';
-            return;
-        }
-        
-        // Use the actual job number from the response
-        const createdJobNumber = data.jobNumber;
-        
-        // Show confirmation
-        const confirmLogo = $('new-job-confirm-logo');
-        confirmLogo.src = getLogoUrl(newJobState.clientCode);
-        confirmLogo.onerror = function() { this.src = 'images/logos/Unknown.png'; };
-        $('new-job-confirm-title').textContent = createdJobNumber;
-        $('new-job-confirm-text').textContent = 'Job created';
-        
-        // Show results summary
-        const results = data.results || {};
-        if (results.channel?.success) {
-            $('new-job-confirm-subtext').textContent = 'Teams channel ready ✓';
-            $('new-job-confirm-subtext').style.display = 'block';
-        } else if (results.channel?.skipped) {
-            $('new-job-confirm-subtext').textContent = 'Teams not configured for this client';
-            $('new-job-confirm-subtext').style.display = 'block';
-        } else {
-            $('new-job-confirm-subtext').style.display = 'none';
-        }
-        
-        $('new-job-form').style.display = 'none';
-        $('new-job-step-3').style.display = 'block';
-        
-        // Refresh jobs list (don't let this fail the whole thing)
-        try {
-            await loadJobs();
-        } catch (refreshErr) {
-            console.error('Error refreshing jobs list:', refreshErr);
-        }
-        
-    } catch (err) {
-        console.error('Error creating job:', err);
-        alert('Failed to create job. Please try again.');
-        createBtn.disabled = false;
-        createBtn.textContent = 'CREATE JOB';
-    }
-}
-
-function closeNewJobModal() {
-    $('new-job-modal')?.classList.remove('visible');
-    newJobState = { clientCode: null, clientName: null, jobNumber: null, status: 'soon' };
-}
-
-function getWorkingDaysFromNow(days) {
+function njGetWorkingDaysFromNow(days) {
     const date = new Date();
     let added = 0;
     while (added < days) {
         date.setDate(date.getDate() + 1);
         const dayOfWeek = date.getDay();
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-            added++;
-        }
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) added++;
     }
     return date.toISOString().split('T')[0];
 }
 
-// Close new job modal on overlay click
-document.addEventListener('click', (e) => {
-    if (e.target.id === 'new-job-modal') {
-        closeNewJobModal();
+function njCurrentMonthName() {
+    return NJ_MONTHS[new Date().getMonth()];
+}
+
+// ===== LISTENERS (one-time setup) =====
+function wireNewJobModalListeners() {
+    const overlay = $nj('new-job-modal-overlay');
+    if (!overlay || overlay.dataset.listenersAttached) return;
+    overlay.dataset.listenersAttached = 'true';
+
+    // Close on overlay click (only outside the shell)
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeNewJobModal();
+    });
+
+    // ESC to close
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && newJobModalState.open) closeNewJobModal();
+    });
+
+    // X button
+    $nj('new-job-modal-close')?.addEventListener('click', closeNewJobModal);
+
+    // Hero input — basic typing handler, no extra logic needed
+    $nj('new-job-hero-input')?.addEventListener('input', (e) => {
+        e.target.classList.remove('input-error');
+    });
+
+    // Description / notes — auto-grow
+    $nj('new-job-description-input')?.addEventListener('input', (e) => njAutoGrow(e.target));
+    $nj('new-job-notes-input')?.addEventListener('input', (e) => njAutoGrow(e.target));
+
+    // Owner trigger — opens dropdown
+    $nj('new-job-owner-trigger')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleNjDropdown('owner');
+    });
+
+    // Owner menu — pick option (delegated)
+    $nj('new-job-owner-menu')?.addEventListener('click', (e) => {
+        const opt = e.target.closest('.custom-dropdown-option');
+        if (!opt) return;
+        const value = opt.dataset.value || '';
+        newJobModalState.owner = value;
+        const trigger = $nj('new-job-owner-trigger');
+        const label   = $nj('new-job-owner-label');
+        if (label) label.textContent = value || 'Choose project owner...';
+        if (trigger) trigger.classList.toggle('empty', !value);
+        closeAllNjDropdowns();
+    });
+
+    // Due chip → opens native date picker
+    $nj('new-job-due-chip')?.addEventListener('click', () => {
+        const input = $nj('new-job-due-input');
+        if (!input) return;
+        if (typeof input.showPicker === 'function') input.showPicker();
+        else input.click();
+    });
+    $nj('new-job-due-input')?.addEventListener('change', (e) => {
+        const label = $nj('new-job-due-label');
+        const chip  = $nj('new-job-due-chip');
+        if (e.target.value) {
+            label.textContent = njFormatDueLabel(e.target.value);
+            chip.classList.remove('empty');
+        } else {
+            label.textContent = 'Set due';
+            chip.classList.add('empty');
+        }
+    });
+
+    // Live chip — open dropdown
+    $nj('new-job-live-chip')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleNjDropdown('live');
+    });
+    $nj('new-job-live-menu')?.addEventListener('click', (e) => {
+        const opt = e.target.closest('.custom-dropdown-option');
+        if (!opt) return;
+        const value = opt.dataset.value;
+        $nj('new-job-live-label').textContent = `Live · ${value}`;
+        $nj('new-job-live-chip').classList.toggle('empty', value === 'TBC');
+        closeAllNjDropdowns();
+    });
+
+    // Month chip — open dropdown
+    $nj('new-job-month-chip')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleNjDropdown('month');
+    });
+    $nj('new-job-month-menu')?.addEventListener('click', (e) => {
+        const opt = e.target.closest('.custom-dropdown-option');
+        if (!opt) return;
+        $nj('new-job-month-label').textContent = opt.dataset.value;
+        closeAllNjDropdowns();
+    });
+
+    // Spend pill — click focuses input
+    $nj('new-job-spend-amount')?.addEventListener('click', () => {
+        $nj('new-job-spend-input')?.focus();
+    });
+    $nj('new-job-spend-input')?.addEventListener('input', (e) => {
+        const raw = e.target.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+        e.target.value = raw ? parseInt(raw, 10).toLocaleString() : '';
+        $nj('new-job-spend-amount').classList.toggle('empty', !raw || raw === '0');
+    });
+
+    // Ballpark tick
+    $nj('new-job-ballpark')?.addEventListener('click', () => {
+        $nj('new-job-ballpark').classList.toggle('on');
+    });
+
+    // With Client toggle
+    $nj('new-job-with-client')?.addEventListener('click', () => {
+        newJobModalState.withClient = !newJobModalState.withClient;
+        $nj('new-job-with-client')?.classList.toggle('on', newJobModalState.withClient);
+        $nj('new-job-with-client-toggle')?.classList.toggle('on', newJobModalState.withClient);
+    });
+
+    // Incoming toggle (ON = Incoming, OFF = In Progress)
+    $nj('new-job-incoming')?.addEventListener('click', () => {
+        newJobModalState.incoming = !newJobModalState.incoming;
+        $nj('new-job-incoming')?.classList.toggle('on', newJobModalState.incoming);
+        $nj('new-job-incoming-toggle')?.classList.toggle('on', newJobModalState.incoming);
+    });
+
+    // Submit
+    $nj('new-job-submit')?.addEventListener('click', submitNewJob);
+}
+
+// ===== DROPDOWN HELPERS =====
+const NJ_DROPDOWN_CONFIG = {
+    owner: { btnId: 'new-job-owner-trigger', menuId: 'new-job-owner-menu' },
+    live:  { btnId: 'new-job-live-chip',     menuId: 'new-job-live-menu'  },
+    month: { btnId: 'new-job-month-chip',    menuId: 'new-job-month-menu' },
+};
+
+function closeAllNjDropdowns() {
+    Object.values(NJ_DROPDOWN_CONFIG).forEach(({ btnId, menuId }) => {
+        $nj(btnId)?.classList.remove('open');
+        $nj(menuId)?.classList.remove('open');
+    });
+}
+
+function toggleNjDropdown(name) {
+    const cfg = NJ_DROPDOWN_CONFIG[name];
+    if (!cfg) return;
+    const btn  = $nj(cfg.btnId);
+    const menu = $nj(cfg.menuId);
+    if (!btn || !menu) return;
+    const willOpen = !menu.classList.contains('open');
+    closeAllNjDropdowns();
+    if (willOpen) {
+        btn.classList.add('open');
+        menu.classList.add('open');
     }
-});
+}
+
+// ===== OPEN / CLOSE =====
+async function openNewJobModal() {
+    const overlay = $nj('new-job-modal-overlay');
+    if (!overlay) {
+        console.warn('[new-job-modal] overlay element missing');
+        return;
+    }
+
+    resetNewJobState();
+
+    // Hard-reset view display so first-open skips the swap animation
+    const pickerEl    = $nj('new-job-picker');
+    const populatedEl = $nj('new-job-populated');
+    if (pickerEl)    pickerEl.style.display    = 'block';
+    if (populatedEl) populatedEl.style.display = 'none';
+
+    // Mount the client picker fresh — singleton may have been destroyed by
+    // another modal. Filter 'all' = every client, top-clients first then a-z.
+    const clientsContainer = $nj('new-job-picker-clients');
+    if (clientsContainer && window.clientPicker) {
+        window.clientPicker.mount(clientsContainer, {
+            title: "Who's it for?",
+            filter: 'all',
+            onPick: (code) => onClientPicked(code),
+        });
+        window.clientPicker.refresh();
+    }
+
+    overlay.classList.add('visible');
+    newJobModalState.open = true;
+    document.body.style.overflow = 'hidden';
+}
+
+function closeNewJobModal() {
+    closeAllNjDropdowns();
+    const overlay = $nj('new-job-modal-overlay');
+    overlay?.classList.remove('visible');
+    newJobModalState.open = false;
+    document.body.style.overflow = '';
+}
+
+function resetNewJobState() {
+    newJobModalState.view = 'picker';
+    newJobModalState.clientCode = null;
+    newJobModalState.clientName = null;
+    newJobModalState.jobNumber = null;
+    newJobModalState.owner = '';
+    newJobModalState.submitting = false;
+    newJobModalState.withClient = false;
+    newJobModalState.incoming = true;
+
+    // Inputs
+    const hero = $nj('new-job-hero-input');
+    if (hero) {
+        hero.value = '';
+        hero.classList.remove('input-error');
+    }
+    const desc = $nj('new-job-description-input');
+    if (desc) {
+        desc.value = '';
+        desc.style.height = 'auto';
+    }
+    const notes = $nj('new-job-notes-input');
+    if (notes) {
+        notes.value = '';
+        notes.style.height = 'auto';
+    }
+
+    // Header
+    const logo = $nj('new-job-header-logo');
+    if (logo) logo.src = 'images/logos/Unknown.png';
+    const meta = $nj('new-job-meta');
+    if (meta) meta.textContent = '';
+
+    // Owner
+    const ownerLabel = $nj('new-job-owner-label');
+    if (ownerLabel) ownerLabel.textContent = 'Choose project owner...';
+    const ownerTrigger = $nj('new-job-owner-trigger');
+    if (ownerTrigger) ownerTrigger.classList.add('empty');
+    const ownerMenu = $nj('new-job-owner-menu');
+    if (ownerMenu) ownerMenu.innerHTML = '';
+
+    // Due — default to +5 working days
+    const dueIso = njGetWorkingDaysFromNow(5);
+    const dueInput = $nj('new-job-due-input');
+    if (dueInput) dueInput.value = dueIso;
+    const dueLabel = $nj('new-job-due-label');
+    const dueChip  = $nj('new-job-due-chip');
+    if (dueLabel) dueLabel.textContent = njFormatDueLabel(dueIso);
+    if (dueChip)  dueChip.classList.remove('empty');
+
+    // Live — TBC default
+    $nj('new-job-live-label').textContent = 'Live · TBC';
+    $nj('new-job-live-chip').classList.add('empty');
+    populateNjLiveMenu();
+
+    // Tracker — $5,000 + Ballpark on + current month
+    const spendInput = $nj('new-job-spend-input');
+    if (spendInput) spendInput.value = '5,000';
+    $nj('new-job-spend-amount').classList.remove('empty');
+    $nj('new-job-month-label').textContent = njCurrentMonthName();
+    populateNjMonthMenu();
+    $nj('new-job-ballpark').classList.add('on');
+
+    // Toggles
+    $nj('new-job-with-client')?.classList.remove('on');
+    $nj('new-job-with-client-toggle')?.classList.remove('on');
+    $nj('new-job-incoming')?.classList.add('on');
+    $nj('new-job-incoming-toggle')?.classList.add('on');
+
+    // Submit button
+    const submit = $nj('new-job-submit');
+    if (submit) {
+        submit.disabled = false;
+        submit.textContent = 'CREATE JOB';
+    }
+}
+
+function populateNjLiveMenu() {
+    const menu = $nj('new-job-live-menu');
+    if (!menu) return;
+    menu.innerHTML = NJ_LIVE_OPTIONS.map(v =>
+        `<div class="custom-dropdown-option" data-value="${njEscapeHtml(v)}">${njEscapeHtml(v)}</div>`
+    ).join('');
+}
+
+function populateNjMonthMenu() {
+    const menu = $nj('new-job-month-menu');
+    if (!menu) return;
+    menu.innerHTML = NJ_MONTHS.map(m =>
+        `<div class="custom-dropdown-option" data-value="${njEscapeHtml(m)}">${njEscapeHtml(m)}</div>`
+    ).join('');
+}
+
+// ===== CLIENT PICKED =====
+async function onClientPicked(code) {
+    if (!code) return;
+
+    // Resolve client name from cache (clientPicker stores it on window._updateModalClientsCache)
+    const cache = (typeof window.clientPicker?.getClients === 'function')
+        ? window.clientPicker.getClients()
+        : (Array.isArray(window._updateModalClientsCache) ? window._updateModalClientsCache : []);
+    const clientObj = cache.find(c => c.code === code);
+    const clientName = clientObj?.name || code;
+
+    newJobModalState.clientCode = code;
+    newJobModalState.clientName = clientName;
+
+    // Header — logo + meta line (job number gets filled in once previewed)
+    const logo = $nj('new-job-header-logo');
+    if (logo) {
+        const url = (typeof getLogoUrl === 'function') ? getLogoUrl(code) : `images/logos/${code}.png`;
+        logo.src = url;
+        logo.alt = code;
+        logo.onerror = () => { logo.src = 'images/logos/Unknown.png'; };
+    }
+    const meta = $nj('new-job-meta');
+    if (meta) meta.textContent = `${code} ···`;
+
+    // Switch view first so the user sees motion
+    showNewJobView('populated');
+
+    // Focus the hero input so the user can start typing the job name
+    setTimeout(() => $nj('new-job-hero-input')?.focus(), 60);
+
+    // Kick off parallel fetches: previewed job number + people for this client
+    fetchPreviewJobNumber(code);
+    fetchOwnersForClient(code);
+}
+
+async function fetchPreviewJobNumber(code) {
+    try {
+        const res = await fetch(`${API_BASE}/preview-job-number/${code}`);
+        const data = await res.json();
+        if (data.error) {
+            console.error('[new-job-modal] preview error:', data.error);
+            return;
+        }
+        newJobModalState.jobNumber = data.previewJobNumber;
+        const meta = $nj('new-job-meta');
+        if (meta) meta.textContent = data.previewJobNumber;
+    } catch (err) {
+        console.error('[new-job-modal] preview fetch failed:', err);
+        const meta = $nj('new-job-meta');
+        if (meta) meta.textContent = `${newJobModalState.clientCode} —`;
+    }
+}
+
+async function fetchOwnersForClient(code) {
+    const menu = $nj('new-job-owner-menu');
+    if (!menu) return;
+    menu.innerHTML = '<div class="custom-dropdown-option" data-value="">Loading...</div>';
+    try {
+        const res = await fetch(`${API_BASE}/people/${code}`);
+        const people = await res.json();
+        const rows = [
+            `<div class="custom-dropdown-option" data-value="">— None —</div>`,
+            ...(Array.isArray(people) ? people : []).map(p => {
+                const name = njEscapeHtml(p.name || '');
+                return `<div class="custom-dropdown-option" data-value="${name}">${name}</div>`;
+            })
+        ];
+        menu.innerHTML = rows.join('');
+    } catch (err) {
+        console.error('[new-job-modal] owner fetch failed:', err);
+        menu.innerHTML = '<div class="custom-dropdown-option" data-value="">Failed to load</div>';
+    }
+}
+
+// ===== VIEW SWITCHING =====
+function showNewJobView(view) {
+    const picker    = $nj('new-job-picker');
+    const populated = $nj('new-job-populated');
+    if (!picker || !populated) return;
+
+    newJobModalState.view = view;
+
+    if (view === 'populated') {
+        picker.style.display = 'none';
+        populated.style.display = 'block';
+    } else {
+        picker.style.display = 'block';
+        populated.style.display = 'none';
+    }
+}
+
+// ===== SUBMIT =====
+async function submitNewJob() {
+    if (newJobModalState.submitting) return;
+
+    // Validate job name
+    const heroInput = $nj('new-job-hero-input');
+    const jobName = (heroInput?.value || '').trim();
+    if (!jobName) {
+        heroInput?.classList.add('input-error');
+        heroInput?.focus();
+        setTimeout(() => heroInput?.classList.remove('input-error'), 2000);
+        return;
+    }
+
+    // Validate client (defensive — picker flow guarantees this is set)
+    if (!newJobModalState.clientCode) {
+        if (typeof showToast === 'function') showToast('No client selected.', 'error');
+        return;
+    }
+
+    const submitBtn = $nj('new-job-submit');
+    newJobModalState.submitting = true;
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'CREATING...';
+    }
+
+    if (typeof showToast === 'function') showToast('Setting up job...', 'info');
+
+    // Read form values
+    const description = $nj('new-job-description-input').value.trim();
+    const ownerValue  = newJobModalState.owner;
+
+    const dueIso = $nj('new-job-due-input').value || null;
+
+    const liveLabel = $nj('new-job-live-label').textContent.replace('Live · ', '').trim();
+    const liveValue = liveLabel === 'TBC' ? 'Tbc' : liveLabel;
+
+    const monthValue = $nj('new-job-month-label').textContent.trim();
+
+    const spendRaw = $nj('new-job-spend-input').value.replace(/,/g, '').replace(/[^0-9]/g, '');
+    const spendNum = spendRaw ? parseInt(spendRaw, 10) : 5000;
+
+    const ballparkOn = $nj('new-job-ballpark').classList.contains('on');
+    const trackerNotes = $nj('new-job-notes-input').value.trim();
+
+    const status = newJobModalState.incoming ? 'Incoming' : 'In Progress';
+
+    // Build brief — extends the legacy shape with status/withClient/spend/ballpark/month/trackerNotes.
+    // Setup worker schema is back-compat: missing fields fall through to today's defaults.
+    const brief = {
+        jobName: jobName,
+        theJob: description || null,
+        owner: ownerValue || null,
+        costs: spendNum ? `$${spendNum.toLocaleString()}` : null,  // legacy field, kept for back-compat
+        when: liveValue || null,
+        updateDue: dueIso,
+        // New fields (require the patched setup worker — handler.py v2):
+        status: status,
+        withClient: newJobModalState.withClient,
+        spend: spendNum,
+        ballpark: ballparkOn,
+        month: monthValue,
+        trackerNotes: trackerNotes || null,
+    };
+
+    const payload = {
+        clientCode: newJobModalState.clientCode,
+        clientName: newJobModalState.clientName,
+        senderEmail: `${state.currentUser?.name?.toLowerCase() || 'hub'}@hunch.co.nz`,
+        senderName:  state.currentUser?.fullName || state.currentUser?.name || 'Hub User',
+        subjectLine: `New job: ${jobName}`,
+        brief: brief,
+    };
+
+    try {
+        const res = await fetch(SETUP_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            const msg = data.error || 'Unknown error';
+            console.error('[new-job-modal] setup failed:', msg);
+            if (typeof showToast === 'function') showToast(`Couldn't create job: ${msg}`, 'error');
+            newJobModalState.submitting = false;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'CREATE JOB';
+            }
+            return;
+        }
+
+        const createdJobNumber = data.jobNumber || newJobModalState.jobNumber || '';
+
+        // Refresh jobs list (don't let this fail the close)
+        try {
+            if (typeof loadJobs === 'function') await loadJobs();
+        } catch (refreshErr) {
+            console.warn('[new-job-modal] post-create refresh failed:', refreshErr);
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(`Job created: ${createdJobNumber}`, 'success');
+        }
+        closeNewJobModal();
+
+    } catch (err) {
+        console.error('[new-job-modal] submit failed:', err);
+        if (typeof showToast === 'function') showToast("Doh, that didn't work.", 'error');
+        newJobModalState.submitting = false;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'CREATE JOB';
+        }
+    }
+}
 
 // ===== EXPOSE TO WINDOW =====
-// These are accessed by app.js and HTML onclick handlers
-window.openNewJobModal = openNewJobModal;
-window.onClientSelected = onClientSelected;
-window.toggleNewJobDropdown = toggleNewJobDropdown;
-window.selectNewJobOption = selectNewJobOption;
-window.submitNewJob = submitNewJob;
+window.openNewJobModal  = openNewJobModal;
 window.closeNewJobModal = closeNewJobModal;
