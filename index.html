@@ -112,9 +112,6 @@
                 <span></span>
             </button>
             <nav class="dropdown" id="phone-dropdown">
-                <div class="dropdown-item" data-view="home">
-                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Home
-                </div>
                 <div class="dropdown-item" data-view="wip">
                     <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> WIP
                 </div>
@@ -123,6 +120,9 @@
                 </div>
                 <div class="dropdown-item" data-view="todo">
                     <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Todo
+                </div>
+                <div class="dropdown-item hunch-only" data-view="settings">
+                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Settings
                 </div>
                 <div class="dropdown-item muted" data-action="signout">
                     <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Sign out
@@ -134,80 +134,6 @@
         
         <!-- Phone Login: replaced by auth-overlay (Phase D) -->
         
-        <!-- Phone Home (Ask Dot) -->
-        <main class="phone-home" id="phone-home">
-            <div class="hello-container">
-                <img src="images/Dotandhello.png" alt="Hello from Dot" class="hello-img">
-            </div>
-            <div class="home-input-area">
-                <button class="input-plus" id="phone-home-plus">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                </button>
-                <div class="plus-menu" id="phone-home-plus-menu">
-                    <div class="plus-menu-item" data-action="new-job">
-                        <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> New Job
-                    </div>
-                    <div class="plus-menu-item" data-action="upload">
-                        <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Upload
-                    </div>
-                    <div class="plus-menu-item" data-action="wip-email">
-                        <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Send WIP
-                    </div>
-                </div>
-                <input type="text" class="home-input" id="phone-home-input" placeholder="How can I help?">
-                <button class="input-send" id="phone-home-send">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="send-icon">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
-                </button>
-            </div>
-            <div class="examples">
-                <button class="example-btn" data-question="Find a job">Find a job</button>
-                <button class="example-btn" data-question="Check a client">Check a client</button>
-                <button class="example-btn" data-question="What can Dot do?">What can Dot do?</button>
-            </div>
-            <footer class="phone-footer">
-                <img src="images/ai2-logo.png" alt="ai&#178;" class="footer-logo">
-            </footer>
-        </main>
-        
-        <!-- Phone Conversation -->
-        <div class="phone-conversation" id="phone-conversation">
-            <div class="conversation-area" id="phone-conversation-area"></div>
-            <div class="chat-input-area">
-                <div class="chat-input-wrapper">
-                    <button class="input-plus" id="phone-chat-plus">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                    </button>
-                    <div class="plus-menu" id="phone-chat-plus-menu">
-                        <div class="plus-menu-item" data-action="new-job">
-                            <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> New Job
-                        </div>
-                        <div class="plus-menu-item" data-action="upload">
-                            <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Upload
-                        </div>
-                        <div class="plus-menu-item" data-action="wip-email">
-                            <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Send WIP
-                        </div>
-                    </div>
-                    <input type="text" class="chat-input" id="phone-chat-input" placeholder="Ask a follow-up...">
-                    <button class="chat-send" id="phone-chat-send">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="send-icon">
-                            <line x1="22" y1="2" x2="11" y2="13"></line>
-                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- Phone WIP View -->
         <div class="phone-wip" id="phone-wip">
             <div class="phone-wip-controls">
@@ -234,7 +160,7 @@
             <img src="images/Robot.png" alt="Dot">
             <h2>Best on desktop</h2>
             <p>Tracker is designed for bigger screens.</p>
-            <button class="pill-btn" onclick="navigateTo('home')">Back to Ask Dot</button>
+            <button class="pill-btn" onclick="goHome()">Back</button>
         </div>
 
         <!-- Phone Todo -->
@@ -242,6 +168,14 @@
             <div class="todo-content" id="phone-todo-content">
                 <div class="loading"><div class="loading-spinner"></div><p>Loading todos...</p></div>
             </div>
+        </div>
+
+        <!-- Phone Settings Message -->
+        <div class="phone-desktop-only" id="phone-settings-message">
+            <img src="images/Robot.png" alt="Dot">
+            <h2>Best on desktop</h2>
+            <p>Settings is designed for bigger screens.</p>
+            <button class="pill-btn" onclick="goHome()">Back</button>
         </div>
     </div>
 
@@ -254,7 +188,6 @@
                     <img src="images/Askdot-header.png" alt="Ask Dot" class="header-logo-img">
                 </a>
                 <nav class="header-nav">
-                    <button class="nav-tab active" data-view="home">Ask Dot</button>
                     <button class="nav-tab" data-view="wip">WIP</button>
                     <button class="nav-tab" data-view="tracker">Tracker</button>
                     <button class="nav-tab" data-view="todo">Todo</button>
@@ -267,6 +200,7 @@
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     <div class="user-dropdown-menu" id="user-dropdown-menu">
+                        <div class="user-dropdown-item hunch-only" data-view="settings">Settings</div>
                         <div class="user-dropdown-item" data-action="signout">Sign out</div>
                     </div>
                 </div>
@@ -277,88 +211,6 @@
         <!-- Desktop Main Content -->
         <main class="desktop-main">
             <!-- Desktop Login: replaced by auth-overlay (Phase D) -->
-
-            <!-- ===== HOME VIEW (Ask Dot) ===== -->
-            <section class="view view-home active" id="view-home">
-                <!-- Home State -->
-                <div class="home-state" id="desktop-home-state">
-                    <div class="home-left">
-                        <img src="images/Dotandhello.png" alt="Hello from Dot" class="home-hello-img">
-                    </div>
-                    <div class="home-right">
-                        <div class="home-input-area">
-                            <button class="input-plus" id="desktop-home-plus">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                            </button>
-                            <div class="plus-menu" id="desktop-home-plus-menu">
-                                <div class="plus-menu-item" data-action="new-job">
-                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> New Job
-                                </div>
-                                <div class="plus-menu-item" data-action="upload">
-                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Upload
-                                </div>
-                                <div class="plus-menu-item" data-action="files">
-                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Files
-                                </div>
-                                <div class="plus-menu-item" data-action="wip-email">
-                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Send WIP
-                                </div>
-                            </div>
-                            <input type="text" class="home-input" id="desktop-home-input" placeholder="What's cooking?">
-                            <button class="input-send" id="desktop-home-send">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="send-icon">
-                                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="examples">
-                            <button class="example-btn" data-question="Find a job">Find a job</button>
-                            <button class="example-btn" data-question="Check a client">Check a client</button>
-                            <button class="example-btn" data-question="What can Dot do?">What can Dot do?</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Conversation State -->
-                <div class="conversation-state" id="desktop-conversation-state">
-                    <div class="conversation-area" id="desktop-conversation-area"></div>
-                    <div class="chat-input-area">
-                        <div class="chat-input-wrapper">
-                            <button class="input-plus" id="desktop-chat-plus">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                            </button>
-                            <div class="plus-menu" id="desktop-chat-plus-menu">
-                                <div class="plus-menu-item" data-action="new-job">
-                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> New Job
-                                </div>
-                                <div class="plus-menu-item" data-action="upload">
-                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Upload
-                                </div>
-                                <div class="plus-menu-item" data-action="files">
-                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Files
-                                </div>
-                                <div class="plus-menu-item" data-action="wip-email">
-                                    <svg class="chevron-icon-right" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg> Send WIP
-                                </div>
-                            </div>
-                            <input type="text" class="chat-input" id="desktop-chat-input" placeholder="Ask a follow-up...">
-                            <button class="input-send" id="desktop-chat-send">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="send-icon">
-                                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             <!-- ===== WIP VIEW ===== -->
             <section class="view view-wip" id="view-wip">
@@ -430,6 +282,40 @@
                         <div class="loading-spinner"></div>
                         <p>Loading todos...</p>
                     </div>
+                </div>
+            </section>
+
+            <!-- ===== SETTINGS VIEW (Hunch-only — placeholder, future phase) ===== -->
+            <section class="view view-settings" id="view-settings">
+                <div class="settings-container">
+                    <h1 class="settings-title">SETTINGS</h1>
+                    <p class="settings-sub">Tools to manage clients, people and access. Coming soon.</p>
+                    <ul class="settings-list">
+                        <li class="settings-item disabled">
+                            <span class="settings-item-label">Permissions</span>
+                            <span class="settings-item-tag">Coming soon</span>
+                        </li>
+                        <li class="settings-item disabled">
+                            <span class="settings-item-label">Add a client</span>
+                            <span class="settings-item-tag">Coming soon</span>
+                        </li>
+                        <li class="settings-item disabled">
+                            <span class="settings-item-label">Add a person</span>
+                            <span class="settings-item-tag">Coming soon</span>
+                        </li>
+                        <li class="settings-item disabled">
+                            <span class="settings-item-label">Remove a client</span>
+                            <span class="settings-item-tag">Coming soon</span>
+                        </li>
+                        <li class="settings-item disabled">
+                            <span class="settings-item-label">Change budget</span>
+                            <span class="settings-item-tag">Coming soon</span>
+                        </li>
+                        <li class="settings-item disabled">
+                            <span class="settings-item-label">Manage devices</span>
+                            <span class="settings-item-tag">Coming soon</span>
+                        </li>
+                    </ul>
                 </div>
             </section>
 
@@ -1211,7 +1097,7 @@
     <div class="plus-backdrop" id="plus-backdrop" aria-hidden="true"></div>
     <div class="plus-dock" id="plus-dock">
         <!-- Menu pills: appear above the FAB when dock has .open class.
-             DOM order top-to-bottom (New Job, Update, Ask Dot).
+             DOM order top-to-bottom (New Job, Update).
              Stagger animation reversed so bottom pill (closest to FAB) animates in first. -->
         <div class="plus-actions" id="plus-actions" role="menu">
             <button class="plus-pill" data-action="new-job" role="menuitem">
@@ -1221,10 +1107,6 @@
             <button class="plus-pill" data-action="update" role="menuitem">
                 <svg class="chevron-icon-right" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
                 <span>Update</span>
-            </button>
-            <button class="plus-pill" data-action="ask-dot" role="menuitem">
-                <svg class="chevron-icon-right" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-                <span>Ask Dot</span>
             </button>
         </div>
         <button class="plus-button" id="plus-button" aria-label="Open menu" aria-expanded="false">

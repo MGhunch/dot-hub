@@ -107,7 +107,7 @@ function applyDeepLink() {
     }
     
     // Now navigate - render functions will use our pre-set values
-    if (view && ['wip', 'tracker', 'home', 'todo'].includes(view)) {
+    if (view && ['wip', 'tracker', 'todo', 'settings'].includes(view)) {
         navigateTo(view);
     }
     
@@ -145,6 +145,10 @@ function setupEventListeners() {
     // User dropdown
     $('user-dropdown-trigger')?.addEventListener('click', toggleUserDropdown);
     document.querySelector('.user-dropdown-item[data-action="signout"]')?.addEventListener('click', signOut);
+    document.querySelector('.user-dropdown-item[data-view="settings"]')?.addEventListener('click', () => {
+        document.querySelector('.user-dropdown')?.classList.remove('open');
+        navigateTo('settings');
+    });
     
     $$('#phone-dropdown .dropdown-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -162,42 +166,6 @@ function setupEventListeners() {
         tab.addEventListener('click', () => navigateTo(tab.dataset.view));
     });
 
-    // Home inputs
-    $('phone-home-input')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') startConversation('phone'); });
-    $('phone-home-send')?.addEventListener('click', () => startConversation('phone'));
-    $('desktop-home-input')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') startConversation('desktop'); });
-    $('desktop-home-send')?.addEventListener('click', () => startConversation('desktop'));
-
-    // Chat inputs
-    $('phone-chat-input')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') continueConversation('phone'); });
-    $('phone-chat-send')?.addEventListener('click', () => continueConversation('phone'));
-    $('desktop-chat-input')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') continueConversation('desktop'); });
-    $('desktop-chat-send')?.addEventListener('click', () => continueConversation('desktop'));
-
-    // Example buttons
-    $$('.example-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const question = btn.dataset.question;
-            
-            // Special handling for "Find a job" - open modal instead
-            if (question === 'Find a job') {
-                openJobFinder();
-                return;
-            }
-            
-            // Special handling for "Send a wip" - open modal instead
-            if (question === 'Send a wip') {
-                openWipEmailModal();
-                return;
-            }
-            
-            const layout = isDesktop() ? 'desktop' : 'phone';
-            const input = $(layout + '-home-input');
-            if (input) input.value = question;
-            startConversation(layout);
-        });
-    });
-
     // Check for stale session when tab becomes visible
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
@@ -213,49 +181,10 @@ function setupEventListeners() {
                 m.previousElementSibling?.classList.remove('open');
             });
         }
-        // Close plus menus on outside click
-        if (!e.target.closest('.input-plus') && !e.target.closest('.plus-menu')) {
-            $$('.plus-menu.open').forEach(m => m.classList.remove('open'));
-        }
         // Close user dropdown on outside click
         if (!e.target.closest('.user-dropdown')) {
             document.querySelector('.user-dropdown')?.classList.remove('open');
         }
-    });
-
-    // Plus button click handlers
-    $$('.input-plus').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const menu = btn.nextElementSibling;
-            // Close other plus menus first
-            $$('.plus-menu.open').forEach(m => {
-                if (m !== menu) m.classList.remove('open');
-            });
-            menu?.classList.toggle('open');
-        });
-    });
-
-    // Plus menu item click handlers
-    $$('.plus-menu-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const action = item.dataset.action;
-            // Close the menu
-            item.closest('.plus-menu')?.classList.remove('open');
-            // Route to appropriate handler
-            if (action === 'new-job') {
-                openNewJobModal();
-            } else if (action === 'find-job') {
-                openJobFinder();
-            } else if (action === 'files') {
-                openFilesModal();
-            } else if (action === 'wip-email') {
-                openWipEmailModal();
-            } else {
-                showComingSoonModal(action);
-            }
-        });
     });
 
     // Edit job modal listeners (textarea auto-resize, job-name overlay click)
@@ -263,7 +192,6 @@ function setupEventListeners() {
 }
 
 function isDesktop() { return window.innerWidth >= 900; }
-function getActiveConversationArea() { return isDesktop() ? $('desktop-conversation-area') : $('phone-conversation-area'); }
 function getClientDisplayName(client) { return CLIENT_DISPLAY_NAMES[client.code] || client.name; }
 
 // ===== INACTIVITY TIMER =====
@@ -437,10 +365,6 @@ function unlockApp() {
     document.body.classList.remove('logged-out');
     document.body.classList.remove('loading');
     
-    const placeholder = `What's cooking ${state.currentUser.name}?`;
-    if ($('phone-home-input')) $('phone-home-input').placeholder = placeholder;
-    if ($('desktop-home-input')) $('desktop-home-input').placeholder = placeholder;
-    
     // Set user display name in header dropdown
     const displayName = state.currentUser?.name || 'User';
     const userNameEl = $('user-display-name');
@@ -453,8 +377,18 @@ function unlockApp() {
     loadJobs();
     resetInactivityTimer();
     
-    // Apply deep link immediately after unlock
-    applyDeepLink();
+    // Apply deep link if present — otherwise route to default landing for this user
+    if (state.deepLink) {
+        applyDeepLink();
+    } else {
+        navigateTo(defaultViewForUser());
+    }
+}
+
+// Default view a user lands on at unlock / when clicking the logo.
+// Hunch (Full) → TODO. Clients (WIP / Tracker) → WIP.
+function defaultViewForUser() {
+    return state.currentUser?.accessLevel === 'Full' ? 'todo' : 'wip';
 }
 
 function applyAccessLevel() {
@@ -489,19 +423,12 @@ function applyAccessLevel() {
         plusBackdrop?.classList.remove('hidden');
     }
     
-    // Hide New Job, Files and Send WIP from plus menus for non-Full users
-    const newJobItems = document.querySelectorAll('.plus-menu-item[data-action="new-job"]');
-    const filesItems = document.querySelectorAll('.plus-menu-item[data-action="files"]');
-    const wipEmailItems = document.querySelectorAll('.plus-menu-item[data-action="wip-email"]');
-    
+    // Hide New Job pill from plus dock for non-Full users
+    const newJobPills = document.querySelectorAll('.plus-pill[data-action="new-job"]');
     if (level !== 'Full') {
-        newJobItems.forEach(item => item.classList.add('hidden'));
-        filesItems.forEach(item => item.classList.add('hidden'));
-        wipEmailItems.forEach(item => item.classList.add('hidden'));
+        newJobPills.forEach(pill => pill.classList.add('hidden'));
     } else {
-        newJobItems.forEach(item => item.classList.remove('hidden'));
-        filesItems.forEach(item => item.classList.remove('hidden'));
-        wipEmailItems.forEach(item => item.classList.remove('hidden'));
+        newJobPills.forEach(pill => pill.classList.remove('hidden'));
     }
     
     // Store client filter for WIP/Tracker views
@@ -511,50 +438,16 @@ function applyAccessLevel() {
         state.clientFilter = null;
     }
     
-    // Update example buttons based on access level
-    updateExampleButtons();
-}
-
-function updateExampleButtons() {
-    const level = state.currentUser?.accessLevel || 'Client WIP';
-    
-    let buttons;
+    // Hunch-only items (e.g. Settings entry) — show for Full access, hide otherwise
+    const hunchOnlyItems = document.querySelectorAll('.hunch-only');
     if (level === 'Full') {
-        buttons = [
-            { question: 'Find a job', label: 'Find a job' },
-            { question: 'Send a wip', label: 'Send a wip' },
-            { question: 'Show me jobs due today and tomorrow', label: 'Deadlines' }
-        ];
-    } else if (level === 'Client Tracker') {
-        buttons = [
-            { question: 'Find a job', label: 'Find a job' },
-            { question: 'Track numbers', label: 'Track numbers' },
-            { question: 'Meet Dot', label: 'Meet Dot' }
-        ];
+        hunchOnlyItems.forEach(item => item.classList.remove('hidden'));
     } else {
-        // Client WIP
-        buttons = [
-            { question: 'Find a job', label: 'Find a job' },
-            { question: "See what's due", label: "See what's due" },
-            { question: 'Meet Dot', label: 'Meet Dot' }
-        ];
+        hunchOnlyItems.forEach(item => item.classList.add('hidden'));
     }
-    
-    // Update all example button sets
-    $$('.examples').forEach(container => {
-        const btns = container.querySelectorAll('.example-btn');
-        btns.forEach((btn, i) => {
-            if (buttons[i]) {
-                btn.dataset.question = buttons[i].question;
-                btn.textContent = buttons[i].label;
-            }
-        });
-    });
 }
 
 async function signOut() {
-    clearDotSession();  // Clear conversation memory on Traffic
-    
     try {
         await fetch('/api/logout', { method: 'POST' });
     } catch (e) {
@@ -564,12 +457,11 @@ async function signOut() {
     sessionStorage.removeItem('dotUser');
     state.currentUser = null;
     state.clientFilter = null;
+    state.currentView = null;
     
-    // Reset login screen and show it
+    // Reset login screen and show it (auth-overlay takes over via .logged-out)
     resetLoginForm();
     document.body.classList.add('logged-out');
-    
-    goHome();
 }
 
 // ===== NAVIGATION =====
@@ -580,48 +472,22 @@ function navigateTo(view) {
     $$('.nav-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === tabView));
     $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
     
-    // Footer: only show on home view when NOT in conversation
-    const footer = $('desktop-footer');
+    // Hide desktop footer on every view (it was Ask Dot's home — orphaned post-Ship-2, kept for now)
+    $('desktop-footer')?.classList.add('hidden');
     
     if (!isDesktop()) {
-        $('phone-home')?.classList.add('hidden');
-        $('phone-conversation')?.classList.remove('visible');
         $('phone-wip')?.classList.remove('visible');
         $('phone-tracker-message')?.classList.remove('visible');
         $('phone-todo')?.classList.remove('visible');
-        if (view === 'home') {
-            // Check if there's an active conversation
-            const hasConversation = $('phone-conversation-area')?.children.length > 0;
-            if (hasConversation) {
-                $('phone-conversation')?.classList.add('visible');
-            } else {
-                $('phone-home')?.classList.remove('hidden');
-            }
-        }
-        else if (view === 'wip') {
+        $('phone-settings-message')?.classList.remove('visible');
+        if (view === 'wip') {
             $('phone-wip')?.classList.add('visible');
             setupPhoneWipDropdown();
             renderPhoneWip();
         }
         else if (view === 'tracker') $('phone-tracker-message')?.classList.add('visible');
         else if (view === 'todo') $('phone-todo')?.classList.add('visible');
-    } else {
-        // Desktop: restore conversation state if exists
-        if (view === 'home') {
-            const hasConversation = $('desktop-conversation-area')?.children.length > 0;
-            if (hasConversation) {
-                $('desktop-home-state')?.classList.add('hidden');
-                $('desktop-conversation-state')?.classList.add('visible');
-                footer?.classList.add('hidden');
-            } else {
-                $('desktop-home-state')?.classList.remove('hidden');
-                $('desktop-conversation-state')?.classList.remove('visible');
-                footer?.classList.remove('hidden');
-            }
-        } else {
-            // Non-home views: hide footer
-            footer?.classList.add('hidden');
-        }
+        else if (view === 'settings') $('phone-settings-message')?.classList.add('visible');
     }
     
     if (view === 'wip' && isDesktop()) { setupWipDropdown(); renderWip(); }
@@ -629,20 +495,9 @@ function navigateTo(view) {
     if (view === 'todo') renderTodos();
 }
 
+// Logo click — route to user's default landing.
 function goHome() {
-    // Clear conversation history for fresh start
-    state.conversationHistory = [];
-    
-    $('phone-home')?.classList.remove('hidden');
-    $('phone-conversation')?.classList.remove('visible');
-    if ($('phone-home-input')) $('phone-home-input').value = '';
-    if ($('phone-conversation-area')) $('phone-conversation-area').innerHTML = '';
-    $('desktop-home-state')?.classList.remove('hidden');
-    $('desktop-conversation-state')?.classList.remove('visible');
-    $('desktop-footer')?.classList.remove('hidden');
-    if ($('desktop-home-input')) $('desktop-home-input').value = '';
-    if ($('desktop-conversation-area')) $('desktop-conversation-area').innerHTML = '';
-    navigateTo('home');
+    navigateTo(defaultViewForUser());
 }
 
 function togglePhoneMenu() {
@@ -686,457 +541,6 @@ async function loadJobs() {
     if (typeof window.markWelcomeReady === 'function') {
         window.markWelcomeReady();
     }
-}
-
-// ===== CONVERSATION =====
-function startConversation(layout) {
-    const input = $(layout + '-home-input');
-    const question = input?.value.trim() || 'What can Dot do?';
-    if (layout === 'phone') {
-        $('phone-home')?.classList.add('hidden');
-        $('phone-conversation')?.classList.add('visible');
-    } else {
-        $('desktop-home-state')?.classList.add('hidden');
-        $('desktop-conversation-state')?.classList.add('visible');
-        $('desktop-footer')?.classList.add('hidden');
-    }
-    addUserMessage(question);
-    processQuestion(question);
-}
-
-function continueConversation(layout) {
-    const input = $(layout + '-chat-input');
-    const question = input?.value.trim();
-    if (!question) return;
-    addUserMessage(question);
-    input.value = '';
-    processQuestion(question);
-}
-
-function addUserMessage(text) {
-    const area = getActiveConversationArea();
-    const msg = document.createElement('div');
-    msg.className = 'user-message fade-in';
-    msg.textContent = text;
-    area?.appendChild(msg);
-    if (area) area.scrollTop = area.scrollHeight;
-}
-
-// Thinking helper messages
-const thinkingMessages = {
-    stage1: ["Let's have a look...", "Gimme a sec...", "Hunting that down..."],
-    stage2: ["Digging the data...", "Joining the dots...", "Piecing bits together..."],
-    stage3: ["Lining it all up...", "Checking for tickety boo...", "Quick lick of polish..."],
-    stage4: ["Dotting my eyes...", "One more thing...", "Nearly there..."],
-    countdown: ["five...", "four...", "three...", "two...", "one..."]
-};
-
-let thinkingTimeouts = [];
-
-function addThinkingDots() {
-    const area = getActiveConversationArea();
-    const dots = document.createElement('div');
-    dots.className = 'thinking-dots';
-    dots.id = 'currentThinking';
-    
-    // Pick random message from each stage
-    const msg1 = thinkingMessages.stage1[Math.floor(Math.random() * thinkingMessages.stage1.length)];
-    const msg2 = thinkingMessages.stage2[Math.floor(Math.random() * thinkingMessages.stage2.length)];
-    const msg3 = thinkingMessages.stage3[Math.floor(Math.random() * thinkingMessages.stage3.length)];
-    const msg4 = thinkingMessages.stage4[Math.floor(Math.random() * thinkingMessages.stage4.length)];
-    
-    // Start with just Dot, no text
-    dots.innerHTML = `
-        <div class="dot-thinking">
-            <img src="images/Robot_01.svg" alt="Dot" class="dot-robot">
-            <img src="images/Heart_01.svg" alt="" class="dot-heart-svg">
-        </div>
-        <span class="thinking-helper"></span>
-    `;
-    
-    area?.appendChild(dots);
-    if (area) area.scrollTop = area.scrollHeight;
-    
-    const helper = dots.querySelector('.thinking-helper');
-    
-    // Helper to fade in new text
-    const fadeToText = (text) => {
-        helper.classList.remove('visible');
-        setTimeout(() => {
-            helper.textContent = text;
-            helper.classList.add('visible');
-        }, 200); // Brief pause during fade out before new text
-    };
-    
-    // Stage timings: 800ms start, then 1600ms between stages
-    thinkingTimeouts.push(setTimeout(() => {
-        helper.textContent = msg1;
-        helper.classList.add('visible');
-    }, 800));
-    
-    thinkingTimeouts.push(setTimeout(() => fadeToText(msg2), 2400));
-    thinkingTimeouts.push(setTimeout(() => fadeToText(msg3), 4000));
-    thinkingTimeouts.push(setTimeout(() => fadeToText(msg4), 5600));
-    
-    // Countdown: 500ms apart starting at 7200ms
-    thinkingMessages.countdown.forEach((word, i) => {
-        thinkingTimeouts.push(setTimeout(() => fadeToText(word), 7200 + (i * 500)));
-    });
-}
-
-function removeThinkingDots() {
-    thinkingTimeouts.forEach(t => clearTimeout(t));
-    thinkingTimeouts = [];
-    $('currentThinking')?.remove();
-}
-
-// ===== QUERY PROCESSING (Unified - routes through Traffic) =====
-async function processQuestion(question) {
-    resetInactivityTimer();
-    addThinkingDots();
-    
-    console.log('Query:', question);
-    
-    const response = await askDot(question);
-    
-    removeThinkingDots();
-    
-    console.log('Dot response:', response);
-    
-    // Resolve job numbers to full objects (Claude now returns just job numbers for speed)
-    let resolvedJobs = [];
-    if (response && response.jobs && Array.isArray(response.jobs) && response.jobs.length > 0) {
-        // Check if it's job numbers (strings) or already full objects
-        if (typeof response.jobs[0] === 'string') {
-            resolvedJobs = resolveJobNumbers(response.jobs);
-            console.log('Resolved jobs:', resolvedJobs.map(j => j.jobNumber));
-        } else {
-            // Already full objects (backwards compatibility)
-            resolvedJobs = response.jobs;
-        }
-    }
-    
-    if (!response) {
-        const failMessages = [
-            "Hmm, I'm having trouble thinking right now. Try again?",
-            "Sorry, my brain just glitched. Give it another go?",
-            "Oops, something went sideways. Mind trying that again?",
-            "My wires got crossed for a sec. One more time?",
-            "That one got away from me. Try again?"
-        ];
-        renderResponse({ 
-            message: failMessages[Math.floor(Math.random() * failMessages.length)],
-            nextPrompt: "What can Dot do?"
-        });
-        return;
-    }
-    
-    // Handle different response types
-    switch (response.type) {
-        case 'answer':
-            // Simple answer, maybe with job cards
-            renderResponse({
-                message: response.message,
-                jobs: resolvedJobs,
-                nextPrompt: response.nextPrompt
-            });
-            break;
-            
-        case 'action':
-            // Worker was called (or will be called)
-            renderResponse({
-                message: response.message,
-                jobs: [],
-                nextPrompt: response.nextPrompt
-            });
-            break;
-            
-        case 'confirm':
-            // Need user to pick a job
-            renderResponse({
-                message: response.message,
-                jobs: resolvedJobs,
-                nextPrompt: null
-            });
-            break;
-            
-        case 'clarify':
-            // Need more info from user - may have job options
-            renderResponse({
-                message: response.message,
-                jobs: resolvedJobs,
-                nextPrompt: null
-            });
-            break;
-            
-        case 'redirect':
-            // Redirect to WIP or Tracker
-            renderResponse({
-                message: response.message,
-                jobs: [],
-                nextPrompt: null
-            });
-            // Navigate to the view
-            if (response.redirectTo) {
-                setTimeout(() => {
-                    navigateTo(response.redirectTo);
-                    // Apply filters if provided
-                    if (response.redirectParams?.client) {
-                        if (response.redirectTo === 'wip') {
-                            state.wipClient = response.redirectParams.client;
-                            renderWip();
-                        } else if (response.redirectTo === 'tracker') {
-                            state.trackerClient = response.redirectParams.client;
-                            renderTracker();
-                        }
-                    }
-                }, 1500);  // Short delay so user sees the message
-            }
-            break;
-            
-        case 'horoscope':
-            // Horoscope response - sass from the stars
-            renderResponse({
-                message: response.message,
-                jobs: [],
-                nextPrompt: response.nextPrompt
-            });
-            break;
-            
-        case 'error':
-            // Something went wrong
-            renderResponse({
-                message: response.message || "Sorry, I got in a muddle over that one.",
-                jobs: [],
-                nextPrompt: "What can Dot do?"
-            });
-            break;
-            
-        default:
-            // Fallback - treat as answer
-            renderResponse({
-                message: response.message || "I'm not sure what happened there.",
-                jobs: resolvedJobs,
-                nextPrompt: response.nextPrompt
-            });
-    }
-}
-
-// ===== DOT API (Simple Claude - Fast) =====
-async function askDot(question) {
-    try {
-        const sessionId = state.currentUser?.name || 'anonymous';
-        
-        // Add user message to history BEFORE sending
-        state.conversationHistory.push({
-            role: 'user',
-            content: question
-        });
-        
-        const response = await fetch(`${BRAIN_BASE}/hub`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                content: question,
-                senderName: state.currentUser?.name || 'Hub User',
-                sessionId: sessionId,
-                jobs: getAccessFilteredJobs(),
-                history: state.conversationHistory.slice(0, -1),  // Send history WITHOUT current message
-                accessLevel: state.currentUser?.accessLevel || 'Client WIP'
-            })
-        });
-        
-        if (!response.ok) {
-            console.log('Hub API error:', response.status);
-            // Remove the user message we just added since request failed
-            state.conversationHistory.pop();
-            return null;
-        }
-        
-        const result = await response.json();
-        
-        // Add assistant response to history
-        if (result && result.message) {
-            state.conversationHistory.push({
-                role: 'assistant',
-                content: result.message
-            });
-        }
-        
-        // Keep history manageable (last 20 messages = 10 exchanges)
-        if (state.conversationHistory.length > 20) {
-            state.conversationHistory = state.conversationHistory.slice(-20);
-        }
-        
-        return result;
-    } catch (e) {
-        console.log('Hub API error:', e);
-        // Remove the user message we just added since request failed
-        if (state.conversationHistory.length > 0) {
-            state.conversationHistory.pop();
-        }
-        return null;
-    }
-}
-
-async function clearDotSession() {
-    try {
-        const sessionId = state.currentUser?.name || 'anonymous';
-        await fetch(`${BRAIN_BASE}/traffic/clear`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId })
-        });
-    } catch (e) {
-        console.log('Failed to clear session:', e);
-    }
-}
-
-/**
- * Resolve job numbers to full job objects from state.allJobs
- * Claude returns ["TOW 088", "TOW 087"], we need full objects for rendering
- */
-function resolveJobNumbers(jobNumbers) {
-    if (!jobNumbers || !Array.isArray(jobNumbers)) return [];
-    
-    return jobNumbers
-        .map(jobNum => {
-            // Handle both "TOW 088" and "TOW088" formats
-            const normalized = jobNum.replace(/\s+/g, ' ').trim().toUpperCase();
-            return state.allJobs.find(j => {
-                const jobNormalized = j.jobNumber.replace(/\s+/g, ' ').trim().toUpperCase();
-                return jobNormalized === normalized;
-            });
-        })
-        .filter(Boolean); // Remove any nulls (jobs not found)
-}
-
-// ===== JOB FILTERING (DEPRECATED - backend now returns jobs directly) =====
-// Keeping for reference in case we need local filtering again
-/*
-function getFilteredJobsFromResponse(jobFilter) {
-    if (!jobFilter) return [];
-    
-    let jobs = [...state.allJobs];
-    
-    // Filter by client
-    if (jobFilter.client) {
-        jobs = jobs.filter(j => j.clientCode === jobFilter.client);
-    }
-    
-    // Filter by status
-    if (jobFilter.status) {
-        jobs = jobs.filter(j => j.status === jobFilter.status);
-    } else {
-        // Default to active jobs only
-        jobs = jobs.filter(j => j.status === 'In Progress');
-    }
-    
-    // Filter by with client
-    if (jobFilter.withClient === true) {
-        jobs = jobs.filter(j => j.withClient === true);
-    } else if (jobFilter.withClient === false) {
-        jobs = jobs.filter(j => !j.withClient);
-    }
-    
-    // Filter by date range
-    if (jobFilter.dateRange) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        jobs = jobs.filter(j => {
-            if (!j.updateDue) return false;
-            const due = new Date(j.updateDue);
-            due.setHours(0, 0, 0, 0);
-            
-            switch (jobFilter.dateRange) {
-                case 'today':
-                    return due <= today;
-                case 'tomorrow':
-                    const tomorrow = new Date(today);
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    return due <= tomorrow;
-                case 'week':
-                    const week = new Date(today);
-                    week.setDate(week.getDate() + 7);
-                    return due <= week;
-                default:
-                    return true;
-            }
-        });
-    }
-    
-    // Search filter
-    if (jobFilter.search?.length) {
-        jobs = jobs.filter(job => {
-            const searchable = `${job.jobNumber} ${job.jobName} ${job.description || ''} ${job.update || ''}`.toLowerCase();
-            return jobFilter.search.some(term => searchable.includes(term.toLowerCase()));
-        });
-    }
-    
-    // Sort by due date
-    jobs.sort((a, b) => {
-        const aDate = a.updateDue ? new Date(a.updateDue) : new Date('9999-12-31');
-        const bDate = b.updateDue ? new Date(b.updateDue) : new Date('9999-12-31');
-        return aDate - bDate;
-    });
-    
-    // Exclude 000 and 999 jobs
-    jobs = jobs.filter(j => {
-        const num = j.jobNumber.split(' ')[1];
-        return num !== '000' && num !== '999';
-    });
-    
-    return jobs;
-}
-*/
-
-// ===== RENDERING =====
-function renderResponse({ message, jobs = [], nextPrompt = null }) {
-    const area = getActiveConversationArea();
-    const response = document.createElement('div');
-    response.className = 'dot-response fade-in';
-    
-    // Format message - handle bullets and line breaks
-    let formattedMessage = formatMessage(message);
-    
-    let html = `<div class="dot-text">${formattedMessage}`;
-    
-    if (nextPrompt) {
-        html += `<p class="next-prompt" data-question="${nextPrompt}">${nextPrompt}</p>`;
-    }
-    
-    html += `</div>`;
-    
-    if (jobs.length > 0) {
-        html += '<div class="job-cards">';
-        jobs.forEach((job, i) => {
-            html += createJobCard(job, i);
-        });
-        html += '</div>';
-    }
-    
-    response.innerHTML = html;
-    area?.appendChild(response);
-    
-    // Bind click handlers
-    response.querySelectorAll('.next-prompt').forEach(el => {
-        el.addEventListener('click', () => {
-            addUserMessage(el.dataset.question);
-            processQuestion(el.dataset.question);
-        });
-    });
-    
-    response.querySelectorAll('.job-card').forEach(card => {
-        card.addEventListener('click', () => openJobDetail(card.dataset.job));
-    });
-    
-    if (area) area.scrollTop = area.scrollHeight;
-}
-
-function createJobCard(job, index) {
-    // Use universal card for Ask Dot results
-    return createUniversalCard(job, `job-${Date.now()}-${index}`);
 }
 
 // ===== UNIVERSAL JOB CARD =====
@@ -2420,47 +1824,6 @@ const ICON_EXCHANGE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="non
 const ICON_CHEVRON = `<svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
 const ICON_CHEVRON_RIGHT = `<svg class="chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>`;
 
-// ===== MESSAGE FORMATTING =====
-function formatMessage(message) {
-    if (!message) return '';
-    
-    // Split into lines
-    const lines = message.split('\n').map(l => l.trim()).filter(l => l);
-    
-    // Check if we have bullet points
-    const hasBullets = lines.some(l => /^[\u2022\-\*]\s/.test(l));
-    
-    if (!hasBullets) {
-        return lines.map(l => `<p>${l}</p>`).join('');
-    }
-    
-    // Process bullets into proper lists
-    let html = '';
-    let inList = false;
-    
-    lines.forEach(line => {
-        const isBullet = /^[\u2022\-\*]\s/.test(line);
-        
-        if (isBullet) {
-            if (!inList) {
-                html += '<ul class="dot-list">';
-                inList = true;
-            }
-            html += `<li>${line.replace(/^[\u2022\-\*]\s*/, '')}</li>`;
-        } else {
-            if (inList) {
-                html += '</ul>';
-                inList = false;
-            }
-            html += `<p>${line}</p>`;
-        }
-    });
-    
-    if (inList) html += '</ul>';
-    
-    return html;
-}
-
 
 // ===== HELPERS =====
 function formatDueDate(isoDate, withClient = false) {
@@ -2915,8 +2278,6 @@ function showComingSoonModal(action) {
         text.textContent = 'Pick a job from WIP to edit for now.';
     } else if (action === 'tracker') {
         text.textContent = 'Pick a job from Tracker to edit for now.';
-    } else if (action === 'ask-dot') {
-        text.textContent = "Hey, what's cooking? Chat coming soon.";
     } else {
         text.textContent = 'Coming soon';
     }
