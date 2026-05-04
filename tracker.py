@@ -225,7 +225,8 @@ def get_rollover(client_code: str, today: date,
                  year_end_month: str,
                  budget_history: list,
                  clients_fallback: dict,
-                 tracker_entries: list) -> dict:
+                 tracker_entries: list,
+                 is_closed: bool = False) -> dict:
     """Return the structured rollover object using the asymmetric bucket model.
 
     Two regimes:
@@ -239,16 +240,28 @@ def get_rollover(client_code: str, today: date,
       - Remaining carry expires.
       - Bank becomes next quarter's carry.
 
+    Args:
+      is_closed: When True, the quarter being calculated is treated as fully
+        closed — all 3 months process regardless of `today`. Used for historic
+        retrospective views. When False (default), in-flight months are skipped.
+
     Shape:
       {
         'lastQuarter': {
-          'remaining': int,                # carry minus chips, floored at 0
+          'remaining': int,                # post-walk carry, floored at 0 (live state)
+          'inherited': int,                # carry that came in from prev quarter
           'previousQuarterLabel': str,     # e.g. 'Q1'
           'expiresOn': str,                # ISO date (last day of current quarter)
-        } | None,                          # None if no carry survives
+        } | None,                          # None if no inherited carry AND closed,
+                                           # or if remaining=0 AND not closed
         'nextQuarter': {
           'banking': int,                  # sum of monthly underspends only
-        } | None,                          # None if nothing banking
+          'monthsBanked': list,
+        } | None,                          # None if nothing banking AND not closed
+        'isClosed': bool,
+        'currentQuarterLabel': str,        # e.g. 'Q2' — quarter this rollover is FOR
+        'nextQuarterLabel': str,           # e.g. 'Q3'
+        'quarterKey': str,                 # 'JAN-MAR' style key
       }
     """
     prev_q_num, _ = _quarter_from_today(year_end_month, today)
@@ -283,7 +296,7 @@ def get_rollover(client_code: str, today: date,
 
     for m in curr_q['months']:
         m_first = date(m['year'], m['month_num'], 1)
-        if m_first >= today_first:
+        if not is_closed and m_first >= today_first:
             continue  # month not yet complete (current month in flight, or future)
 
         committed = get_committed(
@@ -306,22 +319,65 @@ def get_rollover(client_code: str, today: date,
             rollover_remaining = max(0, rollover_remaining - overage)
 
     # ----- Build structured response -----
+    # For LIVE: keep existing hide-on-zero semantics so block stays minimal
+    #   when there's nothing to say.
+    # For CLOSED (historic retrospective): always populate both buckets so
+    #   the story is complete — "$X from Q1, $Y to Q3" — even if values are 0.
     last_quarter = None
-    if rollover_remaining > 0:
+    if is_closed or rollover_remaining > 0:
         last_quarter = {
             'remaining': rollover_remaining,
+            'inherited': carry_in,
             'previousQuarterLabel': prev_q['label'],
             'expiresOn': _last_day_of_quarter(curr_q_first).isoformat(),
         }
 
     next_quarter = None
-    if bank > 0:
+    if is_closed or bank > 0:
         next_quarter = {
             'banking': bank,
             'monthsBanked': months_banked,
         }
 
+    next_q_num = 1 if curr_q_num == 4 else curr_q_num + 1
+
     return {
         'lastQuarter': last_quarter,
         'nextQuarter': next_quarter,
+        'isClosed': is_closed,
+        'currentQuarterLabel': f'Q{curr_q_num}',
+        'nextQuarterLabel': f'Q{next_q_num}',
+        'quarterKey': _quarter_key_from_months(curr_q['months']),
     }
+
+
+def _quarter_key_from_months(months: list) -> str:
+    """Return JAN-MAR style key from the quarter's 3 month dicts.
+
+    Returns '' if months don't map to a standard calendar quarter (shouldn't
+    happen with current fiscal calendars but defensive against weird data).
+    """
+    key_map = {
+        (1, 2, 3): 'JAN-MAR',
+        (4, 5, 6): 'APR-JUN',
+        (7, 8, 9): 'JUL-SEP',
+        (10, 11, 12): 'OCT-DEC',
+    }
+    nums = tuple(m['month_num'] for m in months)
+    return key_map.get(nums, '')
+
+
+def get_historic_quarter_dates(year_end_month: str, today: date,
+                                n_quarters: int = 3) -> list:
+    """Return a list of representative `today` dates for the previous N quarters.
+
+    Each date is the first day of that quarter — sufficient for `_quarter_from_today`
+    to identify the quarter, and works as the `today` parameter for `get_rollover`
+    in is_closed=True mode.
+
+    Args:
+      n_quarters: How many historic quarters to return. Default 3 (covers a
+        full year alongside the current quarter).
+    """
+    _, curr_q_first = _quarter_from_today(year_end_month, today)
+    return [_add_months(curr_q_first, -3 * i) for i in range(1, n_quarters + 1)]

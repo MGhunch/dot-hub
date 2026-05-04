@@ -1212,6 +1212,26 @@ def get_tracker_clients():
                     client_data['committedByMonth'] = tracker.get_committed_by_month(
                         code, today, budget_history, clients_fallback,
                     )
+
+                    # rolloverByQuarter: keyed by JAN-MAR style quarter key.
+                    # Includes current quarter (live) + 3 historic (is_closed=True).
+                    # Frontend looks up the quarter being viewed and renders
+                    # appropriate template based on the isClosed flag.
+                    rollover_by_quarter = {}
+                    current_obj = client_data['rolloverObject']
+                    if current_obj.get('quarterKey'):
+                        rollover_by_quarter[current_obj['quarterKey']] = current_obj
+                    for historic_today in tracker.get_historic_quarter_dates(
+                        year_end_month, today, n_quarters=3,
+                    ):
+                        historic_obj = tracker.get_rollover(
+                            code, historic_today, year_end_month,
+                            budget_history, clients_fallback, tracker_entries,
+                            is_closed=True,
+                        )
+                        if historic_obj.get('quarterKey'):
+                            rollover_by_quarter[historic_obj['quarterKey']] = historic_obj
+                    client_data['rolloverByQuarter'] = rollover_by_quarter
                 except Exception as e:
                     print(f'[Hub API] tracker.py error for {code}: {e}')
 

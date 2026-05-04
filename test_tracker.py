@@ -16,6 +16,7 @@ from tracker import (
     get_previous_quarter,
     get_chart_months,
     get_rollover,
+    get_historic_quarter_dates,
 )
 
 
@@ -505,6 +506,181 @@ class TestCommittedByMonth:
         )
         q_total = result['2026-04'] + result['2026-05'] + result['2026-06']
         assert q_total == 60000  # 3 * 20000
+
+
+class TestHistoricRollover:
+    """is_closed=True treats the quarter as fully closed.
+
+    All 3 months process regardless of `today`. Both buckets are populated
+    even when zero (so historic story renders fully). Includes new metadata
+    fields (isClosed, currentQuarterLabel, nextQuarterLabel, quarterKey).
+    """
+
+    def test_live_response_includes_new_metadata(self):
+        # Even live calls now return the new metadata fields.
+        result = get_rollover('SKY', date(2026, 5, 3), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK,
+                               sky_q3_underspend_26k())
+        assert result['isClosed'] is False
+        assert result['currentQuarterLabel'] == 'Q4'
+        assert result['nextQuarterLabel'] == 'Q1'
+        assert result['quarterKey'] == 'APR-JUN'
+
+    def test_closed_processes_all_months(self):
+        # Looking back at SKY's Q3 (Jan-Mar) as closed.
+        # Q2 (Oct-Dec) has no entries → committed $30K, spent $0, carry = $30K.
+        # Q3 entries from fixture: $4K total spent across 3 months ($1.5/$1.5/$1).
+        # Each month underspent → bank, no carry chips.
+        # Bank = ($10-$1.5) + ($10-$1.5) + ($10-$1) = $26K.
+        entries = sky_q3_underspend_26k()
+        # today = inside Q3, Jan 15 2026 (any date inside Q3 works for closed mode)
+        result = get_rollover('SKY', date(2026, 1, 15), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries,
+                               is_closed=True)
+        assert result['isClosed'] is True
+        assert result['currentQuarterLabel'] == 'Q3'
+        assert result['nextQuarterLabel'] == 'Q4'
+        assert result['quarterKey'] == 'JAN-MAR'
+        # Inherited from Q2 (no Q2 entries → full carry)
+        assert result['lastQuarter']['inherited'] == 30000
+        assert result['lastQuarter']['remaining'] == 30000
+        # Q3 banked $26K toward Q4
+        assert result['nextQuarter']['banking'] == 26000
+
+    def test_closed_historic_overspend_chips_carry(self):
+        # Tower-style: $14.5K carry into a quarter, that quarter overspends.
+        # Set up: Q2 (Oct-Dec) entries totaling $15.5K → carry into Q3 = $14.5K.
+        # Q3 (Jan-Mar) entries: each month $15K spent ($5K over).
+        # Walk Q3: carry $14.5K - $5K - $5K - $4.5K → 0 (floored).
+        # No banking (all months over).
+        entries = [
+            # Q2 setup: $15.5K spent → $14.5K carry into Q3
+            {'client': 'SKY', 'month': 'October',  'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'November', 'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'December', 'spend': 5500, 'spendType': 'Project budget', 'ballpark': False},
+            # Q3 walk: $15K each month
+            {'client': 'SKY', 'month': 'January',  'spend': 15000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'February', 'spend': 15000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'March',    'spend': 15000, 'spendType': 'Project budget', 'ballpark': False},
+        ]
+        result = get_rollover('SKY', date(2026, 1, 15), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries,
+                               is_closed=True)
+        # Inherited tells the "what did they have" story
+        assert result['lastQuarter']['inherited'] == 14500
+        # Remaining: $14.5K - $5K - $5K - $5K = -$0.5K → floored to 0
+        assert result['lastQuarter']['remaining'] == 0
+        # Nothing banked (all months overspent)
+        assert result['nextQuarter']['banking'] == 0
+
+    def test_closed_historic_smaller_overspend_partial_chip(self):
+        # Carry survives the chip with some left over.
+        # Q2 (Oct-Dec) underspent: $15.5K spent → $14.5K carry.
+        # Q3 each month $11K spent ($1K over per month) = $3K over total.
+        # Walk: $14.5K - $1K - $1K - $1K = $11.5K remaining. Bank $0.
+        entries = [
+            {'client': 'SKY', 'month': 'October',  'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'November', 'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'December', 'spend': 5500, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'January',  'spend': 11000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'February', 'spend': 11000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'March',    'spend': 11000, 'spendType': 'Project budget', 'ballpark': False},
+        ]
+        result = get_rollover('SKY', date(2026, 1, 15), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries,
+                               is_closed=True)
+        assert result['lastQuarter']['inherited'] == 14500
+        assert result['lastQuarter']['remaining'] == 11500
+        assert result['nextQuarter']['banking'] == 0
+
+    def test_closed_historic_underspends_bank(self):
+        # Carry inherited AND new banking from underspends.
+        # Q2: $15.5K spent → $14.5K carry in.
+        # Q3: each month $7K spent ($3K under) → bank $9K total. Carry untouched.
+        entries = [
+            {'client': 'SKY', 'month': 'October',  'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'November', 'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'December', 'spend': 5500, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'January',  'spend': 7000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'February', 'spend': 7000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'March',    'spend': 7000, 'spendType': 'Project budget', 'ballpark': False},
+        ]
+        result = get_rollover('SKY', date(2026, 1, 15), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries,
+                               is_closed=True)
+        assert result['lastQuarter']['inherited'] == 14500
+        # Carry not chipped (no overspends)
+        assert result['lastQuarter']['remaining'] == 14500
+        # Three months under → banked $9K
+        assert result['nextQuarter']['banking'] == 9000
+        assert sorted(result['nextQuarter']['monthsBanked']) == sorted(['January', 'February', 'March'])
+
+    def test_closed_zero_buckets_still_populated(self):
+        # No carry, no banking, but is_closed=True → buckets still populated with zeros.
+        # Q2 (Oct-Dec) all $10K committed exactly = $30K spent → $0 carry.
+        # Q3 same, no variance → $0 bank.
+        entries = [
+            {'client': 'SKY', 'month': 'October',  'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'November', 'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'December', 'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'January',  'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'February', 'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'March',    'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+        ]
+        result = get_rollover('SKY', date(2026, 1, 15), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries,
+                               is_closed=True)
+        # For closed, both buckets always populated even at 0
+        assert result['lastQuarter'] is not None
+        assert result['lastQuarter']['inherited'] == 0
+        assert result['lastQuarter']['remaining'] == 0
+        assert result['nextQuarter'] is not None
+        assert result['nextQuarter']['banking'] == 0
+
+    def test_quarter_key_for_each_quarter(self):
+        # SKY (June year-end): Q1=Jul-Sep, Q2=Oct-Dec, Q3=Jan-Mar, Q4=Apr-Jun
+        q1 = get_rollover('SKY', date(2025, 8, 15), 'June',
+                          BUDGET_HISTORY, CLIENTS_FALLBACK, [], is_closed=True)
+        assert q1['quarterKey'] == 'JUL-SEP'
+        assert q1['currentQuarterLabel'] == 'Q1'
+
+        q2 = get_rollover('SKY', date(2025, 11, 15), 'June',
+                          BUDGET_HISTORY, CLIENTS_FALLBACK, [], is_closed=True)
+        assert q2['quarterKey'] == 'OCT-DEC'
+        assert q2['currentQuarterLabel'] == 'Q2'
+
+        q4 = get_rollover('SKY', date(2026, 5, 3), 'June',
+                          BUDGET_HISTORY, CLIENTS_FALLBACK, [], is_closed=False)
+        assert q4['quarterKey'] == 'APR-JUN'
+        assert q4['currentQuarterLabel'] == 'Q4'
+        assert q4['nextQuarterLabel'] == 'Q1'  # wraps
+
+
+class TestHistoricQuarterDates:
+    """get_historic_quarter_dates returns representative dates for past quarters."""
+
+    def test_three_quarters_back_from_sky_q4(self):
+        # SKY Q4 = Apr-Jun. Back 3 → Jan-Mar (Q3), Oct-Dec (Q2), Jul-Sep (Q1).
+        dates = get_historic_quarter_dates('June', date(2026, 5, 3), n_quarters=3)
+        assert len(dates) == 3
+        # Most recent first
+        assert dates[0] == date(2026, 1, 1)   # Q3 first day
+        assert dates[1] == date(2025, 10, 1)  # Q2 first day
+        assert dates[2] == date(2025, 7, 1)   # Q1 first day
+
+    def test_each_date_lands_in_the_right_quarter(self):
+        # Each date, when fed back to get_rollover, identifies the right quarter.
+        dates = get_historic_quarter_dates('June', date(2026, 5, 3), n_quarters=3)
+        labels = []
+        for d in dates:
+            r = get_rollover('SKY', d, 'June',
+                             BUDGET_HISTORY, CLIENTS_FALLBACK, [], is_closed=True)
+            labels.append(r['currentQuarterLabel'])
+        assert labels == ['Q3', 'Q2', 'Q1']
+
+    def test_default_is_three(self):
+        dates = get_historic_quarter_dates('June', date(2026, 5, 3))
+        assert len(dates) == 3
 
 
 if __name__ == '__main__':
