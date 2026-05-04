@@ -18,10 +18,6 @@ body.logged-out .auth-overlay {
     display: flex;
 }
 
-body.auth-welcome .auth-overlay {
-    display: flex;
-}
-
 .auth-stage {
     flex: 1;
     display: flex;

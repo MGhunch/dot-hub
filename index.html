@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="modal-system.css">
     <link rel="stylesheet" href="updateModal.css">
     <link rel="stylesheet" href="authOverlay.css">
+    <link rel="stylesheet" href="welcomeModal.css">
 </head>
 <body class="logged-out">
     <!-- Toast notifications -->
@@ -52,20 +53,6 @@
                 </div>
             </div>
 
-            <!-- WELCOME — magic-link return, valid token -->
-            <div class="auth-face" data-face="welcome" hidden>
-                <div class="auth-graphic">
-                    <img src="images/Dotandhello.png" alt="Hello from Dot">
-                </div>
-                <div class="auth-content">
-                    <h1 class="auth-headline">Hey <span id="auth-firstname">there</span></h1>
-                    <p class="auth-sub">Good to have you back.</p>
-                    <form class="auth-form" id="auth-welcome-form">
-                        <button type="submit" class="auth-button" id="auth-getstarted">Get started</button>
-                    </form>
-                </div>
-            </div>
-
             <!-- EXPIRED — magic link no longer valid -->
             <div class="auth-face" data-face="expired" hidden>
                 <div class="auth-graphic">
@@ -84,6 +71,26 @@
 
             <div class="auth-ai2">
                 <img src="images/ai2-logo.png" alt="ai²">
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ===== WELCOME MODAL (Phase D) =====
+         Opens after magic-link verify (?welcome=1) over the destination
+         view. Sits while initial data loads. Get started enables when
+         data lands, dismisses the modal. -->
+    <div class="modal-overlay" id="welcome-modal-overlay">
+        <div class="modal-shell welcome-modal-shell">
+            <div class="welcome-modal-body">
+                <div class="welcome-modal-graphic">
+                    <img src="images/Dotandhello.png" alt="Hello from Dot">
+                </div>
+                <div class="welcome-modal-content">
+                    <p class="welcome-modal-headline">Hey <span id="welcome-modal-firstname">there</span></p>
+                    <p class="welcome-modal-sub">Just digging up your stuff.</p>
+                    <button type="button" class="modal-button-filled welcome-modal-button" id="welcome-modal-button" disabled>Get started</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1079,6 +1086,7 @@
     <script src="clientPicker.js"></script>
     <script src="jobPicker.js"></script>
     <script src="updateModal.js"></script>
+    <script src="welcomeModal.js"></script>
     <script src="plusComponent.js"></script>
     <!-- Story Edit Modal -->
     <!-- Update Edit Modal -->

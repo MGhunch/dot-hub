@@ -135,7 +135,6 @@ function setupEventListeners() {
     // Auth overlay (Phase D)
     $('auth-signin-form')?.addEventListener('submit', (e) => { e.preventDefault(); requestLogin(); });
     $('auth-expired-form')?.addEventListener('submit', (e) => { e.preventDefault(); requestLogin('expired'); });
-    $('auth-welcome-form')?.addEventListener('submit', (e) => { e.preventDefault(); dismissWelcome(); });
     $('auth-try-again')?.addEventListener('click', (e) => { e.preventDefault(); resetLoginForm(); });
 
     // Phone navigation
@@ -310,13 +309,13 @@ async function checkSession() {
             };
             unlockApp();
 
-            // If we just arrived from a magic-link verify, hold the Welcome face
-            // until the user taps GET STARTED. Overlay stays visible via body.auth-welcome.
+            // If we just arrived from a magic-link verify, open the Welcome
+            // modal over the destination view. The modal sits while initial
+            // data loads; loadJobs() calls markWelcomeReady() when it lands.
             if (params.get('welcome') === '1') {
-                document.body.classList.add('auth-welcome');
-                showAuthFace('welcome');
-                const fnEl = $('auth-firstname');
-                if (fnEl) fnEl.textContent = state.currentUser.name || 'there';
+                if (typeof window.openWelcomeModal === 'function') {
+                    window.openWelcomeModal(state.currentUser.name);
+                }
             }
             return;
         }
@@ -362,17 +361,6 @@ function clearAuthErrors() {
     const e2 = $('auth-error-expired');
     if (e1) e1.textContent = '';
     if (e2) e2.textContent = '';
-}
-
-function dismissWelcome() {
-    document.body.classList.remove('auth-welcome');
-    // Strip ?welcome=1 from URL
-    const params = new URLSearchParams(window.location.search);
-    params.delete('welcome');
-    const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-    window.history.replaceState({}, document.title, newUrl);
-    // Reset overlay back to signin face for next time
-    showAuthFace('signin');
 }
 
 // ----- Magic link request -----
@@ -440,11 +428,7 @@ function resetLoginForm() {
     // Re-enable buttons + restore label
     document.querySelectorAll('.auth-button').forEach(btn => {
         btn.disabled = false;
-        if (btn.id === 'auth-getstarted') {
-            btn.textContent = 'Get started';
-        } else {
-            btn.textContent = 'Get a link';
-        }
+        btn.textContent = 'Get a link';
     });
 }
 
@@ -696,6 +680,11 @@ async function loadJobs() {
     // Re-render WIP if we're on that view
     if (state.currentView === 'wip') {
         renderWip();
+    }
+
+    // Welcome modal — flip its button to ready when initial data lands
+    if (typeof window.markWelcomeReady === 'function') {
+        window.markWelcomeReady();
     }
 }
 
