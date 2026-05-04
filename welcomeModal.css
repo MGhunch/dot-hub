@@ -4,25 +4,27 @@
    Opens after magic-link verify (?welcome=1) over the destination
    view. Sits while initial data loads. Button enables when data is
    ready, user taps to enter.
+
+   Dimensions match the auth overlay landscape proportions —
+   generous image, breathing room, content beside.
    ================================================================= */
 
-/* Shell sized larger than default (400px) — content modal needs room
-   for image + copy side-by-side. */
+/* Shell sized for landscape composition — wider than default (400px). */
 .welcome-modal-shell {
-    max-width: 460px;
-    padding: 28px 32px;
+    max-width: 720px;
+    padding: 48px 56px;
 }
 
 /* Body composes its own layout — image left, content right. */
 .welcome-modal-body {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 48px;
 }
 
 .welcome-modal-graphic {
     flex: 0 0 auto;
-    width: 130px;
+    width: 240px;
 }
 
 .welcome-modal-graphic img {
@@ -38,29 +40,31 @@
 
 .welcome-modal-headline {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 30px;
+    font-size: 38px;
     font-weight: 400;
     letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--modal-text-primary);
-    margin: 0 0 6px 0;
+    margin: 0 0 8px 0;
     line-height: 1;
 }
 
 .welcome-modal-sub {
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
+    font-size: 15px;
     color: var(--modal-text-secondary);
-    margin: 0 0 18px 0;
-    line-height: 1.4;
+    margin: 0 0 24px 0;
+    line-height: 1.45;
 }
+
+/* ---------- Button states ---------- */
 
 /* Loading state — softer, warmer disabled fill than the system default.
    Reads as "not yet" rather than "broken". */
 .welcome-modal-button[disabled] {
     background: #E0DDD6;
     border-color: #E0DDD6;
-    color: #B3AEA3;
+    color: #8C8779;
     cursor: wait;
 }
 
@@ -76,25 +80,68 @@
     100% { transform: scale(1); }
 }
 
+/* ---------- Animated dots (loading state) ----------
+   Three dots that fade in/out in sequence. Loading label is visible
+   while button is disabled, ready label takes over once .is-ready
+   lands. */
 
-/* ---------- Mobile (<480px) — stack image above content ---------- */
+.welcome-modal-button .welcome-modal-loading-label,
+.welcome-modal-button .welcome-modal-ready-label {
+    display: inline-flex;
+    align-items: center;
+}
 
-@media (max-width: 480px) {
+.welcome-modal-loading-label .dot {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+    margin-left: 3px;
+    opacity: 0.3;
+    animation: welcomeDotPulse 1.2s infinite ease-in-out both;
+}
+
+.welcome-modal-loading-label .dot:nth-child(1) { animation-delay: 0s;    }
+.welcome-modal-loading-label .dot:nth-child(2) { animation-delay: 0.18s; }
+.welcome-modal-loading-label .dot:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes welcomeDotPulse {
+    0%, 80%, 100% { opacity: 0.3; }
+    40%           { opacity: 1; }
+}
+
+/* Default: show loading label, hide ready label. */
+.welcome-modal-button .welcome-modal-ready-label   { display: none; }
+.welcome-modal-button .welcome-modal-loading-label { display: inline-flex; }
+
+/* When ready, swap. */
+.welcome-modal-button.is-ready .welcome-modal-loading-label { display: none; }
+.welcome-modal-button.is-ready .welcome-modal-ready-label   { display: inline-flex; }
+
+
+/* ---------- Mobile (<600px) — stack image above content ---------- */
+
+@media (max-width: 600px) {
     .welcome-modal-shell {
-        padding: 24px 20px;
+        padding: 32px 24px;
     }
 
     .welcome-modal-body {
         flex-direction: column;
-        gap: 16px;
+        gap: 20px;
         text-align: center;
     }
 
     .welcome-modal-graphic {
-        width: 140px;
+        width: 180px;
     }
 
     .welcome-modal-headline {
-        font-size: 28px;
+        font-size: 32px;
+    }
+
+    .welcome-modal-sub {
+        margin-bottom: 20px;
     }
 }
