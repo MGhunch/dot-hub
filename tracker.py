@@ -60,13 +60,17 @@ def _quarter_months(quarter_first: date) -> list:
     return out
 
 
-def _confirmed_spend_for_month(client_code: str, month_name: str,
-                                tracker_entries: list) -> int:
+def _spend_for_month(client_code: str, month_name: str,
+                     tracker_entries: list) -> int:
     """Sum tracker spend where:
        - client matches
        - month matches (Tracker.Month is text like 'April')
        - spendType == 'Project budget'
-       - ballpark is False
+
+    Ballpark entries ARE counted. Ballpark is a UI hint indicating the spend
+    is an estimate that may flex, not a gate on whether it counts as billable
+    work. Better to surface planned spend and have a conversation than miss
+    actual work because someone forgot to untick a flag.
 
     Note: Tracker entries don't carry year. Same month name in different years
     can't be disambiguated from this data alone. Acceptable for now: rollover
@@ -82,8 +86,6 @@ def _confirmed_spend_for_month(client_code: str, month_name: str,
         if row.get('month') != month_name:
             continue
         if row.get('spendType') != 'Project budget':
-            continue
-        if row.get('ballpark'):
             continue
         spend = row.get('spend', 0)
         if isinstance(spend, str):
@@ -264,7 +266,7 @@ def get_rollover(client_code: str, today: date,
             client_code, m['year'], m['month_num'],
             budget_history, clients_fallback,
         )
-        prev_spent_total += _confirmed_spend_for_month(
+        prev_spent_total += _spend_for_month(
             client_code, m['month_name'], tracker_entries,
         )
     # Note: previous quarter carry uses sum-of-monthly-unders semantics for
@@ -288,7 +290,7 @@ def get_rollover(client_code: str, today: date,
             client_code, m['year'], m['month_num'],
             budget_history, clients_fallback,
         )
-        spent = _confirmed_spend_for_month(
+        spent = _spend_for_month(
             client_code, m['month_name'], tracker_entries,
         )
         variance = committed - spent

@@ -297,16 +297,18 @@ class TestRollover:
         assert result['lastQuarter']['remaining'] == 75000
         assert result['nextQuarter']['banking'] == 50000
 
-    def test_ballpark_excluded(self):
+    def test_ballpark_counted(self):
+        # Ballpark is a UI hint only — it does NOT gate spend math.
+        # April counts both $5K (confirmed) + $7K (ballpark) = $12K spent.
+        # April $2K over (committed $10K) → chips $2K of $26K carry → carry $24K, no banking.
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'April', 'spend': 7000, 'spendType': 'Project budget', 'ballpark': True},
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        # Only $5K confirmed → April $5K under → banks $5K. Carry untouched.
-        assert result['lastQuarter']['remaining'] == 26000
-        assert result['nextQuarter']['banking'] == 5000
+        assert result['lastQuarter']['remaining'] == 24000
+        assert result['nextQuarter'] is None
 
     def test_project_on_us_excluded(self):
         entries = sky_q3_underspend_26k() + [
