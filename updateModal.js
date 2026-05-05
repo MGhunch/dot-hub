@@ -320,18 +320,21 @@ async function openUpdateModal(jobNumber, month) {
     if (completionEl) completionEl.style.display = 'none';
 
     if (jobNumber) {
-        // Hot entry — open straight to populated view
+        // Hot entry — show modal instantly, populate as data loads
+        showView('populated');
+        overlay.classList.add('visible');
+        updateModalState.open = true;
+        document.body.style.overflow = 'hidden';
         await loadHotEntry(jobNumber, month);
     } else {
         // Cold entry — show picker
         showView('picker');
         window.clientPicker?.refresh();
         showPickerStage('clients');
+        overlay.classList.add('visible');
+        updateModalState.open = true;
+        document.body.style.overflow = 'hidden';
     }
-
-    overlay.classList.add('visible');
-    updateModalState.open = true;
-    document.body.style.overflow = 'hidden';
 }
 
 function closeUpdateModal() {
@@ -460,8 +463,8 @@ async function loadHotEntry(jobNumber, month) {
     }
     updateModalState.currentJob = job;
 
-    // Make sure we have client names cached so the meta line shows the real name, not the code
-    await ensureClientsCached();
+    // ===== SYNC BLOCK — populate from in-memory state, no awaits =====
+    // Header populates instantly. Tracker section shows loading dots until fetch resolves.
 
     // Populate header
     const clientCode = job.clientCode || '';
@@ -479,8 +482,9 @@ async function loadHotEntry(jobNumber, month) {
     if (descArea) descArea.classList.remove('editing');
     const descInput = $um('update-modal-description-input');
     if (descInput) descInput.value = '';
+    const metaEl = $um('update-modal-meta');
     const metaSecond = job.projectOwner || resolveClientName(clientCode);
-    $um('update-modal-meta').textContent = `${formatJobDisplay(job.jobNumber)}  |  ${metaSecond}`;
+    metaEl.textContent = `${formatJobDisplay(job.jobNumber)}  |  ${metaSecond}`;
 
     // Latest update — pull from updateHistory if present, else fall back to .update text
     const display = $um('update-modal-update-display');
@@ -533,10 +537,47 @@ async function loadHotEntry(jobNumber, month) {
     wcPair.classList.toggle('on', updateModalState.withClient);
     wcToggle.classList.toggle('on', updateModalState.withClient);
 
-    // Tracker — fetch budget data for this job
-    await loadTrackerForJob(job.jobNumber, month);
+    // Tracker section — show loading dots until fetch resolves
+    showTrackerLoading(month);
 
     showView('populated');
+
+    // ===== ASYNC BLOCK — fire-and-forget cache warm + tracker fetch =====
+
+    // Refresh meta line if client name resolves later (was using fallback)
+    ensureClientsCached().then(() => {
+        if (updateModalState.currentJob !== job) return; // guard: another job loaded since
+        if (job.projectOwner) return; // not using fallback — nothing to refresh
+        const refreshed = job.projectOwner || resolveClientName(clientCode);
+        metaEl.textContent = `${formatJobDisplay(job.jobNumber)}  |  ${refreshed}`;
+    }).catch(() => { /* fire-and-forget */ });
+
+    // Tracker — fetch budget data for this job
+    await loadTrackerForJob(job.jobNumber, month);
+}
+
+// Show three bouncing dots in the tracker row while budget fetch runs
+function showTrackerLoading(month) {
+    const targetMonth = month || MONTHS[new Date().getMonth()];
+    const monthLabel = $um('update-modal-month-label');
+    const spendInput = $um('update-modal-spend-input');
+    const spendAmount = $um('update-modal-spend-amount');
+    const ballparkRow = $um('update-modal-ballpark');
+    const toDate = $um('update-modal-to-date');
+    const notes = $um('update-modal-tracker-notes');
+
+    if (monthLabel) monthLabel.textContent = targetMonth;
+    if (spendInput) spendInput.value = '';
+    if (spendAmount) spendAmount.classList.add('empty');
+    if (ballparkRow) ballparkRow.classList.remove('on');
+    if (notes) notes.value = '';
+    // Loading dots in the to-date area
+    if (toDate) {
+        toDate.innerHTML = (typeof loadingDots === 'function')
+            ? loadingDots('small')
+            : '<span class="loading-dots loading-dots--small"><span class="loading-dots__dot"></span><span class="loading-dots__dot"></span><span class="loading-dots__dot"></span></span>';
+        toDate.classList.remove('hidden');
+    }
 }
 
 // ===== TRACKER LOADING =====
