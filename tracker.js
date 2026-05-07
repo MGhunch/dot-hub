@@ -1,6 +1,6 @@
 // ===== TRACKER MODULE =====
 // Extracted from app.js - owns the Tracker view (table, chart, client/month controls)
-// Modal lifecycle lives in trackerEditModal.js
+// Row clicks open the Update modal (universal modal post-Phase G).
 // Depends on: $, $$, state, API_BASE, showLoadingModal, hideLoadingModal, showToast, getLogoUrl, ICON_CHEVRON_RIGHT
 // Exposes: renderTracker, loadTrackerData, trackerCurrentMonth, trackerIsQuarterView, getTrackerPDF, toggleJobExpand
 
@@ -9,7 +9,6 @@ let trackerClients = {};
 let trackerData = [];
 let trackerCurrentMonth = getCurrentMonthName();
 let trackerIsQuarterView = false;
-// trackerCurrentEditData moved to trackerEditModal.js
 let expandedJobs = new Set(); // job numbers currently expanded to show monthly breakdown
 
 // ===== CONSTANTS =====
@@ -515,7 +514,7 @@ function buildChildRows(jobNumber, isExpanded, spendTypeFilter, isQuarterView) {
         const isCurrentMonth = !isQuarterView && c.month === trackerCurrentMonth;
         const safeMonth = c.month.replace(/'/g, "\\'");
         return `
-            <tr class="tracker-row-child ${isCurrentMonth ? 'current-month' : ''}" onclick="openTrackerDetail('${safeJob}', '${safeMonth}')">
+            <tr class="tracker-row-child ${isCurrentMonth ? 'current-month' : ''}" onclick="openUpdateModal('${safeJob}', '${safeMonth}')">
                 <td class="chevron-cell"></td>
                 <td class="child-month-label">${c.month}</td>
                 <td></td>
@@ -678,7 +677,7 @@ function renderTrackerContent() {
                             const isExpanded = expandedJobs.has(p.jobNumber);
                             const safeJob = p.jobNumber.replace(/'/g, "\\'");
                             return `
-                                <tr class="tracker-row-clickable ${isExpanded ? 'expanded-parent' : ''}" onclick="openTrackerDetail('${safeJob}', '${trackerCurrentMonth}')">
+                                <tr class="tracker-row-clickable ${isExpanded ? 'expanded-parent' : ''}" onclick="openUpdateModal('${safeJob}', '${trackerCurrentMonth}')">
                                     <td class="chevron-cell"><span class="chevron-indicator ${isExpanded ? 'expanded' : ''}" onclick="event.stopPropagation(); toggleJobExpand('${safeJob}')">${ICON_CHEVRON_RIGHT}</span></td>
                                     <td class="project-name">${p.jobNumber}  -  ${p.projectName}</td>
                                     <td>${p.owner || ''}</td>
@@ -712,7 +711,7 @@ function renderTrackerContent() {
                                 const jobNum = p.jobNumber.split(' ')[1] || '';
                                 const showToDateCol = !trackerIsQuarterView && jobNum !== '000' && jobNum !== '001' && (spendToDate[p.jobNumber] || 0) > 0;
                                 return `
-                                    <tr class="tracker-row-clickable" onclick="openTrackerDetail('${p.jobNumber}', '${trackerCurrentMonth}')">
+                                    <tr class="tracker-row-clickable" onclick="openUpdateModal('${p.jobNumber}', '${trackerCurrentMonth}')">
                                         <td class="chevron-cell"><span class="chevron-indicator">${ICON_CHEVRON_RIGHT}</span></td>
                                         <td class="project-name">${p.jobNumber}  -  ${p.projectName}</td>
                                         <td>${p.owner || ''}</td>
@@ -766,7 +765,6 @@ function renderTrackerContent() {
     `;
 
     setTimeout(renderTrackerChart, 0);
-    setupTrackerModalListeners();
 }
 
 function renderTrackerChart() {
@@ -918,9 +916,6 @@ function renderTrackerChart() {
         container.appendChild(group);
     });
 }
-
-// Modal lifecycle (setupTrackerModalListeners, openTrackerDetail, openTrackerEditModal,
-// closeTrackerModal, saveTrackerProject) moved to trackerEditModal.js
 
 function getTrackerPDF() {
     const url = `https://dot-tracker-pdf.up.railway.app/pdf?client=${state.trackerClient}&month=${trackerCurrentMonth}${trackerIsQuarterView ? '&quarter=true' : ''}`;

@@ -351,6 +351,155 @@
 }
 
 
+/* ===== TOGGLE =====
+   Slide pill control. Wrap in .modal-toggle-pair with a .modal-toggle-label
+   for "OFF — pill — ON" trios; pair gets .on at the same time as the pill. */
+
+.modal-toggle {
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--modal-bg-soft);
+  border: 0.5px solid var(--modal-hairline);
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  display: inline-block;
+}
+.modal-toggle::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 1.5px;
+  left: 2px;
+  border: 0.5px solid var(--modal-hairline);
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.modal-toggle.on { background: var(--modal-red); border-color: var(--modal-red); }
+.modal-toggle.on::after {
+  transform: translateX(16px);
+  border-color: var(--modal-red);
+}
+
+.modal-toggle-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+}
+.modal-toggle-label {
+  font-size: var(--modal-type-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--modal-text-tertiary);
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+.modal-toggle-pair.on .modal-toggle-label {
+  color: var(--modal-text-primary);
+}
+
+
+/* ===== TICK =====
+   Rounded-square check control. Pair .modal-tick-row + .modal-tick + .modal-tick-label;
+   row gets .on when active. */
+
+.modal-tick-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 4px;
+  background: none;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.modal-tick-row:hover { opacity: 0.7; }
+
+.modal-tick {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: white;
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.modal-tick svg {
+  width: 12px;
+  height: 12px;
+  stroke: white;
+  stroke-width: 3;
+  fill: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.modal-tick-row.on .modal-tick {
+  background: var(--modal-red);
+  border-color: var(--modal-red);
+}
+.modal-tick-row.on .modal-tick svg { opacity: 1; }
+
+.modal-tick-label {
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-primary);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+
+/* ===== SPEND PILL =====
+   Composes with .modal-soft-pill (chrome). Adds inline-flex layout, dollar glyph,
+   editable input, empty-state colour. Compose by setting both classes on the
+   element: class="modal-soft-pill modal-spend-pill". */
+
+.modal-spend-pill {
+  display: inline-flex;
+  align-items: baseline;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+.modal-spend-pill:focus-within { background: var(--modal-bg-soft-hover); }
+
+.modal-spend-pill .dollar {
+  font-size: var(--modal-type-meta);
+  font-weight: 500;
+  color: var(--modal-text-primary);
+  margin-right: 1px;
+}
+.modal-spend-pill.empty .dollar { color: var(--modal-text-tertiary); }
+.modal-spend-pill.empty .modal-spend-input { color: var(--modal-text-tertiary); }
+
+.modal-spend-input {
+  font-size: var(--modal-type-meta);
+  font-weight: 500;
+  line-height: 1.3;
+  border: none;
+  background: none;
+  outline: none;
+  font-family: inherit;
+  width: 70px;
+  color: var(--modal-text-primary);
+  padding: 0;
+}
+.modal-spend-input::placeholder { color: var(--modal-text-tertiary); }
+.modal-spend-input:focus-visible { outline: none; }
+
+
 /* ===== MOBILE =====
    Tightens horizontal + vertical padding on header and body. */
 

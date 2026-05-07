@@ -9,8 +9,7 @@
 /* Inputs inside soft containers — the container handles focus state visually,
    so the inner outline is redundant noise. */
 .update-modal-update-area textarea:focus-visible,
-.update-modal-notes-box textarea:focus-visible,
-.update-modal-spend-amount input:focus-visible {
+.update-modal-notes-box textarea:focus-visible {
   outline: none;
 }
 
@@ -259,87 +258,6 @@
   flex-wrap: wrap;
 }
 
-.update-modal-spend-amount {
-  /* Base bg/radius/transition/hover provided by .modal-soft-pill primitive. */
-  display: inline-flex;
-  align-items: baseline;
-  padding: 9px 16px;
-  cursor: pointer;
-}
-.update-modal-spend-amount:focus-within { background: var(--modal-bg-soft-hover); }
-
-.update-modal-spend-amount .dollar {
-  font-size: var(--modal-type-meta);
-  font-weight: 500;
-  color: var(--modal-text-primary);
-  margin-right: 1px;
-}
-
-.update-modal-spend-amount.empty .dollar { color: var(--modal-text-tertiary); }
-.update-modal-spend-amount.empty .update-modal-spend-input { color: var(--modal-text-tertiary); }
-
-.update-modal-spend-input {
-  font-size: var(--modal-type-meta);
-  font-weight: 500;
-  line-height: 1.3;
-  border: none;
-  background: none;
-  outline: none;
-  font-family: inherit;
-  width: 70px;
-  color: var(--modal-text-primary);
-  padding: 0;
-}
-.update-modal-spend-input::placeholder { color: var(--modal-text-tertiary); }
-
-/* Tick (checkbox style) — for Ballpark, no pill chrome */
-.update-modal-tick-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 4px;
-  background: none;
-  cursor: pointer;
-  border: none;
-  font-family: inherit;
-  transition: opacity 0.15s;
-}
-.update-modal-tick-row:hover { opacity: 0.7; }
-
-.update-modal-tick {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  background: white;
-  border: 1.5px solid rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.15s, border-color 0.15s;
-}
-.update-modal-tick svg {
-  width: 12px;
-  height: 12px;
-  stroke: white;
-  stroke-width: 3;
-  fill: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.update-modal-tick-row.on .update-modal-tick {
-  background: var(--modal-red);
-  border-color: var(--modal-red);
-}
-.update-modal-tick-row.on .update-modal-tick svg { opacity: 1; }
-
-.update-modal-tick-label {
-  font-size: var(--modal-type-meta);
-  color: var(--modal-text-primary);
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
 .update-modal-to-date {
   font-size: var(--modal-type-eyebrow);
   color: var(--modal-text-secondary);
@@ -381,61 +299,6 @@
   gap: 16px;
   margin-top: 24px;
   flex-wrap: wrap;
-}
-
-/* Slide toggle */
-.update-modal-toggle {
-  width: 38px;
-  height: 22px;
-  border-radius: 999px;
-  background: var(--modal-bg-soft);
-  border: 0.5px solid var(--modal-hairline);
-  position: relative;
-  cursor: pointer;
-  padding: 0;
-  flex-shrink: 0;
-  transition: background 0.2s;
-  display: inline-block;
-}
-.update-modal-toggle::after {
-  content: '';
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: white;
-  position: absolute;
-  top: 1.5px;
-  left: 2px;
-  border: 0.5px solid var(--modal-hairline);
-  transition: transform 0.2s;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-.update-modal-toggle.on { background: var(--modal-red); border-color: var(--modal-red); }
-.update-modal-toggle.on::after {
-  transform: translateX(16px);
-  border-color: var(--modal-red);
-}
-
-.update-modal-toggle-pair {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: inherit;
-}
-.update-modal-toggle-label {
-  font-size: var(--modal-type-eyebrow);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--modal-text-tertiary);
-  text-transform: uppercase;
-  transition: color 0.15s;
-}
-.update-modal-toggle-pair.on .update-modal-toggle-label {
-  color: var(--modal-text-primary);
 }
 
 /* Status statement */
