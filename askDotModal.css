@@ -82,7 +82,7 @@
     padding: 56px var(--modal-padding) 20px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 22px;
 }
 
 
@@ -264,9 +264,10 @@
     color: var(--modal-text-primary);
 }
 .askdot-modal-input::placeholder { color: var(--modal-text-tertiary); }
+.askdot-modal-input:focus,
 .askdot-modal-input:focus-visible {
-    outline: 2px solid rgba(237, 28, 36, 0.35);
-    outline-offset: 0;
+    outline: none;
+    background: var(--modal-bg-soft-hover);
 }
 
 .askdot-modal-send {
@@ -307,4 +308,23 @@
         max-height: 100vh;
         border-radius: 0;
     }
+}
+
+
+/* ===== CHART ATTACHMENT ===== */
+/* Used when Brain returns a `chart` response (YTD spend, etc.).
+   Image rides on turn.attachment.imageBase64 and renders inside a Dot bubble. */
+
+.askdot-chart {
+    margin-top: 8px;
+    max-width: 100%;
+}
+
+.askdot-chart img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--radius-sm, 8px);
+    background: var(--white, #ffffff);
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
 }

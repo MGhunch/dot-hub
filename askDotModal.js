@@ -163,6 +163,7 @@ async function handleSend() {
             redirectParams: data.redirectParams || null,
             nextPrompt: data.nextPrompt || null,
             sign: data.sign || null,
+            attachment: data.attachment || null,  // YTD chart, etc.
         });
     } catch (e) {
         console.error('[askdot] send error', e);
@@ -268,6 +269,18 @@ function renderTurn(turn) {
             extrasHtml += renderJobCard(jobNumber, job);
         });
         extrasHtml += '</div>';
+    }
+
+    // Chart attachment (used by `chart` — YTD spend chart, etc.)
+    if (turn.attachment?.type === 'chart' && turn.attachment.imageBase64) {
+        const raw = turn.attachment.imageBase64;
+        const src = raw.startsWith('data:') ? raw : `data:image/png;base64,${raw}`;
+        const altText = `${turn.attachment.clientName || 'Client'} ${turn.attachment.fyLabel || ''} YTD spend chart`.trim();
+        extrasHtml += `
+            <div class="askdot-chart">
+                <img src="${src}" alt="${escapeHtml(altText)}" />
+            </div>
+        `;
     }
 
     // Redirect button (used by `redirect`)
