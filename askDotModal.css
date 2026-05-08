@@ -82,7 +82,7 @@
     padding: 56px var(--modal-padding) 20px;
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 28px;
 }
 
 
@@ -316,15 +316,43 @@
    Image rides on turn.attachment.imageBase64 and renders inside a Dot bubble. */
 
 .askdot-chart {
+    position: relative;
     margin-top: 8px;
     max-width: 100%;
+    padding: 14px;
+    background: #ffffff;
+    border-radius: var(--radius-sm, 12px);
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
 }
 
 .askdot-chart img {
     width: 100%;
     height: auto;
     display: block;
-    border-radius: var(--radius-sm, 8px);
-    background: var(--white, #ffffff);
-    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+}
+
+.askdot-chart-download {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--modal-text-tertiary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+.askdot-chart-download:hover {
+    background: var(--modal-bg-soft, #f5f2ed);
+    color: var(--modal-text-primary, #1a1a1a);
+}
+.askdot-chart-download:active {
+    transform: scale(0.94);
 }

@@ -233,6 +233,22 @@ function renderAskDotMessages() {
         });
     });
 
+    // Wire chart download buttons — pulls the data: URL straight off the rendered <img>
+    container.querySelectorAll('.askdot-chart-download').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const card = btn.closest('.askdot-chart');
+            const img = card?.querySelector('img');
+            if (!img) return;
+            const a = document.createElement('a');
+            a.href = img.src;
+            a.download = btn.dataset.askdotDownload || 'chart.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+    });
+
     scrollMessagesToBottom();
 }
 
@@ -276,9 +292,22 @@ function renderTurn(turn) {
         const raw = turn.attachment.imageBase64;
         const src = raw.startsWith('data:') ? raw : `data:image/png;base64,${raw}`;
         const altText = `${turn.attachment.clientName || 'Client'} ${turn.attachment.fyLabel || ''} YTD spend chart`.trim();
+        // Filename: "TOWER YTD FY26.png" — display name uppercased, FY end-year only.
+        // fyLabel comes through as "FY25-26"; we want just the end "FY26".
+        const namePart = (turn.attachment.clientName || 'Client').toUpperCase();
+        const fyMatch = (turn.attachment.fyLabel || '').match(/^FY\d+-(\d+)$/);
+        const fyPart = fyMatch ? `FY${fyMatch[1]}` : (turn.attachment.fyLabel || '');
+        const filename = `${namePart} YTD${fyPart ? ' ' + fyPart : ''}.png`;
         extrasHtml += `
             <div class="askdot-chart">
                 <img src="${src}" alt="${escapeHtml(altText)}" />
+                <button class="askdot-chart-download" data-askdot-download="${escapeHtml(filename)}" aria-label="Download chart">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </button>
             </div>
         `;
     }
