@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="modal-system.css">
     <link rel="stylesheet" href="updateModal.css">
     <link rel="stylesheet" href="newJobModal.css">
+    <link rel="stylesheet" href="askDotModal.css">
     <link rel="stylesheet" href="authOverlay.css">
     <link rel="stylesheet" href="welcomeModal.css">
 </head>
@@ -560,15 +561,20 @@
     <script src="jobPicker.js"></script>
     <script src="updateModal.js"></script>
     <script src="newJobModal.js"></script>
+    <script src="askDotModal.js"></script>
     <script src="welcomeModal.js"></script>
     <script src="plusComponent.js"></script>
     <!-- Plus Component (floating button — visible on every page) -->
     <div class="plus-backdrop" id="plus-backdrop" aria-hidden="true"></div>
     <div class="plus-dock" id="plus-dock">
         <!-- Menu pills: appear above the FAB when dock has .open class.
-             DOM order top-to-bottom (New Job, Update).
+             DOM order top-to-bottom (Ask Dot, New Job, Update).
              Stagger animation reversed so bottom pill (closest to FAB) animates in first. -->
         <div class="plus-actions" id="plus-actions" role="menu">
+            <button class="plus-pill" data-action="ask-dot" role="menuitem">
+                <svg class="chevron-icon-right" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+                <span>Ask Dot</span>
+            </button>
             <button class="plus-pill" data-action="new-job" role="menuitem">
                 <svg class="chevron-icon-right" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
                 <span>New Job</span>
@@ -727,6 +733,51 @@
                 <div class="update-modal-completion-menu" id="update-modal-completion-menu" hidden></div>
 
                 <button class="modal-button-filled update-modal-completion-btn-filled" id="update-modal-completion-btn-done" type="button">DONE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ASK DOT MODAL =====
+         Chat-with-Dot modal — Plus menu's Ask Dot action lands here.
+         Talks to Brain /hub for conversational responses (answer/clarify/redirect/horoscope).
+         History persists across open/close until logout (state.conversationHistory).
+         See askDotModal.js / askDotModal.css. -->
+    <div class="modal-overlay askdot-modal-overlay" id="askdot-modal-overlay" role="dialog" aria-modal="true" aria-label="Ask Dot">
+        <div class="modal-shell askdot-modal-shell" id="askdot-modal-shell">
+            <button class="modal-close askdot-modal-close" id="askdot-modal-close" aria-label="Close">×</button>
+
+            <!-- HEADER — banner image + new-chat pill -->
+            <div class="modal-header askdot-modal-header" id="askdot-modal-header">
+                <img class="askdot-modal-banner" src="images/Askdot-header.png" alt="Ask Dot">
+                <div class="askdot-modal-actions">
+                    <button class="askdot-modal-newchat" id="askdot-modal-newchat" type="button">New chat</button>
+                </div>
+            </div>
+
+            <!-- BODY — scrolling messages + pinned input row -->
+            <div class="modal-body askdot-modal-body" id="askdot-modal-body">
+                <div class="askdot-modal-scroll" id="askdot-modal-scroll">
+                    <div id="askdot-modal-messages"></div>
+
+                    <!-- Thinking indicator — three red bouncing dots -->
+                    <div class="askdot-thinking" id="askdot-modal-thinking" aria-hidden="true">
+                        <span class="askdot-thinking-dot"></span>
+                        <span class="askdot-thinking-dot"></span>
+                        <span class="askdot-thinking-dot"></span>
+                    </div>
+                </div>
+
+                <div class="askdot-modal-input-row">
+                    <textarea
+                        class="askdot-modal-input"
+                        id="askdot-modal-input"
+                        placeholder="Ask Dot anything…"
+                        rows="1"
+                        autocomplete="off"></textarea>
+                    <button class="askdot-modal-send" id="askdot-modal-send" type="button" aria-label="Send">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

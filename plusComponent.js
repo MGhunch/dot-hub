@@ -101,8 +101,12 @@ function firePlusAction(action) {
             }
             break;
         case 'ask-dot':
-            // Stub — real Ask Dot modal lands when chat-as-modal ships (B1)
-            window.showComingSoonModal?.('ask-dot');
+            // Chat-with-Dot modal — askDotModal.js
+            if (typeof window.openAskDotModal === 'function') {
+                window.openAskDotModal();
+            } else {
+                console.warn('[plus] openAskDotModal not available');
+            }
             break;
         default:
             console.warn('[plus] unknown action:', action);
