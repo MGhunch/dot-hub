@@ -192,6 +192,13 @@ function renderAskDotMessages() {
     const container = $ad('askdot-modal-messages');
     if (!container) return;
 
+    // Show/hide "New chat" — only useful when there's history to clear
+    const newchatBtn = $ad('askdot-modal-newchat');
+    if (newchatBtn) {
+        const hasHistory = state.askDotTurns && state.askDotTurns.length > 0;
+        newchatBtn.hidden = !hasHistory;
+    }
+
     if (!state.askDotTurns || state.askDotTurns.length === 0) {
         container.innerHTML = renderEmptyState();
         return;

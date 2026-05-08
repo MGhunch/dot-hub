@@ -5,13 +5,11 @@
      .modal-overlay         — fixed dimmed backdrop
      .modal-shell           — white card chrome (we override width/height)
      .modal-close           — top-right ×
-     .modal-header          — header padding (we replace with banner)
-     .modal-body            — body padding (we override to 0; chat owns layout)
 
    Adds:
-     - Tall flex shell (header / scrolling messages / input row)
-     - Banner header (Askdot-header.png) + new-chat pill
-     - User + Dot speech bubbles
+     - Tall flex shell (messages scroll / input row)
+     - "New chat" button as a top-left corner control (mirrors × top-right)
+     - User + Dot speech bubbles (both cream — alignment differentiates)
      - Job cards rendered inline in chat
      - Redirect button
      - Thinking indicator (three red bouncing dots)
@@ -20,8 +18,9 @@
 
 
 /* ===== SHELL =====
-   Wider + taller than the default modal-shell. Flex column so header/body/input
-   can each take their share. */
+   Wider + taller than the default modal-shell. Flex column so messages and
+   input can each take their share. No header — corner controls float over
+   the body, anchored to the shell. */
 
 .askdot-modal-overlay .askdot-modal-shell {
     max-width: 540px;
@@ -33,47 +32,32 @@
 }
 
 
-/* ===== HEADER =====
-   Banner image fills the top edge. Close × inherits .modal-close from the
-   primitives. New-chat pill sits in the top-left over the banner. */
-
-.askdot-modal-header {
-    position: relative;
-    padding: 0;
-    flex-shrink: 0;
-    border-bottom: none; /* banner image provides its own visual edge */
-}
-
-.askdot-modal-banner {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: var(--modal-radius) var(--modal-radius) 0 0;
-}
-
-.askdot-modal-actions {
-    position: absolute;
-    top: 12px;
-    left: 16px;
-    display: flex;
-    gap: 8px;
-}
+/* ===== NEW CHAT — top-left corner control =====
+   Mirror of the .modal-close × in the top-right. Hidden via the `hidden`
+   attribute when no history exists; toggled by askDotModal.js. */
 
 .askdot-modal-newchat {
-    background: rgba(255, 255, 255, 0.92);
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 2;
+    background: none;
     border: none;
-    color: var(--modal-text-primary);
+    padding: 6px 10px;
+    border-radius: var(--modal-pill-radius);
+    color: var(--modal-text-tertiary);
     font-family: inherit;
     font-size: var(--modal-type-eyebrow);
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    padding: 7px 14px;
-    border-radius: var(--modal-pill-radius);
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s;
 }
-.askdot-modal-newchat:hover { background: #ffffff; }
+.askdot-modal-newchat:hover {
+    background: var(--modal-bg-soft);
+    color: var(--modal-text-primary);
+}
 
 
 /* ===== BODY =====
@@ -89,12 +73,13 @@
 
 
 /* ===== SCROLLING MESSAGES =====
-   The flex-grow region. Holds turns + thinking indicator. */
+   The flex-grow region. Holds turns + thinking indicator.
+   Top padding clears the corner controls (× + New chat). */
 
 .askdot-modal-scroll {
     flex: 1;
     overflow-y: auto;
-    padding: 20px var(--modal-padding);
+    padding: 56px var(--modal-padding) 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -141,8 +126,8 @@
     overflow-wrap: anywhere;
 }
 .askdot-bubble-user {
-    background: var(--modal-red);
-    color: #ffffff;
+    background: var(--modal-bg-soft-hover);
+    color: var(--modal-text-primary);
     border-bottom-right-radius: 6px;
 }
 .askdot-bubble-dot {
@@ -320,9 +305,6 @@
         width: 100vw;
         height: 100vh;
         max-height: 100vh;
-        border-radius: 0;
-    }
-    .askdot-modal-banner {
         border-radius: 0;
     }
 }
