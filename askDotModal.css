@@ -60,6 +60,38 @@
 }
 
 
+/* ===== DOT IDENTITY =====
+   Small robot avatar + "DOT" wordmark, top-centre of the shell.
+   Mirrors the visual weight of the corner controls (× and NEW CHAT). */
+
+.askdot-modal-identity {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none; /* purely decorative — doesn't block clicks */
+}
+
+.askdot-modal-avatar {
+    width: 26px;
+    height: 26px;
+    display: block;
+}
+
+.askdot-modal-name {
+    font-size: var(--modal-type-eyebrow);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--modal-text-tertiary);
+    line-height: 1;
+}
+
+
 /* ===== BODY =====
    Chat owns its own padding scheme — primitive .modal-body padding overridden. */
 
@@ -82,7 +114,7 @@
     padding: 56px var(--modal-padding) 20px;
     display: flex;
     flex-direction: column;
-    gap: 40px;
+    gap: 56px;
 }
 
 
@@ -149,16 +181,22 @@
     width: 100%;
 }
 .askdot-job-card {
-    background: var(--modal-bg-soft);
+    background: #ffffff;
     border: none;
     border-radius: var(--modal-row-radius);
     padding: 12px 14px;
     text-align: left;
     cursor: pointer;
     font-family: inherit;
-    transition: background 0.15s;
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+    transition: box-shadow 0.15s, transform 0.1s;
 }
-.askdot-job-card:hover { background: var(--modal-bg-soft-hover); }
+.askdot-job-card:hover {
+    box-shadow: var(--shadow-md, 0 4px 8px rgba(0, 0, 0, 0.10));
+}
+.askdot-job-card:active {
+    transform: translateY(1px);
+}
 .askdot-job-card-kicker {
     font-size: var(--modal-type-eyebrow);
     font-weight: 600;

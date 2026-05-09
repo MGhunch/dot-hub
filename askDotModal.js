@@ -35,6 +35,19 @@ function wireAskDotModal() {
         return;
     }
 
+    // Inject Dot identity (robot + DOT label) at the top of the modal shell.
+    // Done from JS so it's part of this module, not coupled to index.html.
+    const shell = overlay.querySelector('.askdot-modal-shell');
+    if (shell && !shell.querySelector('.askdot-modal-identity')) {
+        const identity = document.createElement('div');
+        identity.className = 'askdot-modal-identity';
+        identity.innerHTML = `
+            <img src="images/Robot.png" alt="" class="askdot-modal-avatar" />
+            <span class="askdot-modal-name">DOT</span>
+        `;
+        shell.appendChild(identity);
+    }
+
     // Click-outside (overlay backdrop) closes
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) closeAskDotModal();
