@@ -468,7 +468,7 @@ function navigateTo(view) {
     
     if (!isDesktop()) {
         $('phone-wip')?.classList.remove('visible');
-        $('phone-tracker-message')?.classList.remove('visible');
+        $('phone-tracker')?.classList.remove('visible');
         $('phone-todo')?.classList.remove('visible');
         $('phone-settings-message')?.classList.remove('visible');
         if (view === 'wip') {
@@ -476,13 +476,16 @@ function navigateTo(view) {
             setupPhoneWipDropdown();
             renderPhoneWip();
         }
-        else if (view === 'tracker') $('phone-tracker-message')?.classList.add('visible');
+        else if (view === 'tracker') {
+            $('phone-tracker')?.classList.add('visible');
+            loadAndRenderPhoneTracker();
+        }
         else if (view === 'todo') $('phone-todo')?.classList.add('visible');
         else if (view === 'settings') $('phone-settings-message')?.classList.add('visible');
     }
     
     if (view === 'wip' && isDesktop()) { setupWipDropdown(); renderWip(); }
-    if (view === 'tracker') renderTracker();
+    if (view === 'tracker' && isDesktop()) renderTracker();
     if (view === 'todo') renderTodos();
 }
 
@@ -975,6 +978,186 @@ function renderPhoneWip() {
             if (jobNumber) openJobDetail(jobNumber);
         });
     });
+}
+
+// ===== PHONE TRACKER =====
+
+function setupPhoneTrackerDropdown() {
+    const trigger = $('phone-tracker-client-trigger');
+    const menu = $('phone-tracker-client-menu');
+    if (!trigger || !menu) return;
+
+    const allCodes = Object.keys(trackerClients || {});
+    if (allCodes.length === 0) {
+        trigger.querySelector('span').textContent = 'No clients';
+        return;
+    }
+
+    // Available clients (respect client filter for client-side users; hide system codes for Hunch users)
+    let available = allCodes
+        .map(code => trackerClients[code])
+        .filter(c => state.clientFilter ? c.code === state.clientFilter : !HIDDEN_CLIENTS.includes(c.code));
+    if (available.length === 0) available = allCodes.map(code => trackerClients[code]);
+
+    // Default selection — share state.trackerClient with desktop; fall back to first available
+    if (!state.trackerClient || !available.some(c => c.code === state.trackerClient)) {
+        state.trackerClient = available[0].code;
+    }
+
+    trigger.querySelector('span').textContent = getClientDisplayName(trackerClients[state.trackerClient]);
+
+    // Lock the picker if there's only one option
+    if (available.length === 1) {
+        trigger.style.pointerEvents = 'none';
+        trigger.querySelector('svg')?.classList.add('hidden');
+        return;
+    }
+    trigger.style.pointerEvents = '';
+    trigger.querySelector('svg')?.classList.remove('hidden');
+
+    menu.innerHTML = '';
+    available.forEach(c => {
+        const opt = document.createElement('div');
+        opt.className = 'custom-dropdown-option' + (c.code === state.trackerClient ? ' selected' : '');
+        opt.dataset.value = c.code;
+        opt.textContent = getClientDisplayName(c);
+        menu.appendChild(opt);
+    });
+
+    trigger.onclick = (e) => {
+        e.stopPropagation();
+        trigger.classList.toggle('open');
+        menu.classList.toggle('open');
+    };
+
+    menu.onclick = (e) => {
+        const opt = e.target.closest('.custom-dropdown-option');
+        if (!opt) return;
+        menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        trigger.querySelector('span').textContent = opt.textContent;
+        trigger.classList.remove('open');
+        menu.classList.remove('open');
+        state.trackerClient = opt.dataset.value;
+        renderPhoneTracker();
+    };
+}
+
+function renderPhoneTracker() {
+    const content = $('phone-tracker-content');
+    if (!content) return;
+
+    if (!trackerClients || Object.keys(trackerClients).length === 0) {
+        content.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading numbers...</p></div>';
+        return;
+    }
+
+    const client = trackerClients[state.trackerClient];
+    if (!client) {
+        content.innerHTML = '<div class="pt-empty">No tracker data.</div>';
+        return;
+    }
+
+    const isQuarter = trackerIsQuarterView;
+    const monthName = trackerCurrentMonth || getCurrentMonthName();
+    const qInfo = getCurrentQuarterInfo(state.trackerClient);
+
+    // Period scope
+    const months = isQuarter ? qInfo.months : [monthName];
+    const eyebrow = isQuarter
+        ? qInfo.label.toUpperCase()
+        : `${monthName.toUpperCase()} NUMBERS`;
+
+    // Numbers (mirrors desktop renderTracker math)
+    const committed = months.reduce((sum, m) => {
+        const year = getYearForMonth(client, m);
+        return sum + getCommittedFor(client, year, m);
+    }, 0);
+    const toDate = months.reduce((sum, m) => sum + getTrackerMonthSpend(state.trackerClient, m), 0);
+    const toSpend = committed - toDate;
+    const pct = committed > 0 ? Math.min(100, Math.max(0, (toDate / committed) * 100)) : 0;
+    const isOver = toDate > committed;
+
+    // Rollover — legacy single-line format. Hides if no rollover field.
+    const rolloverHtml = client.rollover ? formatRolloverLine(client.rollover) : '';
+
+    // Work list — Project budget entries, grouped across the period
+    const projects = months.flatMap(m => getTrackerProjectsForMonth(state.trackerClient, m))
+        .filter(p => p.spendType === 'Project budget');
+    const grouped = {};
+    projects.forEach(p => {
+        const key = (p.jobNumber || '') + '|' + (p.projectName || '');
+        if (!grouped[key]) grouped[key] = { jobNumber: p.jobNumber || '', name: p.projectName || '', spend: 0 };
+        grouped[key].spend += p.spend;
+    });
+    const projectList = Object.values(grouped)
+        .filter(p => p.spend !== 0)
+        .sort((a, b) => b.spend - a.spend);
+
+    content.innerHTML = `
+        <div class="pt-eyebrow-row">
+            <div class="pt-eyebrow">${eyebrow}</div>
+            <div class="pt-toggle">
+                <button class="pt-toggle-seg ${!isQuarter ? 'active' : ''}" data-mode="month">Mth</button>
+                <button class="pt-toggle-seg ${isQuarter ? 'active' : ''}" data-mode="quarter">Qtr</button>
+            </div>
+        </div>
+        <div class="pt-card pt-stat">
+            <div class="pt-stat-num">${formatTrackerCurrency(committed)}</div>
+            <div class="pt-stat-label">COMMITTED</div>
+        </div>
+        <div class="pt-card pt-stat">
+            <div class="pt-stat-num">${formatTrackerCurrency(toDate)}</div>
+            <div class="pt-stat-label">TO DATE</div>
+        </div>
+        <div class="pt-card pt-stat">
+            <div class="pt-stat-num ${toSpend > 0 ? 'pt-stat-num-red' : ''}">${formatTrackerCurrency(toSpend)}</div>
+            <div class="pt-stat-label">TO SPEND</div>
+        </div>
+        <div class="pt-progress">
+            <div class="pt-progress-bar ${isOver ? 'pt-progress-over' : ''}" style="width: ${pct}%"></div>
+        </div>
+        ${rolloverHtml ? `
+        <div class="pt-card pt-rollover">
+            <div class="pt-eyebrow">ROLLOVER</div>
+            <div class="pt-rollover-text">${rolloverHtml}</div>
+        </div>` : ''}
+        <div class="pt-eyebrow pt-work-heading">THE WORK</div>
+        <div class="pt-card pt-work-list">
+            ${projectList.length === 0
+                ? '<div class="pt-work-empty">No spend recorded.</div>'
+                : projectList.map(p => `
+                    <div class="pt-work-row" data-job="${escapeHtml(p.jobNumber)}">
+                        <div class="pt-work-name">${escapeHtml(p.name)}</div>
+                        <div class="pt-work-spend">${formatTrackerCurrency(p.spend)}</div>
+                    </div>`).join('')
+            }
+        </div>
+    `;
+
+    // Wire toggle
+    content.querySelectorAll('.pt-toggle-seg').forEach(seg => {
+        seg.onclick = () => {
+            trackerIsQuarterView = (seg.dataset.mode === 'quarter');
+            renderPhoneTracker();
+        };
+    });
+
+    // Wire row taps → Update Modal (hot connect, mirrors desktop tracker behaviour)
+    content.querySelectorAll('.pt-work-row').forEach(row => {
+        row.onclick = () => {
+            const job = row.dataset.job;
+            if (job) openJobDetail(job);
+        };
+    });
+}
+
+async function loadAndRenderPhoneTracker() {
+    if (!trackerClients || Object.keys(trackerClients).length === 0) {
+        await loadTrackerClients();
+    }
+    setupPhoneTrackerDropdown();
+    renderPhoneTracker();
 }
 
 function renderWipSection(section, isListMode = false) {
