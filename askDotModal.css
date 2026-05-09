@@ -316,13 +316,17 @@
    Image rides on turn.attachment.imageBase64 and renders inside a Dot bubble. */
 
 .askdot-chart {
-    position: relative;
+    /* Match bubble width — same column as the rest of Dot's reply */
+    max-width: 85%;
+    width: 100%;
     margin-top: 8px;
-    max-width: 100%;
     padding: 14px;
     background: #ffffff;
     border-radius: var(--radius-sm, 12px);
     box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+    /* Flex column so the download button can self-align bottom-right */
+    display: flex;
+    flex-direction: column;
 }
 
 .askdot-chart img {
@@ -331,28 +335,39 @@
     display: block;
 }
 
+/* Download — small footer action, right-aligned, sits below the chart */
 .askdot-chart-download {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 32px;
-    height: 32px;
+    align-self: flex-end;
+    margin-top: 10px;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: transparent;
     border: none;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.85);
+    border-radius: 8px;
     color: var(--modal-text-tertiary);
+    font-family: inherit;
+    font-size: var(--modal-type-meta, 12px);
+    font-weight: 500;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
 }
 .askdot-chart-download:hover {
     background: var(--modal-bg-soft, #f5f2ed);
     color: var(--modal-text-primary, #1a1a1a);
 }
 .askdot-chart-download:active {
-    transform: scale(0.94);
+    transform: scale(0.96);
+}
+.askdot-chart-download svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+/* Tighten the gap between chart and the next-prompt italic so the
+   prompt reads as part of the same Dot reply, not a separate beat. */
+.askdot-chart + .askdot-prompt {
+    margin-top: -4px;
 }
