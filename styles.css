@@ -371,7 +371,7 @@ body.logged-out .view-tracker {
 }
 
 /* Mobile adjustments for login */
-@media (max-width: 500px) {
+@media (max-width: 768px) {
     .login-logo {
         height: 150px;
     }
@@ -384,12 +384,12 @@ body.logged-out .view-tracker {
 .phone-container { display: none; }
 .desktop-container { display: none; }
 
-@media (max-width: 899px) {
+@media (max-width: 768px) {
     .phone-container { display: flex; flex-direction: column; }
     body { background: var(--white); }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 769px) {
     .desktop-container { display: flex; flex-direction: column; }
 }
 
@@ -2611,7 +2611,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 /* Mobile adjustments */
-@media (max-width: 500px) {
+@media (max-width: 768px) {
     .client-picker {
         grid-template-columns: 1fr;
     }
@@ -3191,7 +3191,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
         transform: translateX(-50%);
     }
 }
-@media (max-width: 899px) {
+@media (max-width: 768px) {
     .view-wip,
     .view-tracker,
     .view-todo {
@@ -3402,7 +3402,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     border-radius: var(--radius-full);
 }
 
-@media (max-width: 899px) {
+@media (max-width: 768px) {
     .settings-container {
         padding: 40px 20px 80px;
     }
