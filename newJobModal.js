@@ -556,9 +556,13 @@ async function submitNewJob() {
 
         const createdJobNumber = data.jobNumber || newJobModalState.jobNumber || '';
 
-        // Refresh jobs list (don't let this fail the close)
+        // Refresh jobs (and tracker if visible) — don't let this fail the close.
         try {
-            if (typeof loadJobs === 'function') await loadJobs();
+            if (typeof window.refreshAfterMutation === 'function') {
+                await window.refreshAfterMutation(['jobs', 'tracker']);
+            } else if (typeof loadJobs === 'function') {
+                await loadJobs();
+            }
         } catch (refreshErr) {
             console.warn('[new-job-modal] post-create refresh failed:', refreshErr);
         }

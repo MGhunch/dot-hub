@@ -773,15 +773,17 @@ async function submitUpdate() {
         // Track this job as updated in this modal session (so it's not suggested as "next")
         updateModalState.sessionUpdatedJobs.add(job.jobNumber);
 
-        // Refresh jobs list FIRST — we need fresh state.allJobs to compute "next"
+        // Refresh jobs (and tracker if visible) — needs fresh state.allJobs
+        // before findNextJob below.
         try {
-            if (typeof window.loadAllJobs === 'function') {
-                await window.loadAllJobs();
+            if (typeof window.refreshAfterMutation === 'function') {
+                await window.refreshAfterMutation(['jobs', 'tracker']);
             } else {
+                // Fallback: shouldn't fire if app.js loaded normally
                 const r = await fetch(`${API_BASE}/jobs/all`);
                 if (r.ok && typeof state !== 'undefined') state.allJobs = await r.json();
+                if (typeof window.renderWip === 'function') window.renderWip();
             }
-            if (typeof window.renderWip === 'function') window.renderWip();
         } catch (refreshErr) {
             console.warn('[update-modal] post-save refresh failed:', refreshErr);
         }

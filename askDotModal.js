@@ -175,6 +175,15 @@ async function handleSend() {
             sign: data.sign || null,
             attachment: data.attachment || null,  // YTD chart, etc.
         });
+
+        // If Brain mutated underlying data (e.g. captured/corrected a todo),
+        // refresh the relevant view in the background so it reflects the change
+        // without a manual reload. Fire-and-forget.
+        if (data.mutated && typeof window.refreshAfterMutation === 'function') {
+            window.refreshAfterMutation(data.mutated).catch(err => {
+                console.warn('[askdot] post-response refresh failed:', err);
+            });
+        }
     } catch (e) {
         console.error('[askdot] send error', e);
         state.askDotTurns.push({

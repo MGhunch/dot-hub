@@ -534,6 +534,43 @@ async function loadJobs() {
     }
 }
 
+// ===== REFRESH AFTER MUTATION =====
+// Single dispatcher for "something changed, update the visible page".
+// Used by updateModal, newJobModal, and askDotModal so the page reflects
+// changes without a manual refresh. Each type only does work when it's
+// relevant (e.g. tracker only refreshes if currently on the tracker view).
+//
+//   types: array of strings — any of 'jobs', 'tracker', 'todo'
+//
+// Safe to over-pass — passing 'tracker' when not on tracker view is a no-op.
+window.refreshAfterMutation = async function(types) {
+    if (!Array.isArray(types) || !types.length) return;
+
+    if (types.includes('jobs')) {
+        await loadJobs();  // already auto-renders WIP if on it
+    }
+
+    if (types.includes('tracker') &&
+        state.currentView === 'tracker' &&
+        state.trackerClient) {
+        if (typeof loadTrackerData === 'function') {
+            await loadTrackerData(state.trackerClient, true);
+            if (typeof renderTrackerContent === 'function') {
+                renderTrackerContent();
+            }
+        }
+    }
+
+    if (types.includes('todo')) {
+        if (typeof loadTodos === 'function') {
+            await loadTodos();
+            if (typeof renderTodoContent === 'function') {
+                renderTodoContent();
+            }
+        }
+    }
+};
+
 // ===== UNIVERSAL JOB CARD =====
 function createUniversalCard(job, id) {
     const dueDate = formatDueDate(job.updateDue, job.withClient);
