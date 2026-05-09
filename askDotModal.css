@@ -75,7 +75,7 @@
     font-family: var(--font-display);
     font-size: 34px;
     font-weight: 400;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.02em;
     color: var(--modal-text-primary);
     line-height: 1;
 }
@@ -171,7 +171,7 @@
 .askdot-bubble-dot {
     background: #ffffff;
     color: var(--modal-text-primary);
-    border: 0.5px solid rgba(0, 0, 0, 0.14);
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
     border-bottom-left-radius: 6px;
 }
 

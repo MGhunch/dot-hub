@@ -264,6 +264,34 @@ function renderEmptyState() {
     `;
 }
 
+// Lightweight inline-markdown for Claude's replies. Operates on already-escaped
+// text (after escapeHtml) and turns **bold** into <strong>. Backticks left
+// literal for now — extend here if Claude starts emitting `code` or *italic*.
+function renderInlineMarkdown(text) {
+    return text.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+}
+
+// Find unique [CCC ###] patterns in text that match real jobs the current user
+// can see. Preserves first-seen order. Used to auto-render clickable cards
+// for jobs that Dot mentioned in prose without an explicit jobs[] payload.
+function extractJobNumbersFromText(text) {
+    if (!text) return [];
+    const matches = text.match(/\b[A-Z]{3}\s\d{3}\b/g) || [];
+    const accessible = (typeof getAccessFilteredJobs === 'function')
+        ? getAccessFilteredJobs()
+        : (state.allJobs || []);
+    const known = new Set(accessible.map((j) => j.jobNumber));
+    const seen = new Set();
+    const result = [];
+    for (const m of matches) {
+        if (!seen.has(m) && known.has(m)) {
+            seen.add(m);
+            result.push(m);
+        }
+    }
+    return result;
+}
+
 function renderTurn(turn) {
     if (turn.role === 'user') {
         return `
@@ -276,15 +304,21 @@ function renderTurn(turn) {
     // Assistant turn — leads with a small Bebas DOT eyebrow above the bubble.
     const labelHtml = `<div class="askdot-turn-label">DOT</div>`;
     const messageHtml = turn.content
-        ? `<div class="askdot-bubble askdot-bubble-dot">${escapeHtml(turn.content).replace(/\n/g, '<br>')}</div>`
+        ? `<div class="askdot-bubble askdot-bubble-dot">${renderInlineMarkdown(escapeHtml(turn.content).replace(/\n/g, '<br>'))}</div>`
         : '';
 
     let extrasHtml = '';
 
-    // Job cards (used by `answer` w/ jobs + `clarify`)
-    if (Array.isArray(turn.jobs) && turn.jobs.length > 0) {
+    // Job cards — union of explicit Brain payload and any mentioned in the
+    // prose. De-duplicated, order-preserving (Brain's first, then extracted).
+    let jobNumbers = Array.isArray(turn.jobs) ? [...turn.jobs] : [];
+    const extracted = extractJobNumbersFromText(turn.content);
+    for (const jn of extracted) {
+        if (!jobNumbers.includes(jn)) jobNumbers.push(jn);
+    }
+    if (jobNumbers.length > 0) {
         extrasHtml += '<div class="askdot-jobs">';
-        turn.jobs.forEach((jobNumber) => {
+        jobNumbers.forEach((jobNumber) => {
             const job = (state.allJobs || []).find((j) => j.jobNumber === jobNumber);
             extrasHtml += renderJobCard(jobNumber, job);
         });
