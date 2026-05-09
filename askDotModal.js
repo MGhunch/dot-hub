@@ -256,10 +256,14 @@ function renderAskDotMessages() {
 }
 
 function renderEmptyState() {
+    // Render Dot's opener as a real assistant turn — same DOT eyebrow + shadow
+    // bubble as any other reply, so the modal feels alive on open instead of
+    // shouting a static greeting.
     const name = state.currentUser?.name || 'there';
     return `
-        <div class="askdot-empty">
-            <div class="askdot-empty-greeting">Hey ${escapeHtml(name)}!<br>What can I dig up for you?</div>
+        <div class="askdot-turn askdot-turn-dot">
+            <div class="askdot-turn-label">DOT</div>
+            <div class="askdot-bubble askdot-bubble-dot">Hey ${escapeHtml(name)}, what's cooking?</div>
         </div>
     `;
 }

@@ -106,24 +106,9 @@
 }
 
 
-/* ===== EMPTY STATE =====
-   Centred greeting on a fresh chat. */
-
-.askdot-empty {
-    margin: auto 0;
-    text-align: center;
-}
-.askdot-empty-greeting {
-    font-size: var(--modal-type-hero);
-    font-weight: 600;
-    line-height: 1.3;
-    color: var(--modal-text-primary);
-    letter-spacing: -0.015em;
-}
-
-
 /* ===== TURNS =====
-   User turns right-aligned, Dot turns left-aligned. */
+   User turns right-aligned, Dot turns left-aligned.
+   Empty state is a regular Dot turn — Dot opens the conversation. */
 
 .askdot-turn {
     display: flex;
