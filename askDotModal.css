@@ -4,13 +4,15 @@
    Composes (from modal-system.css):
      .modal-overlay         — fixed dimmed backdrop
      .modal-shell           — white card chrome (we override width/height)
-     .modal-close           — top-right ×
+     .modal-close           — × button (we drop it into the header bar)
 
    Adds:
-     - Tall flex shell (messages scroll / input row)
-     - "New chat" button as a top-left corner control (mirrors × top-right)
-     - User + Dot speech bubbles (both cream — alignment differentiates)
-     - Job cards rendered inline in chat
+     - Header bar — robot avatar + ASK DOT wordmark (Bebas) + close,
+       with a 1.5px red rule beneath
+     - Tall flex shell (header / messages scroll / input row)
+     - User bubble cream, Dot bubble white-with-hairline-border (subtle two-tone)
+     - Tiny Bebas "DOT" eyebrow above each Dot turn
+     - Job cards with red Bebas TOW kickers, no shadow, hairline border
      - Redirect button
      - Thinking indicator (three red bouncing dots)
      - Mobile full-screen takeover at <=600px
@@ -18,9 +20,8 @@
 
 
 /* ===== SHELL =====
-   Wider + taller than the default modal-shell. Flex column so messages and
-   input can each take their share. No header — corner controls float over
-   the body, anchored to the shell. */
+   Wider + taller than the default modal-shell. Flex column so header /
+   messages / input each take their share. */
 
 .askdot-modal-overlay .askdot-modal-shell {
     max-width: 540px;
@@ -28,92 +29,80 @@
     height: 720px;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* internal scroll lives on .askdot-modal-scroll */
+    overflow: hidden;
 }
 
 
-/* ===== NEW CHAT — top-left corner control =====
-   Mirror of the .modal-close × in the top-right. Hidden via the `hidden`
-   attribute when no history exists; toggled by askDotModal.js. */
+/* ===== HEADER =====
+   Real header bar — identity (robot + ASK DOT) on the left, close on the right,
+   1.5px red rule beneath. Replaces the floating corner controls. */
 
-.askdot-modal-newchat {
-    position: absolute;
-    top: 16px;
-    right: 56px;  /* sits to the left of the × close button */
-    z-index: 2;
-    background: none;
-    border: none;
-    padding: 6px 10px;
-    border-radius: var(--modal-pill-radius);
-    color: var(--modal-text-tertiary);
-    font-family: inherit;
-    font-size: var(--modal-type-eyebrow);
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+.askdot-modal-header {
+    flex-shrink: 0;
+    padding: 16px 24px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1.5px solid var(--modal-red);
 }
-.askdot-modal-newchat:hover {
-    background: var(--modal-bg-soft);
-    color: var(--modal-text-primary);
+
+/* The shared .modal-close primitive is absolute-positioned by default;
+   inside our flex header we want it inline at the right end. */
+.askdot-modal-shell .askdot-modal-close {
+    position: static;
+    margin-left: auto;
 }
 
 
 /* ===== DOT IDENTITY =====
-   Robot avatar + "DOT" wordmark, top-LEFT of the shell. Anchors the modal
-   to Dot's identity. NEW CHAT button moves to the right (paired with ×). */
+   Robot avatar + ASK DOT wordmark, sitting in the header bar.
+   Injected by askDotModal.js so this module owns the markup. */
 
 .askdot-modal-identity {
-    position: absolute;
-    top: 14px;
-    left: 16px;
-    z-index: 2;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    pointer-events: none; /* purely decorative — doesn't block clicks */
+    gap: 12px;
 }
 
 .askdot-modal-avatar {
     width: 32px;
     height: 32px;
     display: block;
+    flex-shrink: 0;
 }
 
 .askdot-modal-name {
-    font-size: var(--modal-type-eyebrow);
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--modal-text-tertiary);
+    font-family: var(--font-display);
+    font-size: 34px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    color: var(--modal-text-primary);
     line-height: 1;
 }
 
 
 /* ===== BODY =====
-   Chat owns its own padding scheme — primitive .modal-body padding overridden. */
+   Chat owns its own padding scheme. */
 
 .askdot-modal-body {
     padding: 0;
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* lets the inner scroll area actually scroll */
+    min-height: 0;
 }
 
 
 /* ===== SCROLLING MESSAGES =====
-   The flex-grow region. Holds turns + thinking indicator.
-   Top padding clears the corner controls (× + New chat). */
+   Flex-grow region. Header occupies the top now, so no clearance padding. */
 
 .askdot-modal-scroll {
     flex: 1;
     overflow-y: auto;
-    padding: 64px var(--modal-padding) 20px;
+    padding: 24px var(--modal-padding) 20px;
     display: flex;
     flex-direction: column;
-    gap: 64px;
+    gap: 32px;
 }
 
 
@@ -145,7 +134,25 @@
 .askdot-turn-dot  { align-items: flex-start; }
 
 
-/* ===== BUBBLES ===== */
+/* ===== TURN LABEL =====
+   Tiny Bebas "DOT" eyebrow above each Dot turn — marks who's speaking
+   without colour-coding both bubbles. Negative margin pulls the bubble
+   close (cancels half the turn's own gap). */
+
+.askdot-turn-label {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    color: var(--modal-text-tertiary);
+    line-height: 1;
+    margin-bottom: -4px;
+    text-transform: uppercase;
+}
+
+
+/* ===== BUBBLES =====
+   User cream-filled, Dot white with hairline border. Two-tone but quiet. */
 
 .askdot-bubble {
     max-width: 85%;
@@ -157,20 +164,20 @@
     overflow-wrap: anywhere;
 }
 .askdot-bubble-user {
-    background: var(--modal-bg-soft-hover);
+    background: var(--modal-bg-soft);
     color: var(--modal-text-primary);
     border-bottom-right-radius: 6px;
 }
 .askdot-bubble-dot {
-    background: var(--modal-bg-soft);
+    background: #ffffff;
     color: var(--modal-text-primary);
+    border: 0.5px solid rgba(0, 0, 0, 0.14);
     border-bottom-left-radius: 6px;
 }
 
 
 /* ===== JOB CARDS IN CHAT =====
-   Stack of cream rectangles, full bubble-width.
-   Same kicker/name typography as modal-row but slimmer. */
+   White, hairline border (no shadow). Red Bebas kicker, DM Sans name. */
 
 .askdot-jobs {
     display: flex;
@@ -181,29 +188,29 @@
 }
 .askdot-job-card {
     background: #ffffff;
-    border: none;
+    border: 0.5px solid rgba(0, 0, 0, 0.14);
     border-radius: var(--modal-row-radius);
     padding: 12px 14px;
     text-align: left;
     cursor: pointer;
     font-family: inherit;
-    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
-    transition: box-shadow 0.15s, transform 0.1s;
+    transition: background 0.15s, transform 0.1s;
 }
 .askdot-job-card:hover {
-    box-shadow: var(--shadow-md, 0 4px 8px rgba(0, 0, 0, 0.10));
+    background: var(--modal-bg-soft);
 }
 .askdot-job-card:active {
     transform: translateY(1px);
 }
 .askdot-job-card-kicker {
-    font-size: var(--modal-type-eyebrow);
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    color: var(--modal-text-tertiary);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: var(--modal-red);
+    line-height: 1.1;
+    margin-bottom: 2px;
     text-transform: uppercase;
-    line-height: 1;
-    margin-bottom: 4px;
 }
 .askdot-job-card-name {
     font-size: var(--modal-type-body);
@@ -235,12 +242,11 @@
 
 
 /* ===== NEXT PROMPT =====
-   Subtle italic hint. Not clickable — just a conversational suggestion. */
+   Subtle hint. Regular weight (no italic). */
 
 .askdot-prompt {
     font-size: var(--modal-type-meta);
     color: var(--modal-text-tertiary);
-    font-style: italic;
     padding-left: 4px;
 }
 
@@ -332,7 +338,7 @@
 
 
 /* ===== MOBILE — full-screen takeover =====
-   At narrow widths the modal becomes the whole viewport. */
+   At narrow widths the modal becomes the whole viewport. Header tightens. */
 
 @media (max-width: 600px) {
     .askdot-modal-overlay {
@@ -345,11 +351,22 @@
         max-height: 100vh;
         border-radius: 0;
     }
+    .askdot-modal-header {
+        padding: 14px 18px 10px;
+        gap: 10px;
+    }
+    .askdot-modal-name {
+        font-size: 24px;
+    }
+    .askdot-modal-avatar {
+        width: 26px;
+        height: 26px;
+    }
 }
 
 
-/* ===== CHART ATTACHMENT ===== */
-/* Used when Brain returns a `chart` response (YTD spend, etc.).
+/* ===== CHART ATTACHMENT =====
+   Used when Brain returns a `chart` response (YTD spend, etc.).
    Image rides on turn.attachment.imageBase64 and renders inside a Dot bubble. */
 
 .askdot-chart {
@@ -359,8 +376,8 @@
     margin-top: 8px;
     padding: 14px;
     background: #ffffff;
+    border: 0.5px solid rgba(0, 0, 0, 0.14);
     border-radius: var(--radius-sm, 12px);
-    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
     /* Flex column so the download button can self-align bottom-right */
     display: flex;
     flex-direction: column;
@@ -403,7 +420,7 @@
     flex-shrink: 0;
 }
 
-/* Tighten the gap between chart and the next-prompt italic so the
+/* Tighten the gap between chart and the next-prompt line so the
    prompt reads as part of the same Dot reply, not a separate beat. */
 .askdot-chart + .askdot-prompt {
     margin-top: -4px;

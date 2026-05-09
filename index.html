@@ -740,14 +740,17 @@
     <!-- ===== ASK DOT MODAL =====
          Chat-with-Dot modal — Plus menu's Ask Dot action lands here.
          Talks to Brain /hub for conversational responses (answer/clarify/redirect/horoscope).
-         History persists across open/close until logout (state.conversationHistory).
-         No header chrome — entry point is announced by the FAB action; the empty-state
-         greeting acts as the visual anchor. New chat sits top-left, × top-right.
+         Header bar: robot avatar + ASK DOT wordmark (Bebas) + close, with a 1.5px red rule beneath.
+         History resets when the modal closes — each open is a fresh chat.
          See askDotModal.js / askDotModal.css. -->
     <div class="modal-overlay askdot-modal-overlay" id="askdot-modal-overlay" role="dialog" aria-modal="true" aria-label="Ask Dot">
         <div class="modal-shell askdot-modal-shell" id="askdot-modal-shell">
-            <button class="askdot-modal-newchat" id="askdot-modal-newchat" type="button" hidden>New chat</button>
-            <button class="modal-close askdot-modal-close" id="askdot-modal-close" aria-label="Close">×</button>
+
+            <!-- HEADER — identity (avatar + ASK DOT wordmark) injected by askDotModal.js,
+                 close button on the right, 1.5px red rule beneath. -->
+            <div class="askdot-modal-header" id="askdot-modal-header">
+                <button class="modal-close askdot-modal-close" id="askdot-modal-close" aria-label="Close">×</button>
+            </div>
 
             <!-- BODY — scrolling messages + pinned input row -->
             <div class="modal-body askdot-modal-body" id="askdot-modal-body">
@@ -766,7 +769,7 @@
                     <textarea
                         class="askdot-modal-input"
                         id="askdot-modal-input"
-                        placeholder="Ask Dot anything…"
+                        placeholder="Ask Dot…"
                         rows="1"
                         autocomplete="off"></textarea>
                     <button class="askdot-modal-send" id="askdot-modal-send" type="button" aria-label="Send">

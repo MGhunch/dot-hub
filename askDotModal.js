@@ -3,10 +3,10 @@
 // Talks to Brain /hub endpoint. Renders responses by type
 // (answer / clarify / redirect / horoscope) per prompt_hub.txt.
 //
-// History persists across open/close until logout via state.conversationHistory
-// (already declared in app.js state). A parallel state.askDotTurns mirror keeps
-// the rendered turn objects (with type, jobs, redirect targets, etc.) so
-// re-opens repaint the conversation exactly as it was.
+// History resets when the modal closes — each open is a fresh chat.
+// state.conversationHistory + state.askDotTurns wiped in closeAskDotModal.
+// Within a session, state.askDotTurns mirrors the rendered turn shape (with
+// type, jobs, redirect targets, etc.) so renderTurn() can repaint as it goes.
 //
 // Depends on (globals from app.js): state, BRAIN_BASE, openJobDetail,
 // navigateTo, escapeHtml, getAccessFilteredJobs.
@@ -35,17 +35,18 @@ function wireAskDotModal() {
         return;
     }
 
-    // Inject Dot identity (robot + DOT label) at the top of the modal shell.
-    // Done from JS so it's part of this module, not coupled to index.html.
-    const shell = overlay.querySelector('.askdot-modal-shell');
-    if (shell && !shell.querySelector('.askdot-modal-identity')) {
+    // Inject Dot identity (robot + ASK DOT wordmark) into the header bar.
+    // Done from JS so this module owns the markup. Sits at the front of the
+    // flex header, left of the close button.
+    const header = overlay.querySelector('.askdot-modal-header');
+    if (header && !header.querySelector('.askdot-modal-identity')) {
         const identity = document.createElement('div');
         identity.className = 'askdot-modal-identity';
         identity.innerHTML = `
             <img src="images/Robot.png" alt="" class="askdot-modal-avatar" />
-            <span class="askdot-modal-name">DOT</span>
+            <span class="askdot-modal-name">ASK DOT</span>
         `;
-        shell.appendChild(identity);
+        header.insertBefore(identity, header.firstChild);
     }
 
     // Click-outside (overlay backdrop) closes
@@ -59,7 +60,6 @@ function wireAskDotModal() {
     });
 
     $ad('askdot-modal-close')?.addEventListener('click', closeAskDotModal);
-    $ad('askdot-modal-newchat')?.addEventListener('click', clearAskDotChat);
     $ad('askdot-modal-send')?.addEventListener('click', handleSend);
 
     const input = $ad('askdot-modal-input');
@@ -109,12 +109,9 @@ function closeAskDotModal() {
     overlay?.classList.remove('visible');
     askDotState.open = false;
     document.body.style.overflow = '';
-}
-
-function clearAskDotChat() {
+    // Chat resets between sessions — wipe so the next open starts fresh.
     state.conversationHistory = [];
     state.askDotTurns = [];
-    renderAskDotMessages();
 }
 
 
@@ -206,13 +203,6 @@ function renderAskDotMessages() {
     const container = $ad('askdot-modal-messages');
     if (!container) return;
 
-    // Show/hide "New chat" — only useful when there's history to clear
-    const newchatBtn = $ad('askdot-modal-newchat');
-    if (newchatBtn) {
-        const hasHistory = state.askDotTurns && state.askDotTurns.length > 0;
-        newchatBtn.hidden = !hasHistory;
-    }
-
     if (!state.askDotTurns || state.askDotTurns.length === 0) {
         container.innerHTML = renderEmptyState();
         return;
@@ -283,7 +273,8 @@ function renderTurn(turn) {
         `;
     }
 
-    // Assistant turn
+    // Assistant turn — leads with a small Bebas DOT eyebrow above the bubble.
+    const labelHtml = `<div class="askdot-turn-label">DOT</div>`;
     const messageHtml = turn.content
         ? `<div class="askdot-bubble askdot-bubble-dot">${escapeHtml(turn.content).replace(/\n/g, '<br>')}</div>`
         : '';
@@ -341,13 +332,14 @@ function renderTurn(turn) {
         `;
     }
 
-    // Next prompt — subtle italic hint, not interactive
+    // Next prompt — subtle hint line, not interactive
     const promptHtml = turn.nextPrompt
         ? `<div class="askdot-prompt">${escapeHtml(turn.nextPrompt)}</div>`
         : '';
 
     return `
         <div class="askdot-turn askdot-turn-dot">
+            ${labelHtml}
             ${messageHtml}
             ${extrasHtml}
             ${promptHtml}
