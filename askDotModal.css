@@ -39,7 +39,7 @@
 .askdot-modal-newchat {
     position: absolute;
     top: 16px;
-    left: 16px;
+    right: 56px;  /* sits to the left of the × close button */
     z-index: 2;
     background: none;
     border: none;
@@ -61,24 +61,23 @@
 
 
 /* ===== DOT IDENTITY =====
-   Small robot avatar + "DOT" wordmark, top-centre of the shell.
-   Mirrors the visual weight of the corner controls (× and NEW CHAT). */
+   Robot avatar + "DOT" wordmark, top-LEFT of the shell. Anchors the modal
+   to Dot's identity. NEW CHAT button moves to the right (paired with ×). */
 
 .askdot-modal-identity {
     position: absolute;
     top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 16px;
     z-index: 2;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     pointer-events: none; /* purely decorative — doesn't block clicks */
 }
 
 .askdot-modal-avatar {
-    width: 26px;
-    height: 26px;
+    width: 32px;
+    height: 32px;
     display: block;
 }
 
@@ -111,10 +110,10 @@
 .askdot-modal-scroll {
     flex: 1;
     overflow-y: auto;
-    padding: 56px var(--modal-padding) 20px;
+    padding: 64px var(--modal-padding) 20px;
     display: flex;
     flex-direction: column;
-    gap: 56px;
+    gap: 64px;
 }
 
 
@@ -304,7 +303,7 @@
 .askdot-modal-input::placeholder { color: var(--modal-text-tertiary); }
 .askdot-modal-input:focus,
 .askdot-modal-input:focus-visible {
-    outline: none;
+    outline: none !important;
     background: var(--modal-bg-soft-hover);
 }
 
