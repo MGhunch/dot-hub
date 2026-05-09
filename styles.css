@@ -3297,9 +3297,9 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 /* Stagger — bottom pill (closest to FAB) animates first.
-   DOM order is top-to-bottom (New Job, Update),
-   so :nth-child(2) is Update (bottom), :nth-child(1) is New Job (top).
-   nth-child(3)/(4) rules are no-ops post-Ship-2 but harmless. */
+   DOM order is top-to-bottom (Ask Dot, Update, New Job),
+   so :nth-child(3) is New Job (bottom, animates first), :nth-child(1) is Ask Dot (top, animates last).
+   nth-child(4) rule is a no-op but harmless. */
 .plus-dock.open .plus-pill:nth-child(4) { transition-delay: 0ms; }
 .plus-dock.open .plus-pill:nth-child(3) { transition-delay: 40ms; }
 .plus-dock.open .plus-pill:nth-child(2) { transition-delay: 80ms; }

@@ -568,20 +568,21 @@
     <div class="plus-backdrop" id="plus-backdrop" aria-hidden="true"></div>
     <div class="plus-dock" id="plus-dock">
         <!-- Menu pills: appear above the FAB when dock has .open class.
-             DOM order top-to-bottom (New Job, Update, Ask Dot).
+             DOM order top-to-bottom (Ask Dot, Update, New Job) — Ask Dot is the
+             primary conversational entry point so it leads the visual stack.
              Stagger animation reversed so bottom pill (closest to FAB) animates in first. -->
         <div class="plus-actions" id="plus-actions" role="menu">
-            <button class="plus-pill" data-action="new-job" role="menuitem">
+            <button class="plus-pill" data-action="ask-dot" role="menuitem">
                 <svg class="chevron-icon-right" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-                <span>New Job</span>
+                <span>Ask Dot</span>
             </button>
             <button class="plus-pill" data-action="update" role="menuitem">
                 <svg class="chevron-icon-right" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
                 <span>Update</span>
             </button>
-            <button class="plus-pill" data-action="ask-dot" role="menuitem">
+            <button class="plus-pill" data-action="new-job" role="menuitem">
                 <svg class="chevron-icon-right" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-                <span>Ask Dot</span>
+                <span>New Job</span>
             </button>
         </div>
         <button class="plus-button" id="plus-button" aria-label="Open menu" aria-expanded="false">
