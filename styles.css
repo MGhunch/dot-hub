@@ -400,6 +400,48 @@ body.logged-out .view-tracker {
     }
 }
 
+/* Phase H · Ship 2 — view trigger replaces hamburger; bare red Bebas, no box.
+   Dropdown items in Bebas, active item in red. */
+@media (max-width: 899px) {
+    .view-trigger {
+        background: transparent;
+        border: 0;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: var(--font-display);
+        font-size: 20px;
+        letter-spacing: 0.04em;
+        color: var(--red);
+        line-height: 1;
+        text-transform: uppercase;
+    }
+    .view-trigger-chev {
+        width: 8px;
+        height: 8px;
+        border-right: 2px solid var(--red);
+        border-bottom: 2px solid var(--red);
+        transform: rotate(45deg) translate(-2px, -2px);
+        transition: transform 0.2s var(--ease-out);
+    }
+    .view-trigger.open .view-trigger-chev {
+        transform: rotate(-135deg) translate(-2px, -2px);
+    }
+
+    #phone-dropdown .dropdown-item {
+        font-family: var(--font-display);
+        font-size: 18px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    #phone-dropdown .dropdown-item.active {
+        color: var(--red);
+    }
+}
+
 @media (min-width: 900px) {
     .desktop-container { display: flex; flex-direction: column; }
 }

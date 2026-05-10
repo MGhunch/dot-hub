@@ -134,7 +134,7 @@ function setupEventListeners() {
     $('auth-try-again')?.addEventListener('click', (e) => { e.preventDefault(); resetLoginForm(); });
 
     // Phone navigation
-    $('phone-hamburger')?.addEventListener('click', togglePhoneMenu);
+    $('phone-view-trigger')?.addEventListener('click', togglePhoneMenu);
     $('phone-overlay')?.addEventListener('click', closePhoneMenu);
     $('phone-home-btn')?.addEventListener('click', () => goHome());
     
@@ -149,10 +149,7 @@ function setupEventListeners() {
     $$('#phone-dropdown .dropdown-item').forEach(item => {
         item.addEventListener('click', () => {
             closePhoneMenu();
-            const view = item.dataset.view;
-            const action = item.dataset.action;
-            if (view) navigateTo(view);
-            if (action === 'signout') signOut();
+            if (item.dataset.view) navigateTo(item.dataset.view);
         });
     });
 
@@ -474,9 +471,17 @@ function navigateTo(view) {
 
         // View label in header
         const viewLabel = $('phone-view-label');
+        const triggerLabel = $('phone-view-trigger-label');
         const contextBar = $('phone-context-bar');
         const labels = { wip: 'WIP', tracker: 'Tracker', todo: 'Todo', settings: 'Settings' };
+        const triggerLabels = { wip: 'WIP', tracker: 'TRACKER', todo: 'TO DO' };
         if (viewLabel) viewLabel.textContent = labels[view] || '';
+        if (triggerLabel) triggerLabel.textContent = triggerLabels[view] || '';
+
+        // Mark active item in the phone dropdown
+        $$('#phone-dropdown .dropdown-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.view === view);
+        });
 
         // Context bar — show on WIP/Tracker (holds shared client picker), hide on Todo/Settings
         if (contextBar) {
@@ -511,13 +516,13 @@ function goHome() {
 }
 
 function togglePhoneMenu() {
-    $('phone-hamburger')?.classList.toggle('open');
+    $('phone-view-trigger')?.classList.toggle('open');
     $('phone-dropdown')?.classList.toggle('open');
     $('phone-overlay')?.classList.toggle('open');
 }
 
 function closePhoneMenu() {
-    $('phone-hamburger')?.classList.remove('open');
+    $('phone-view-trigger')?.classList.remove('open');
     $('phone-dropdown')?.classList.remove('open');
     $('phone-overlay')?.classList.remove('open');
 }
