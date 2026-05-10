@@ -3801,7 +3801,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     }
     /* Beat the inherited `.phone-context-bar .custom-dropdown-trigger > span { flex: 1 }`
        rule (line 462) which would otherwise stretch the logo span to fill space. */
-    .phone-context-bar .phone-picker-logo {
+    .phone-context-bar .custom-dropdown-trigger > .phone-picker-logo {
         flex: 0 0 44px;
     }
     .phone-picker-logo img {
