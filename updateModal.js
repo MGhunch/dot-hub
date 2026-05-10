@@ -61,6 +61,12 @@ function wireUpdateModalListeners() {
     // X button
     $um('update-modal-close')?.addEventListener('click', closeUpdateModal);
 
+    // Mobile scroll lid — fade in shadow on populated header when content scrolls under
+    const updPop = $um('update-modal-populated');
+    if (updPop) updPop.addEventListener('scroll', () => {
+        updPop.classList.toggle('is-scrolled', updPop.scrollTop > 0);
+    }, { passive: true });
+
     // NOTE: clientPicker + jobPicker mounts moved into openUpdateModal so this
     // modal coexists with other modals that mount the same single-instance
     // pickers (e.g. New Job modal in Phase F). Mount-on-open is cheap.

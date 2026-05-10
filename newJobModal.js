@@ -99,6 +99,12 @@ function wireNewJobModalListeners() {
     // X button
     $nj('new-job-modal-close')?.addEventListener('click', closeNewJobModal);
 
+    // Mobile scroll lid — fade in shadow on populated header when content scrolls under
+    const njPop = $nj('new-job-populated');
+    if (njPop) njPop.addEventListener('scroll', () => {
+        njPop.classList.toggle('is-scrolled', njPop.scrollTop > 0);
+    }, { passive: true });
+
     // Hero input — basic typing handler, no extra logic needed
     $nj('new-job-hero-input')?.addEventListener('input', (e) => {
         e.target.classList.remove('input-error');

@@ -507,3 +507,68 @@
   .modal-header { padding: 24px 20px 20px; }
   .modal-body   { padding: 20px 20px 24px; }
 }
+
+
+/* ===== MOBILE FULL-SCREEN TAKEOVER =====
+   Below 600px every modal owns the whole viewport. Header pins at the top,
+   step content scrolls inside. The shell-level .modal-close X stays put
+   automatically — it's already position:absolute on the shell. */
+
+@media (max-width: 600px) {
+
+  .modal-overlay {
+    padding: 0;
+  }
+
+  .modal-shell {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-width: none;
+    max-height: 100dvh;
+    border-radius: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Each step section is a flex item that grows and scrolls internally.
+     Inactive steps have inline display:none and drop out of the flow. */
+  .update-modal-picker,
+  .update-modal-populated,
+  .update-modal-completion,
+  .new-job-picker,
+  .new-job-populated,
+  .welcome-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+
+  /* Inside the populated step, the modal header pins at the top while
+     the rest of the step scrolls underneath. */
+  .update-modal-populated > .modal-header,
+  .new-job-populated > .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--modal-bg);
+    transition: box-shadow 0.2s ease;
+  }
+
+  /* Lid shadow that fades in once content has scrolled under the header.
+     The .is-scrolled class is toggled by the modal's wire function. */
+  .update-modal-populated.is-scrolled > .modal-header,
+  .new-job-populated.is-scrolled > .modal-header {
+    box-shadow: 0 4px 8px -4px rgba(0, 0, 0, 0.08);
+  }
+}
+
+
+/* ===== BODY SCROLL LOCK =====
+   Stop page scroll bleed-through whenever any modal is open. */
+
+body:has(.modal-overlay.visible) {
+  overflow: hidden;
+}
