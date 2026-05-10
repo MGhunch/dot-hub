@@ -432,10 +432,7 @@ body.logged-out .view-tracker {
     }
 
     #phone-dropdown .dropdown-item {
-        font-family: var(--font-display);
-        font-size: 18px;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
+        font-size: 17px;
     }
     #phone-dropdown .dropdown-item.active {
         color: var(--red);
@@ -3653,7 +3650,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     .plus-bar {
         height: 44px;
         border-top: 1px solid rgba(0, 0, 0, 0.06);
-        box-shadow: 0 -6px 12px -6px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 -6px 12px -6px rgba(0, 0, 0, 0.12);
     }
 
     /* FAB straddle: FAB centre lands on bar's top edge.
@@ -3691,7 +3688,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 
     /* Header: more right padding so trigger isn't kissing the edge */
     .phone-header {
-        padding-right: 24px;
+        padding-right: 32px;
     }
 
     /* Trigger: black text matching wordmark height; chevron stays red */
@@ -3726,14 +3723,37 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
         padding-bottom: 84px;
     }
 
-    /* Pills: left-justified to the screen (was centred over FAB).
-       position:fixed pulls them out of the dock's centred container so
-       their left edges align flush at 24px from viewport edge. */
+    /* Pills: centred on FAB, left edges aligned to each other.
+       Container centred over the dock; widest pill sets the column width;
+       align-items flex-start aligns each pill to the container's left edge. */
     .plus-actions {
-        position: fixed;
-        left: 24px;
-        bottom: 88px;
-        transform: none;
+        position: absolute;
+        left: 50%;
+        bottom: calc(100% + 12px);
+        transform: translateX(-50%);
         align-items: flex-start;
+    }
+}
+
+/* Phase H · Ship 5 — soft fade-out at the bottom of phone views.
+   Mask the bottom ~100px of each scrollable view so cards approaching the
+   footer fade smoothly into the bar instead of hard-cutting at its top edge.
+   Mask only affects view content; footer + FAB sit on top, unaffected. */
+@media (max-width: 899px) {
+    .phone-wip,
+    .phone-tracker,
+    .phone-todo {
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            black 0%,
+            black calc(100% - 100px),
+            transparent 100%
+        );
+                mask-image: linear-gradient(
+            to bottom,
+            black 0%,
+            black calc(100% - 100px),
+            transparent 100%
+        );
     }
 }
