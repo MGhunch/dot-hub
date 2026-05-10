@@ -432,7 +432,7 @@ body.logged-out .view-tracker {
     }
 
     #phone-dropdown .dropdown-item {
-        font-size: 17px;
+        font-size: 22px;
     }
     #phone-dropdown .dropdown-item.active {
         color: var(--red);
