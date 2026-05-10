@@ -143,61 +143,57 @@ function getYearForMonth(client, monthName) {
     return today.getFullYear();
 }
 
-// Build the rollover block (two lines: last quarter + next quarter).
-// Returns HTML, or '' if nothing to show. New shape (3 May 2026):
-//   rolloverObj = { lastQuarter: {remaining, previousQuarterLabel, expiresOn} | null,
-//                   nextQuarter: {banking, monthsBanked} | null }
+// Build the rollover line ("rollover shrinks" pattern). One line, three shapes:
+//   chipped == 0           → "Rollover $X from Q3."
+//   0 < chipped < inherited → "Rollover $X from Q3 (less $Y this quarter). Now $Z."
+//   chipped >= inherited   → "Rollover $X from Q3 — all used."
+// Live mode appends "Use by <date>." when there's remaining > 0.
+// Hides entirely when inherited <= 0 (nothing to say).
+//
+// New shape (11 May 2026): rolloverObj.lastQuarter has additional `chipped` field.
+//   rolloverObj = { lastQuarter: {remaining, inherited, chipped,
+//                                  previousQuarterLabel, expiresOn} | null,
+//                   nextQuarter: ignored — no second line under new model }
 function formatRolloverBlock(rolloverObj) {
     if (!rolloverObj) return '';
     const lq = rolloverObj.lastQuarter;
-    const nq = rolloverObj.nextQuarter;
-    const isClosed = !!rolloverObj.isClosed;
-    if (!lq && !nq) return '';
+    if (!lq) return '';
 
-    const rows = [];
-    if (isClosed) {
-        // Historic: always show both lines, $0 included.
-        // "Last quarter:" = inherited from prev quarter.
-        // "Next quarter:" = banked toward next quarter.
-        const inherited = (lq && lq.inherited) || 0;
-        const prevLabel = (lq && lq.previousQuarterLabel) || '';
-        rows.push(`
-            <div class="rollover-row">
-                <span class="rollover-row-label">Last quarter:</span>
-                <span class="rollover-row-value"><strong>${formatTrackerCurrency(inherited)}</strong> rollover (from ${prevLabel}).</span>
-            </div>
-        `);
-        const banked = (nq && nq.banking) || 0;
-        const nextLabel = rolloverObj.nextQuarterLabel || '';
-        rows.push(`
-            <div class="rollover-row">
-                <span class="rollover-row-label">Next quarter:</span>
-                <span class="rollover-row-value"><strong>${formatTrackerCurrency(banked)}</strong> rollover (to ${nextLabel}).</span>
-            </div>
-        `);
+    const inherited = lq.inherited || 0;
+    if (inherited <= 0) return '';  // nothing came in, nothing to say
+
+    const chipped = lq.chipped || 0;
+    const remaining = lq.remaining || 0;
+    const prevLabel = lq.previousQuarterLabel || '';
+    const isClosed = !!rolloverObj.isClosed;
+
+    const inheritedStr = formatTrackerCurrency(inherited);
+
+    let line;
+    if (chipped === 0) {
+        // Untouched
+        line = `<strong>${inheritedStr}</strong> rollover from ${prevLabel}.`;
+    } else if (chipped < inherited) {
+        // Partially chipped — the "shrinks" story
+        const chippedStr = formatTrackerCurrency(chipped);
+        const remainingStr = formatTrackerCurrency(remaining);
+        line = `<strong>${inheritedStr}</strong> rollover from ${prevLabel} (less <strong>${chippedStr}</strong> this quarter). Now <strong>${remainingStr}</strong>.`;
     } else {
-        // Live: hide zero rows, current usable state.
-        if (lq && lq.remaining > 0) {
-            const expires = formatExpiryDate(lq.expiresOn);
-            rows.push(`
-                <div class="rollover-row">
-                    <span class="rollover-row-label">Last quarter:</span>
-                    <span class="rollover-row-value"><strong>${formatTrackerCurrency(lq.remaining)}</strong> remaining (use by ${expires}).</span>
-                </div>
-            `);
-        }
-        if (nq && nq.banking > 0) {
-            const monthsList = formatMonthsList(nq.monthsBanked || []);
-            const fromClause = monthsList ? ` (from ${monthsList})` : '';
-            rows.push(`
-                <div class="rollover-row">
-                    <span class="rollover-row-label">Next quarter:</span>
-                    <span class="rollover-row-value">Currently tracking <strong>${formatTrackerCurrency(nq.banking)}</strong> under${fromClause}.</span>
-                </div>
-            `);
-        }
+        // chipped >= inherited — fully consumed
+        line = `<strong>${inheritedStr}</strong> rollover from ${prevLabel} — all used.`;
     }
-    return rows.join('');
+
+    // Expiry only relevant in live mode and only when something's left to use
+    if (!isClosed && remaining > 0) {
+        const expires = formatExpiryDate(lq.expiresOn);
+        line += ` Use by ${expires}.`;
+    }
+
+    return `
+        <div class="rollover-row">
+            <span class="rollover-row-value">${line}</span>
+        </div>
+    `;
 }
 
 // Join a list of month names with NZ-style "and" / commas (no Oxford comma).
@@ -574,14 +570,14 @@ function renderTrackerContent() {
     const rolloverByQuarter = client.rolloverByQuarter || {};
     const viewedRollover = rolloverByQuarter[viewedQuarterKey] || null;
     const isViewingCurrentQuarter = viewedQuarterKey === rolloverUseIn;
-    const hasViewedRollover = viewedRollover && (viewedRollover.lastQuarter || viewedRollover.nextQuarter);
-    const hasNewRollover = rolloverObject && (rolloverObject.lastQuarter || rolloverObject.nextQuarter);
     // Prefer per-quarter data; fall back to legacy current-quarter rolloverObject
     const rolloverToRender = viewedRollover || (isViewingCurrentQuarter ? rolloverObject : null);
-    const showRolloverNew = hasViewedRollover || (hasNewRollover && isViewingCurrentQuarter);
+    const rolloverBlockHtml = rolloverToRender ? formatRolloverBlock(rolloverToRender) : '';
+    // Show the new block whenever the renderer produced content. Under the new
+    // single-line model, that means `inherited > 0` — no carry, no header.
+    const showRolloverNew = !!rolloverBlockHtml;
     const showRolloverOld = !rolloverObject && rollover > 0 && rolloverUseIn && isViewingCurrentQuarter;
     const showRollover = showRolloverNew || showRolloverOld;
-    const rolloverBlockHtml = rolloverToRender ? formatRolloverBlock(rolloverToRender) : '';
     
     const mainProjects = projects.filter(p => p.spendType === 'Project budget');
     const otherProjects = projects.filter(p => p.spendType === 'Extra budget' || p.spendType === 'Project on us');
