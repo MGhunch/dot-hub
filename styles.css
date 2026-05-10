@@ -386,7 +386,18 @@ body.logged-out .view-tracker {
 
 @media (max-width: 899px) {
     .phone-container { display: flex; flex-direction: column; }
-    body { background: var(--white); }
+    body { background: var(--grey-100); }
+}
+
+/* Phase H · Ship 1 — cream page + sticky header on mobile.
+   --grey-100 (#f0eeeb) is the locked-spec cream; renamed in a later tidy. */
+@media (max-width: 899px) {
+    .phone-container { background: var(--grey-100); }
+    .phone-header {
+        position: sticky;
+        top: 0;
+        border-bottom-width: 2px;
+    }
 }
 
 @media (min-width: 900px) {
