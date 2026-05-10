@@ -3682,3 +3682,58 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
         height: 20px;
     }
 }
+
+/* Phase H · Ship 3 polish — chrome refinements:
+   - TO DO: black not red, bigger to match ASK DOT, breathing room from edge
+   - FAB bigger (56 → 64), dock recalculated for new straddle
+   - Pills left-justified to the screen instead of centred over the FAB */
+@media (max-width: 899px) {
+
+    /* Header: more right padding so trigger isn't kissing the edge */
+    .phone-header {
+        padding-right: 24px;
+    }
+
+    /* Trigger: black text matching wordmark height; chevron stays red */
+    .view-trigger {
+        font-size: 30px;
+        color: var(--black);
+    }
+
+    /* FAB: bigger (was 56) */
+    .plus-button {
+        width: 64px;
+        height: 64px;
+    }
+    .plus-button svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    /* Dock: recalc straddle for new FAB size — centre on bar top edge.
+       bar 44 + dock 12 = 56, FAB radius 32, centre at 12+32 = 44 = bar top. */
+    .plus-dock {
+        bottom: 12px;
+        width: 64px;
+        height: 64px;
+    }
+
+    /* Phone view bottom padding bumped to clear the bigger FAB.
+       44 (bar) + 32 (FAB upper hemisphere) + 8 (breathing) = 84. */
+    .phone-wip,
+    .phone-tracker,
+    .phone-todo {
+        padding-bottom: 84px;
+    }
+
+    /* Pills: left-justified to the screen (was centred over FAB).
+       position:fixed pulls them out of the dock's centred container so
+       their left edges align flush at 24px from viewport edge. */
+    .plus-actions {
+        position: fixed;
+        left: 24px;
+        bottom: 88px;
+        transform: none;
+        align-items: flex-start;
+    }
+}
