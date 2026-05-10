@@ -3854,3 +3854,23 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
         letter-spacing: 1.8px;
     }
 }
+
+/* ============================================================ */
+/* Phase H · Ship 8 — Mobile picker modal.                       */
+/* The picker card in .phone-context-bar now opens a full-screen */
+/* modal (#wip-picker-overlay) using clientPicker in 'active'    */
+/* mode with allOption=true. The legacy .custom-dropdown-menu    */
+/* is no longer used — defensively hidden here on mobile so a    */
+/* stray .open class can't show it.                              */
+/* ============================================================ */
+@media (max-width: 899px) {
+    .phone-context-bar .custom-dropdown-menu {
+        display: none !important;
+    }
+
+    /* Picker modal uses standard modal-system full-screen takeover.
+       Body gets reasonable inner padding so the picker list breathes. */
+    .wip-picker-modal {
+        padding: 24px 20px 20px;
+    }
+}

@@ -773,5 +773,16 @@
         </div>
     </div>
 
+    <!-- WIP / Tracker Picker Modal (mobile).
+         Opened by tapping the picker card in .phone-context-bar.
+         Uses clientPicker in 'active' mode with allOption=true (adds "All clients" row).
+         See app.js openWipPicker / closeWipPicker. -->
+    <div class="modal-overlay wip-picker-overlay" id="wip-picker-overlay" role="dialog" aria-modal="true" aria-label="Choose client">
+        <div class="modal-shell wip-picker-modal" id="wip-picker-modal">
+            <button class="modal-close" id="wip-picker-close" aria-label="Close">×</button>
+            <div id="wip-picker-clients"></div>
+        </div>
+    </div>
+
 </body>
 </html>

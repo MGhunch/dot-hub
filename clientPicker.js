@@ -49,6 +49,7 @@
     let onPickFn = null;
     let clickHandler = null;
     let filterMode = 'active';
+    let allOption = false;  // When true, prepend an "All clients" row (data-code="all")
 
     // ===== MOUNT =====
     function mount(container, opts = {}) {
@@ -62,6 +63,7 @@
         onPickFn = opts.onPick || (() => {});
         const title = opts.title || 'Choose a client';
         filterMode = opts.filter === 'all' ? 'all' : 'active';
+        allOption = !!opts.allOption;
 
         containerEl.innerHTML = `
           <h2 class="update-modal-picker-title">${escapeHtml(title)}</h2>
@@ -147,7 +149,7 @@
             }
         }
 
-        listEl.innerHTML = visible.map(c => {
+        const rowsHtml = visible.map(c => {
             const code = escapeAttr(c.code || '');
             const name = escapeHtml(c.name || c.code || '');
             const logoUrl = (typeof getLogoUrl === 'function')
@@ -163,6 +165,26 @@
               </button>
             `;
         }).join('');
+
+        // "All clients" row prepended when allOption is set (WIP/Tracker picker).
+        // Update/New Job mounts don't set this flag, so they're unaffected.
+        let allRowHtml = '';
+        if (allOption) {
+            const allLogoUrl = (typeof getLogoUrl === 'function')
+                ? getLogoUrl('HUN')
+                : 'images/logos/HUN.png';
+            allRowHtml = `
+              <button class="modal-row" data-code="all">
+                <img class="modal-row-logo" src="${escapeAttr(allLogoUrl)}" alt="All" onerror="this.src='images/logos/Unknown.png'">
+                <div class="modal-row-content">
+                  <div class="modal-row-kicker">ALL</div>
+                  <div class="modal-row-name">All clients</div>
+                </div>
+              </button>
+            `;
+        }
+
+        listEl.innerHTML = allRowHtml + rowsHtml;
     }
 
     // ===== GET CLIENTS =====
@@ -187,6 +209,7 @@
         onPickFn = null;
         clickHandler = null;
         filterMode = 'active';
+        allOption = false;
     }
 
     // ===== EXPOSE TO WINDOW =====

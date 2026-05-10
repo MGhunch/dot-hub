@@ -915,7 +915,7 @@ async function setupPhoneSharedPicker() {
     const trigger = $('phone-shared-client-trigger');
     const menu = $('phone-shared-client-menu');
     const logoEl = $('phone-picker-logo');
-    if (!trigger || !menu) return;
+    if (!trigger) return;
 
     if (state.allClients.length === 0) {
         await loadClients();
@@ -951,22 +951,6 @@ async function setupPhoneSharedPicker() {
     trigger.style.pointerEvents = '';
     trigger.querySelector('svg')?.classList.remove('hidden');
 
-    // Build options — All Clients first, then visible main clients
-    menu.innerHTML = '';
-    const allOpt = document.createElement('div');
-    allOpt.className = 'custom-dropdown-option' + (current === 'all' ? ' selected' : '');
-    allOpt.dataset.value = 'all';
-    allOpt.textContent = 'All clients';
-    menu.appendChild(allOpt);
-
-    state.allClients.filter(c => !HIDDEN_CLIENTS.includes(c.code)).forEach(c => {
-        const opt = document.createElement('div');
-        opt.className = 'custom-dropdown-option' + (c.code === current ? ' selected' : '');
-        opt.dataset.value = c.code;
-        opt.textContent = getClientDisplayName(c);
-        menu.appendChild(opt);
-    });
-
     // Set current label + logo
     if (current === 'all') {
         setPickerName('All clients');
@@ -977,31 +961,29 @@ async function setupPhoneSharedPicker() {
         setPickerLogo(current);
     }
 
-    trigger.onclick = (e) => {
-        e.stopPropagation();
-        trigger.classList.toggle('open');
-        menu.classList.toggle('open');
-    };
+    // Old .custom-dropdown-menu is no longer used (replaced by full-screen picker modal).
+    // Clear any legacy markup; CSS in Ship 8 also defensively hides it on mobile.
+    if (menu) menu.innerHTML = '';
 
-    menu.onclick = async (e) => {
-        const opt = e.target.closest('.custom-dropdown-option');
-        if (!opt) return;
-        menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
-        opt.classList.add('selected');
-        const newClient = opt.dataset.value;
-        setPickerName(opt.textContent);
-        setPickerLogo(newClient);
-        trigger.classList.remove('open');
-        menu.classList.remove('open');
+    // Handle the pick selection — called from clientPicker's onPick callback.
+    async function handlePickerSelect(newClient) {
+        if (newClient === 'all') {
+            setPickerName('All clients');
+            setPickerLogo('all');
+        } else {
+            const selectedClient = state.allClients.find(c => c.code === newClient);
+            setPickerName(selectedClient ? getClientDisplayName(selectedClient) : newClient);
+            setPickerLogo(newClient);
+        }
         state.wipClient = newClient;
         if (newClient !== 'all') {
             state.trackerClient = newClient;
         }
+        closeWipPicker();
         // Re-render whichever phone view is active
         if ($('phone-wip')?.classList.contains('visible')) {
             renderPhoneWip();
         } else if ($('phone-tracker')?.classList.contains('visible')) {
-            // Load fresh tracker data for new client, then render
             const content = $('phone-tracker-content');
             if (content && newClient !== 'all') {
                 content.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading numbers...</p></div>';
@@ -1009,7 +991,61 @@ async function setupPhoneSharedPicker() {
             }
             renderPhoneTracker();
         }
+    }
+
+    // Tap the picker card → open the full-screen picker modal.
+    trigger.onclick = (e) => {
+        e.stopPropagation();
+        openWipPicker(handlePickerSelect);
     };
+
+    // Wire close handlers once (idempotent via dataset flag — setupPhoneSharedPicker
+    // is called on every nav into WIP/Tracker, so we guard against double-binding).
+    wireWipPickerListeners();
+}
+
+// ===== WIP/Tracker Picker Modal (mobile) =====
+function wireWipPickerListeners() {
+    const overlay = $('wip-picker-overlay');
+    if (!overlay || overlay.dataset.listenersAttached) return;
+    overlay.dataset.listenersAttached = 'true';
+
+    // Close on overlay click (only outside modal box)
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeWipPicker();
+    });
+
+    // ESC to close
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay.classList.contains('visible')) closeWipPicker();
+    });
+
+    // X button
+    $('wip-picker-close')?.addEventListener('click', closeWipPicker);
+}
+
+function openWipPicker(onPickFn) {
+    const overlay = $('wip-picker-overlay');
+    if (!overlay) return;
+    const container = $('wip-picker-clients');
+    if (container && window.clientPicker) {
+        window.clientPicker.mount(container, {
+            filter: 'active',
+            allOption: true,
+            title: 'Show me…',
+            onPick: onPickFn,
+        });
+        window.clientPicker.refresh();
+    }
+    overlay.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeWipPicker() {
+    const overlay = $('wip-picker-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('visible');
+    document.body.style.overflow = '';
 }
 
 function renderPhoneWip() {
