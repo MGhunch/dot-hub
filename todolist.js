@@ -60,9 +60,6 @@ function renderTodoContent() {
     const otherTodos = todos.filter(t => t.bucket === 'OTHER');
 
     const html = `
-        <div class="todo-toolbar">
-            <button class="todo-add-btn" onclick="openTodoModal()">+ ADD</button>
-        </div>
         <div class="todo-columns">
             ${renderTodoColumn('Client Work', clientsTodos)}
             ${renderTodoColumn('Other', otherTodos)}

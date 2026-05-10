@@ -100,6 +100,14 @@ function firePlusAction(action) {
                 console.warn('[plus] openUpdateModal not available');
             }
             break;
+        case 'todo':
+            // New To Do — opens the todo capture modal (todolist.js)
+            if (typeof window.openTodoModal === 'function') {
+                window.openTodoModal();
+            } else {
+                console.warn('[plus] openTodoModal not available');
+            }
+            break;
         case 'ask-dot':
             // Chat-with-Dot modal — askDotModal.js
             if (typeof window.openAskDotModal === 'function') {
