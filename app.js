@@ -914,10 +914,25 @@ function renderWip() {
 async function setupPhoneSharedPicker() {
     const trigger = $('phone-shared-client-trigger');
     const menu = $('phone-shared-client-menu');
+    const logoEl = $('phone-picker-logo');
     if (!trigger || !menu) return;
 
     if (state.allClients.length === 0) {
         await loadClients();
+    }
+
+    // Picker logo: H mark when "all", actual client logo when a code.
+    function setPickerLogo(code) {
+        if (!logoEl) return;
+        if (code === 'all') {
+            logoEl.innerHTML = 'h';
+        } else {
+            logoEl.innerHTML = `<img src="${getLogoUrl(code)}" alt="${code}" onerror="this.style.display='none'">`;
+        }
+    }
+    function setPickerName(text) {
+        const nameEl = trigger.querySelector('.phone-picker-name');
+        if (nameEl) nameEl.textContent = text;
     }
 
     // Determine current selection — use existing state.wipClient as the phone-wide picker
@@ -927,7 +942,8 @@ async function setupPhoneSharedPicker() {
     if (state.clientFilter) {
         const client = state.allClients.find(c => c.code === state.clientFilter);
         const displayName = client ? getClientDisplayName(client) : state.clientFilter;
-        trigger.querySelector('span').textContent = displayName;
+        setPickerName(displayName);
+        setPickerLogo(state.clientFilter);
         trigger.style.pointerEvents = 'none';
         trigger.querySelector('svg')?.classList.add('hidden');
         state.wipClient = state.clientFilter;
@@ -954,12 +970,14 @@ async function setupPhoneSharedPicker() {
         menu.appendChild(opt);
     });
 
-    // Set current label
+    // Set current label + logo
     if (current === 'all') {
-        trigger.querySelector('span').textContent = 'All clients';
+        setPickerName('All clients');
+        setPickerLogo('all');
     } else {
         const selectedClient = state.allClients.find(c => c.code === current);
-        trigger.querySelector('span').textContent = selectedClient ? getClientDisplayName(selectedClient) : 'All clients';
+        setPickerName(selectedClient ? getClientDisplayName(selectedClient) : 'All clients');
+        setPickerLogo(current);
     }
 
     trigger.onclick = (e) => {
@@ -973,10 +991,11 @@ async function setupPhoneSharedPicker() {
         if (!opt) return;
         menu.querySelectorAll('.custom-dropdown-option').forEach(o => o.classList.remove('selected'));
         opt.classList.add('selected');
-        trigger.querySelector('span').textContent = opt.textContent;
+        const newClient = opt.dataset.value;
+        setPickerName(opt.textContent);
+        setPickerLogo(newClient);
         trigger.classList.remove('open');
         menu.classList.remove('open');
-        const newClient = opt.dataset.value;
         state.wipClient = newClient;
         if (newClient !== 'all') {
             state.trackerClient = newClient;
