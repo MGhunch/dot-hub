@@ -3643,3 +3643,42 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 
 /* hunch-only items hidden by JS for non-Full access */
 .hunch-only.hidden { display: none !important; }
+
+/* Phase H · Ship 3 — flat-top white footer, FAB straddles bar's top edge,
+   menu pills 1.5x. Cradle SVG removed from markup; cradle CSS stays as
+   harmless orphan (clean up in Phase I tidy). */
+@media (max-width: 899px) {
+
+    /* Footer: flat top with hairline + soft upward shadow, slimmer */
+    .plus-bar {
+        height: 44px;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+        box-shadow: 0 -6px 12px -6px rgba(0, 0, 0, 0.08);
+    }
+
+    /* FAB straddle: FAB centre lands on bar's top edge.
+       bar height 44 + dock bottom 16 → FAB centre at 16+28 = 44px from
+       viewport bottom = bar's top edge. */
+    .plus-dock {
+        bottom: 16px;
+    }
+
+    /* Phone views need bottom padding so cards clear the FAB area.
+       44 (bar) + 28 (FAB upper hemisphere) + 8 (breathing) = 80px. */
+    .phone-wip,
+    .phone-tracker,
+    .phone-todo {
+        padding-bottom: 80px;
+    }
+
+    /* Plus menu pills — 1.5x scale-up */
+    .plus-pill {
+        padding: 18px 32px 18px 24px;
+        font-size: 26px;
+        gap: 14px;
+    }
+    .plus-pill .chevron-icon-right {
+        width: 20px;
+        height: 20px;
+    }
+}
