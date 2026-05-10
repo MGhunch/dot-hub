@@ -371,7 +371,7 @@ body.logged-out .view-tracker {
 }
 
 /* Mobile adjustments for login */
-@media (max-width: 768px) {
+@media (max-width: 500px) {
     .login-logo {
         height: 150px;
     }
@@ -384,12 +384,12 @@ body.logged-out .view-tracker {
 .phone-container { display: none; }
 .desktop-container { display: none; }
 
-@media (max-width: 768px) {
+@media (max-width: 899px) {
     .phone-container { display: flex; flex-direction: column; }
     body { background: var(--white); }
 }
 
-@media (min-width: 769px) {
+@media (min-width: 900px) {
     .desktop-container { display: flex; flex-direction: column; }
 }
 
@@ -551,8 +551,6 @@ body.logged-out .view-tracker {
     width: 100%;
     height: 100vh;
     background: var(--grey-100);
-    display: flex;
-    flex-direction: column;
 }
 
 /* Desktop Header */
@@ -2611,7 +2609,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 
 /* Mobile adjustments */
-@media (max-width: 768px) {
+@media (max-width: 500px) {
     .client-picker {
         grid-template-columns: 1fr;
     }
@@ -2901,9 +2899,37 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 .phone-tracker.visible { display: flex; }
 
 .phone-tracker-controls {
-    padding: 16px 16px 8px;
+    padding: 8px 16px 6px;
     background: var(--white);
     flex-shrink: 0;
+}
+
+/* Thumb-friendly picker — pill button, 48px tap target */
+.phone-tracker-controls .custom-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--grey-100);
+    border: none;
+    border-radius: var(--radius-full);
+    padding: 12px 20px;
+    min-height: 48px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--black);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.phone-tracker-controls .custom-dropdown-trigger > span {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 8px;
 }
 
 .phone-tracker-content {
@@ -3362,7 +3388,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
         transform: translateX(-50%);
     }
 }
-@media (max-width: 768px) {
+@media (max-width: 899px) {
     .view-wip,
     .view-tracker,
     .view-todo {
@@ -3573,7 +3599,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     border-radius: var(--radius-full);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 899px) {
     .settings-container {
         padding: 40px 20px 80px;
     }
