@@ -3768,6 +3768,12 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
         padding: 18px 16px 10px;
     }
 
+    /* Override .custom-dropdown's inline-block so the trigger fills the row. */
+    .phone-context-bar .custom-dropdown {
+        display: block;
+        width: 100%;
+    }
+
     /* Picker becomes a lifted white card matching content cards but bigger. */
     .phone-context-bar .custom-dropdown-trigger {
         background: #fff;
@@ -3790,7 +3796,6 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
         font-family: var(--font-display);
         font-size: 34px;
         line-height: 1;
-        padding-bottom: 3px;
         flex-shrink: 0;
         overflow: hidden;
     }

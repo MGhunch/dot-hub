@@ -921,14 +921,11 @@ async function setupPhoneSharedPicker() {
         await loadClients();
     }
 
-    // Picker logo: H mark when "all", actual client logo when a code.
+    // Picker logo: always pull an image. HUN.png for "all", otherwise the client's logo.
     function setPickerLogo(code) {
         if (!logoEl) return;
-        if (code === 'all') {
-            logoEl.innerHTML = 'h';
-        } else {
-            logoEl.innerHTML = `<img src="${getLogoUrl(code)}" alt="${code}" onerror="this.style.display='none'">`;
-        }
+        const logoCode = code === 'all' ? 'HUN' : code;
+        logoEl.innerHTML = `<img src="${getLogoUrl(logoCode)}" alt="${code}" onerror="this.style.display='none'">`;
     }
     function setPickerName(text) {
         const nameEl = trigger.querySelector('.phone-picker-name');
