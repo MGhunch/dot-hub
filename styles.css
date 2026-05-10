@@ -411,11 +411,60 @@ body.logged-out .view-tracker {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 18px 22px;
-    border-bottom: 1px solid var(--grey-100);
+    padding: 14px 18px;
+    border-bottom: 3px solid var(--red);
     position: relative;
     z-index: 100;
     background: var(--white);
+}
+
+.phone-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.phone-view-label {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    color: var(--grey-400);
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+/* Phone Context Bar — shared client picker for WIP and Tracker */
+.phone-context-bar {
+    background: var(--grey-100);
+    padding: 12px 14px;
+    flex-shrink: 0;
+}
+.phone-context-bar.hidden { display: none; }
+
+.phone-context-bar .custom-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--white);
+    border: none;
+    border-radius: var(--radius-full);
+    padding: 10px 18px;
+    min-height: 48px;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--black);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.phone-context-bar .custom-dropdown-trigger > span {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .header-logo {
@@ -2819,10 +2868,6 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     display: flex;
 }
 
-.phone-wip-controls {
-    margin-bottom: 16px;
-}
-
 .phone-wip-content {
     flex: 1;
     overflow-y: auto;
@@ -2898,51 +2943,9 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 }
 .phone-tracker.visible { display: flex; }
 
-.phone-tracker-controls {
-    padding: 8px 16px 6px;
-    background: var(--white);
-    flex-shrink: 0;
-}
-
-/* Thumb-friendly picker — pill button, 48px tap target */
-.phone-tracker-controls .custom-dropdown-trigger {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    box-sizing: border-box;
-    background: var(--grey-100);
-    border: none;
-    border-radius: var(--radius-full);
-    padding: 12px 20px;
-    min-height: 48px;
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--black);
-    font-family: inherit;
-    cursor: pointer;
-}
-
-.phone-tracker-controls .custom-dropdown-trigger > span {
-    flex: 1;
-    text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    margin-right: 8px;
-}
-
 .phone-tracker-content {
     padding: 16px;
     flex: 1;
-}
-
-.pt-eyebrow-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 14px;
 }
 
 .pt-eyebrow {
@@ -2951,30 +2954,7 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     color: var(--grey-400);
     font-weight: 500;
     text-transform: uppercase;
-}
-
-.pt-toggle {
-    display: inline-flex;
-    background: rgba(0, 0, 0, 0.06);
-    border-radius: var(--radius-full);
-    padding: 2px;
-}
-
-.pt-toggle-seg {
-    border: none;
-    background: transparent;
-    padding: 4px 12px;
-    border-radius: var(--radius-full);
-    font-size: 11px;
-    color: var(--grey-400);
-    cursor: pointer;
-    font-family: inherit;
-}
-
-.pt-toggle-seg.active {
-    background: var(--red);
-    color: var(--white);
-    font-weight: 500;
+    margin-bottom: 14px;
 }
 
 .pt-card {
