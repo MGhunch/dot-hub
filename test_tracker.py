@@ -129,15 +129,18 @@ class TestGetCommitted:
         assert get_committed('SKY', 2023, 12, BUDGET_HISTORY, CLIENTS_FALLBACK) == 10000  # falls back
 
 
-# ===== Rollover — asymmetric bucket model =====
+# ===== Rollover — quarterly net model =====
 
 class TestRollover:
-    """The asymmetric bucket model (3 May 2026 spec):
+    """The quarterly net model (11 May 2026 spec):
 
-    - Carry from previous quarter sits as `lastQuarter.remaining`.
-    - Monthly OVERSPENDS chip lastQuarter.remaining (floored at 0).
-    - Monthly UNDERSPENDS bank to nextQuarter.banking — they do NOT repair lastQuarter.
-    - Carry expires at quarter close. Bank becomes next quarter's carry.
+    - Inherited carry from previous quarter sits as `lastQuarter.remaining`.
+    - This quarter's spend draws on this quarter's committed first.
+    - Only chips inherited carry if running quarter net goes negative.
+    - At quarter close: net underspend banks to next quarter; any remaining
+      inherited carry expires.
+    - Tower-style under-then-over within a quarter nets cleanly to $0
+      (the previous asymmetric bucket model double-counted these).
     """
 
     def test_q3_underspend_no_in_quarter_activity(self):
@@ -166,17 +169,21 @@ class TestRollover:
 
     def test_april_underspent_5k_banks_does_not_repair(self):
         # SKY: April underspent $5K. Carry stays $26K. $5K banks for next quarter.
+        # Under new model, "does not repair" means: net is positive, so carry
+        # isn't chipped in the first place. monthsBanked deprecated (always []).
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
         assert result['lastQuarter']['remaining'] == 26000
+        assert result['lastQuarter']['chipped'] == 0
         assert result['nextQuarter']['banking'] == 5000
-        assert result['nextQuarter']['monthsBanked'] == ['April']
+        assert result['nextQuarter']['monthsBanked'] == []
 
     def test_monthsBanked_skips_on_commit(self):
-        # April under, May exactly on commit, June not yet. Only April in banked list.
+        # April under, May exactly on commit, June not yet. Net = $3K under.
+        # monthsBanked deprecated (always []).
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 7000,  'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'May',   'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
@@ -184,43 +191,49 @@ class TestRollover:
         result = get_rollover('SKY', date(2026, 6, 15), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
         assert result['nextQuarter']['banking'] == 3000
-        assert result['nextQuarter']['monthsBanked'] == ['April']  # May not in list
+        assert result['nextQuarter']['monthsBanked'] == []
 
-    def test_monthsBanked_skips_overspend(self):
-        # April under, May over. Only April banked. May's overage chipped rollover.
+    def test_under_then_over_evens_within_quarter(self):
+        # The Tower-fix headline case: April under $5K, May over $5K. Net = $0.
+        # Old asymmetric model: bank $5K AND chip $5K from carry. Double-counted.
+        # New model: clean. Bank $0, chip $0, carry untouched.
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 5000,  'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'May',   'spend': 15000, 'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 6, 15), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        assert result['nextQuarter']['banking'] == 5000
-        assert result['nextQuarter']['monthsBanked'] == ['April']
-        assert result['lastQuarter']['remaining'] == 21000  # 26000 - 5000 May overage
+        assert result['lastQuarter']['remaining'] == 26000  # carry untouched
+        assert result['lastQuarter']['chipped'] == 0
+        assert result['nextQuarter'] is None  # net is $0, nothing banks
 
-    def test_april_over_then_may_under_does_not_repair(self):
-        # The asymmetry test: April -10, May +3.
-        # Old (net) model: $7K over net, lastQuarter would drop to $19K, nothing banks.
-        # New model: April chips by $10K → $16K. May banks $3K. They don't talk.
+    def test_over_then_under_nets_smaller_overage(self):
+        # April over $10K, May under $3K. Net = $7K over.
+        # Old asymmetric: chip $10K (remaining $16K), bank $3K.
+        # New model: chip the net overage only ($7K). Bank nothing.
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 20000, 'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'May',   'spend': 7000,  'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 6, 15), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        assert result['lastQuarter']['remaining'] == 16000  # 26000 - 10000
-        assert result['nextQuarter']['banking'] == 3000
+        assert result['lastQuarter']['remaining'] == 19000  # 26000 - 7000 net
+        assert result['lastQuarter']['chipped'] == 7000
+        assert result['nextQuarter'] is None
 
-    def test_under_then_over_chips_only_overage(self):
-        # Reverse order: April +5, May -10. Same end state — bucket model is order-insensitive.
+    def test_under_then_over_chips_only_net_overage(self):
+        # April under $5K, May over $10K. Net = $5K over.
+        # Old asymmetric: chip $10K, bank $5K separately.
+        # New model: net is what chips ($5K). Bank nothing.
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 5000,  'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'May',   'spend': 20000, 'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 6, 15), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        assert result['lastQuarter']['remaining'] == 16000  # chipped by May's overage
-        assert result['nextQuarter']['banking'] == 5000     # April's under
+        assert result['lastQuarter']['remaining'] == 21000  # 26000 - 5000 net
+        assert result['lastQuarter']['chipped'] == 5000
+        assert result['nextQuarter'] is None
 
     def test_floor_at_zero_when_overage_exceeds_carry(self):
         # SKY Q3 underspent $5K (not 26K). April overspent $10K. Chip floors at 0.
@@ -337,6 +350,39 @@ class TestRollover:
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
         assert result['lastQuarter']['remaining'] == 26000
         assert result['nextQuarter'] is None  # nothing banking
+
+    def test_tower_clean_under_then_over_zero_bank(self):
+        # The headline Tower case: no carry in, April under $1K, May over $1K.
+        # Net = $0 → no banking, no chipping. Carry untouched (and none anyway).
+        # Old asymmetric model would have banked $1K AND chipped $1K — double count.
+        entries = [
+            # Q4 (Jan-Mar) on commit → $0 inherited into Q1
+            {'client': 'TOW', 'month': 'January',  'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'TOW', 'month': 'February', 'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'TOW', 'month': 'March',    'spend': 10000, 'spendType': 'Project budget', 'ballpark': False},
+            # Q1 (Apr-Jun): April under $1K, May over $1K, nets to $0
+            {'client': 'TOW', 'month': 'April',    'spend': 9000,  'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'TOW', 'month': 'May',      'spend': 11000, 'spendType': 'Project budget', 'ballpark': False},
+        ]
+        # Tower has March year-end → today Jun 15 → Q1 = Apr-Jun, April + May complete
+        result = get_rollover('TOW', date(2026, 6, 15), 'March',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
+        assert result['lastQuarter'] is None  # no inherited (Q4 on commit), nothing to show
+        assert result['nextQuarter'] is None  # net $0, nothing banks
+
+    def test_chipped_field_reflects_consumption(self):
+        # New field: lastQuarter.chipped = how much of inherited was consumed
+        # by this quarter's overspend. inherited - chipped == remaining always.
+        entries = sky_q3_underspend_26k() + [
+            {'client': 'SKY', 'month': 'April', 'spend': 15000, 'spendType': 'Project budget', 'ballpark': False},
+        ]
+        result = get_rollover('SKY', date(2026, 5, 3), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
+        lq = result['lastQuarter']
+        assert lq['inherited'] == 26000
+        assert lq['chipped'] == 5000
+        assert lq['remaining'] == 21000
+        assert lq['inherited'] - lq['chipped'] == lq['remaining']
 
 
 # ===== Chart months — historical accuracy =====
@@ -622,11 +668,12 @@ class TestHistoricRollover:
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries,
                                is_closed=True)
         assert result['lastQuarter']['inherited'] == 14500
-        # Carry not chipped (no overspends)
+        # Carry not chipped (net is positive)
         assert result['lastQuarter']['remaining'] == 14500
-        # Three months under → banked $9K
+        assert result['lastQuarter']['chipped'] == 0
+        # Net under $9K → banks $9K
         assert result['nextQuarter']['banking'] == 9000
-        assert sorted(result['nextQuarter']['monthsBanked']) == sorted(['January', 'February', 'March'])
+        assert result['nextQuarter']['monthsBanked'] == []  # deprecated, always []
 
     def test_closed_zero_buckets_still_populated(self):
         # No carry, no banking, but is_closed=True → buckets still populated with zeros.

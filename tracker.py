@@ -227,137 +227,138 @@ def get_rollover(client_code: str, today: date,
                  clients_fallback: dict,
                  tracker_entries: list,
                  is_closed: bool = False) -> dict:
-    """Return the structured rollover object using the asymmetric bucket model.
+    """Return rollover state for the quarter containing today.
 
-    Two regimes:
-    - No carry from previous quarter: months can swing freely, only underspends
-      bank toward next quarter. Overspends are written off at quarter close.
-    - Carry from previous quarter: monthly overspends chip the carry immediately
-      (floor at 0). Monthly underspends do NOT repair the carry — they bank
-      separately toward next quarter.
+    Model: quarterly net.
+      - One pot per quarter: this quarter's committed.
+      - Inherited rollover from previous quarter sits alongside, expires at
+        the close of the quarter it carried into.
+      - Spend draws on this quarter's committed first. Only chips inherited
+        rollover if the running quarter net goes negative.
+      - At quarter close: any net underspend banks to next quarter; any
+        inherited rollover not chipped expires.
 
-    At quarter close (handled implicitly by the next quarter's calculation):
-      - Remaining carry expires.
-      - Bank becomes next quarter's carry.
+    Tower-style behaviour (under one month, over the next, even net) produces
+    a clean $0 bank and $0 chip — the previous asymmetric bucket model
+    double-counted these.
+
+    Live view uses completed months only (in-flight current month and future
+    months skipped) so the displayed rollover reflects cumulative state through
+    the last completed month. Closed view walks all 3 months.
 
     Args:
-      is_closed: When True, the quarter being calculated is treated as fully
-        closed — all 3 months process regardless of `today`. Used for historic
-        retrospective views. When False (default), in-flight months are skipped.
+      is_closed: When True, the quarter is treated as fully closed — all 3
+        months process regardless of `today`. Used for historic retrospective
+        views. When False (default), in-flight + future months are skipped.
 
     Shape:
       {
         'lastQuarter': {
-          'remaining': int,                # post-walk carry, floored at 0 (live state)
+          'remaining': int,                # inherited - chipped, floored at 0
           'inherited': int,                # carry that came in from prev quarter
+          'chipped': int,                  # how much of inherited consumed this quarter
           'previousQuarterLabel': str,     # e.g. 'Q1'
           'expiresOn': str,                # ISO date (last day of current quarter)
-        } | None,                          # None if no inherited carry AND closed,
-                                           # or if remaining=0 AND not closed
+        } | None,                          # None if prev quarter had no data,
+                                           # or (live mode AND remaining == 0)
         'nextQuarter': {
-          'banking': int,                  # sum of monthly underspends only
-          'monthsBanked': list,
-        } | None,                          # None if nothing banking AND not closed
+          'banking': int,                  # net underspend this quarter (>= 0)
+          'monthsBanked': list,            # always [] — kept for backward
+                                           # compatibility (no longer populated)
+        } | None,                          # None if not closed AND banking == 0
         'isClosed': bool,
         'currentQuarterLabel': str,        # e.g. 'Q2' — quarter this rollover is FOR
         'nextQuarterLabel': str,           # e.g. 'Q3'
         'quarterKey': str,                 # 'JAN-MAR' style key
       }
     """
-    prev_q_num, _ = _quarter_from_today(year_end_month, today)
-    prev_q = get_previous_quarter(year_end_month, today)
     curr_q_num, curr_q_first = _quarter_from_today(year_end_month, today)
     curr_q = get_current_quarter(year_end_month, today)
+    prev_q = get_previous_quarter(year_end_month, today)
 
-    # ----- Carry from previous quarter -----
-    # Sum of (committed - spent) per month, floored at 0 per quarter
-    # (a net-over previous quarter writes off — doesn't carry as negative).
-    prev_committed_total = 0
-    prev_spent_total = 0
-    prev_entry_count = 0  # how many tracker entries exist in prev quarter at all
-    prev_month_names = {m['month_name'] for m in prev_q['months']}
-    for row in tracker_entries:
-        if row.get('client') != client_code:
-            continue
-        if row.get('month') in prev_month_names:
-            prev_entry_count += 1
-    for m in prev_q['months']:
-        prev_committed_total += get_committed(
-            client_code, m['year'], m['month_num'],
-            budget_history, clients_fallback,
-        )
-        prev_spent_total += _spend_for_month(
-            client_code, m['month_name'], tracker_entries,
-        )
-    # Note: previous quarter carry uses sum-of-monthly-unders semantics for
-    # banking, but to keep this calc tractable across multiple historical
-    # quarters we use net for prior-quarter rollup. This matches today's
-    # behaviour and isn't visible to clients.
+    # ===== Inherited from previous quarter =====
+    # Previous quarter's banking = max(0, prev_committed - prev_spent).
     #
     # Pre-system suppression: if the previous quarter has ZERO tracker entries
     # for this client, that quarter pre-dates the tracker system being live for
-    # them. A retainer client with system live in that quarter would have at
-    # minimum the "Always on" monthly entries (~$1K each, $3K/quarter), so zero
-    # entries = system wasn't tracking them yet. Don't manufacture a phantom
-    # carry from "underspend = full committed amount".
+    # them. Don't manufacture a phantom carry from "no entries = full underspend".
+    prev_month_names = {m['month_name'] for m in prev_q['months']}
+    prev_entry_count = sum(
+        1 for row in tracker_entries
+        if row.get('client') == client_code
+        and row.get('month') in prev_month_names
+    )
     prev_quarter_has_data = prev_entry_count > 0
+
     if prev_quarter_has_data:
-        carry_in = max(0, prev_committed_total - prev_spent_total)
+        prev_committed_total = 0
+        prev_spent_total = 0
+        for m in prev_q['months']:
+            prev_committed_total += get_committed(
+                client_code, m['year'], m['month_num'],
+                budget_history, clients_fallback,
+            )
+            prev_spent_total += _spend_for_month(
+                client_code, m['month_name'], tracker_entries,
+            )
+        inherited = max(0, prev_committed_total - prev_spent_total)
     else:
-        carry_in = 0
+        inherited = 0
 
-    # ----- Walk completed months in current quarter -----
+    # ===== Current quarter net =====
+    # LIVE: completed months only. CLOSED: all 3 months.
     today_first = date(today.year, today.month, 1)
-    rollover_remaining = carry_in
-    bank = 0
-    months_banked = []  # only months where variance > 0 (under)
-
+    curr_committed_total = 0
+    curr_spent_total = 0
     for m in curr_q['months']:
         m_first = date(m['year'], m['month_num'], 1)
         if not is_closed and m_first >= today_first:
-            continue  # month not yet complete (current month in flight, or future)
-
-        committed = get_committed(
+            continue  # in-flight or future month — skip in live mode
+        curr_committed_total += get_committed(
             client_code, m['year'], m['month_num'],
             budget_history, clients_fallback,
         )
-        spent = _spend_for_month(
+        curr_spent_total += _spend_for_month(
             client_code, m['month_name'], tracker_entries,
         )
-        variance = committed - spent
 
-        if variance > 0:
-            # Underspend: banks toward next quarter (does NOT repair rollover)
-            bank += variance
-            months_banked.append(m['month_name'])
-        elif variance < 0:
-            # Overspend: chips current rollover, floored at 0
-            # Excess (beyond rollover) is tracked and written off at quarter close
-            overage = -variance
-            rollover_remaining = max(0, rollover_remaining - overage)
+    net = curr_committed_total - curr_spent_total
 
-    # ----- Build structured response -----
-    # For LIVE: keep existing hide-on-zero semantics so block stays minimal
-    #   when there's nothing to say.
-    # For CLOSED (historic retrospective): always populate both buckets so
-    #   the story is complete — "$X from Q1, $Y to Q3" — even if values are 0.
-    # Pre-system override: if prev quarter had no data at all (system wasn't
-    #   live yet), hide the lastQuarter line entirely in BOTH modes — showing
-    #   "$0 from Q4" would be technically correct but misleading.
+    if net >= 0:
+        # Net under (or exactly even): banks to next quarter. Inherited untouched.
+        banking = net
+        chipped = 0
+    else:
+        # Net over: chips inherited rollover (floor at 0). Anything beyond the
+        # carry is written off — no banking.
+        overage = -net
+        chipped = min(inherited, overage)
+        banking = 0
+
+    remaining = inherited - chipped
+
+    # ===== Build response =====
+    # Live: hide lastQuarter when there's nothing useful to say (no prev data,
+    #   or carry fully chipped — "expired" stories ask more questions than
+    #   they answer).
+    # Closed: always populate both buckets (with zeros) so the historic story
+    #   renders fully — EXCEPT when prev quarter had no data at all (pre-system),
+    #   in which case lastQuarter stays hidden.
     last_quarter = None
-    if prev_quarter_has_data and (is_closed or rollover_remaining > 0):
+    if prev_quarter_has_data and (is_closed or remaining > 0):
         last_quarter = {
-            'remaining': rollover_remaining,
-            'inherited': carry_in,
+            'remaining': remaining,
+            'inherited': inherited,
+            'chipped': chipped,
             'previousQuarterLabel': prev_q['label'],
             'expiresOn': _last_day_of_quarter(curr_q_first).isoformat(),
         }
 
     next_quarter = None
-    if is_closed or bank > 0:
+    if is_closed or banking > 0:
         next_quarter = {
-            'banking': bank,
-            'monthsBanked': months_banked,
+            'banking': banking,
+            'monthsBanked': [],  # backward-compat field; no longer populated
         }
 
     next_q_num = 1 if curr_q_num == 4 else curr_q_num + 1
