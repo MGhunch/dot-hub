@@ -323,7 +323,12 @@
 
 
 /* ===== MOBILE — full-screen takeover =====
-   At narrow widths the modal becomes the whole viewport. Header tightens. */
+   At narrow widths the modal becomes the whole viewport. Header tightens.
+   Phase H · Ship 9 — 100vh → 100dvh so the modal collapses with the mobile
+   URL bar (was clipping the input off the bottom on iOS Safari).
+   Input row also picks up env(safe-area-inset-bottom) to clear the iPhone
+   home indicator; the env value reads 0 when the keyboard is up, so no
+   double-padding when typing. */
 
 @media (max-width: 600px) {
     .askdot-modal-overlay {
@@ -333,7 +338,8 @@
         max-width: none;
         width: 100vw;
         height: 100vh;
-        max-height: 100vh;
+        height: 100dvh;
+        max-height: 100dvh;
         border-radius: 0;
     }
     .askdot-modal-header {
@@ -346,6 +352,9 @@
     .askdot-modal-avatar {
         width: 26px;
         height: 26px;
+    }
+    .askdot-modal-input-row {
+        padding-bottom: calc(14px + env(safe-area-inset-bottom));
     }
 }
 
