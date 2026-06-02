@@ -622,7 +622,7 @@
                                 <div class="update-modal-description" id="update-modal-description"></div>
                                 <textarea id="update-modal-description-input" placeholder="What's this job about?" rows="2"></textarea>
                             </div>
-                            <div class="modal-eyebrow update-modal-meta" id="update-modal-meta"></div>
+                            <div class="modal-eyebrow update-modal-meta" id="update-modal-meta"><span class="update-modal-meta-job" id="update-modal-meta-job"></span><span class="update-modal-meta-sep"> | </span><span class="update-modal-meta-owner" id="update-modal-meta-owner"></span></div>
                         </div>
                     </div>
                 </div>
@@ -726,6 +726,38 @@
                 <div class="update-modal-completion-menu" id="update-modal-completion-menu" hidden></div>
 
                 <button class="modal-button-filled update-modal-completion-btn-filled" id="update-modal-completion-btn-done" type="button">DONE</button>
+            </div>
+
+            <!-- EDIT DETAILS VIEW -->
+            <div class="update-modal-edit" id="update-modal-edit" style="display:none">
+                <div class="modal-header update-modal-header">
+                    <div class="update-modal-header-row">
+                        <img class="update-modal-header-logo" id="update-modal-edit-logo" src="images/logos/Unknown.png" alt="">
+                        <div class="update-modal-header-text">
+                            <div class="modal-hero">Edit details</div>
+                            <div class="modal-eyebrow update-modal-edit-jobnum" id="update-modal-edit-jobnum"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-body update-modal-body">
+                    <div class="modal-eyebrow update-modal-section-eyebrow">JOB NAME</div>
+                    <div class="modal-soft-box update-modal-edit-name-box">
+                        <input class="update-modal-edit-name-input" id="update-modal-edit-name-input" type="text" placeholder="Job name">
+                    </div>
+
+                    <div class="modal-eyebrow update-modal-section-eyebrow">OWNER</div>
+                    <div class="custom-dropdown update-modal-dropdown update-modal-edit-owner-wrap">
+                        <button class="modal-chip update-modal-chip update-modal-edit-owner-chip" id="update-modal-edit-owner-chip" type="button">
+                            <span id="update-modal-edit-owner-label">Choose owner</span>
+                            <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                        </button>
+                        <div class="custom-dropdown-menu" id="update-modal-edit-owner-menu"></div>
+                    </div>
+
+                    <button class="modal-button-filled update-modal-edit-save" id="update-modal-edit-save">SAVE</button>
+                    <button class="update-modal-edit-back" id="update-modal-edit-back" type="button">Cancel</button>
+                </div>
             </div>
         </div>
     </div>

@@ -31,7 +31,11 @@ const updateModalState = {
     // Completion view: next-up suggestion + jobs already touched in this modal session
     nextJobNumber: null,
     sessionUpdatedJobs: new Set(),
+    // Edit details view — which field to focus after the view transition
+    editFocus: null, // 'name' | 'owner'
 };
+// Team list (People where Access = Full) — cached once per page load
+let _umTeamCache = null;
 
 const STATUSES = ['Incoming', 'In Progress', 'On Hold', 'Completed'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -94,8 +98,16 @@ function wireUpdateModalListeners() {
         setTimeout(() => { ta.focus(); autoGrow(ta); }, 50);
     });
 
-    // Meta line — tap to switch to a different job for the same client
-    $um('update-modal-meta')?.addEventListener('click', () => {
+    // Hero (job name) — tap to edit details (name + owner)
+    $um('update-modal-hero')?.addEventListener('click', () => openEditView('name'));
+
+    // Meta line — owner zone edits details, job zone switches job
+    $um('update-modal-meta')?.addEventListener('click', (e) => {
+        if (e.target.closest('.update-modal-meta-owner')) {
+            openEditView('owner');
+            return;
+        }
+        // Default (job number zone / separator) — switch to another job for this client
         const job = updateModalState.currentJob;
         if (!job?.clientCode) return;
         updateModalState.selectedClientCode = job.clientCode;
@@ -111,6 +123,32 @@ function wireUpdateModalListeners() {
 
         showView('picker', 'back');
     });
+
+    // Edit details view — owner dropdown open
+    $um('update-modal-edit-owner-chip')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleUmDropdown('owner');
+    });
+
+    // Edit details view — owner pick (or "Add someone new")
+    $um('update-modal-edit-owner-menu')?.addEventListener('click', (e) => {
+        const opt = e.target.closest('.custom-dropdown-option');
+        if (!opt) return;
+        if (opt.dataset.action === 'add-person') {
+            closeAllUmDropdowns();
+            closeUpdateModal();
+            // Deep link to the Add a person tool in Settings.
+            // Ship 2 wires ?open=add-person to open the form directly.
+            if (typeof window.navigateTo === 'function') window.navigateTo('settings');
+            return;
+        }
+        $um('update-modal-edit-owner-label').textContent = opt.dataset.value;
+        closeAllUmDropdowns();
+    });
+
+    // Edit details view — save + cancel
+    $um('update-modal-edit-save')?.addEventListener('click', saveEditDetails);
+    $um('update-modal-edit-back')?.addEventListener('click', () => showView('populated', 'back'));
 
     // Auto-grow update + description textareas (notes is single-line — no auto-grow)
     $um('update-modal-update-field')?.addEventListener('input', (e) => autoGrow(e.target));
@@ -321,9 +359,11 @@ async function openUpdateModal(jobNumber, month) {
     const pickerEl = $um('update-modal-picker');
     const populatedEl = $um('update-modal-populated');
     const completionEl = $um('update-modal-completion');
+    const editEl = $um('update-modal-edit');
     if (pickerEl) pickerEl.style.display = 'none';
     if (populatedEl) populatedEl.style.display = 'none';
     if (completionEl) completionEl.style.display = 'none';
+    if (editEl) editEl.style.display = 'none';
 
     if (jobNumber) {
         // Hot entry — show modal instantly, populate as data loads
@@ -383,11 +423,13 @@ function showView(view, direction = 'fwd') {
     const picker = $um('update-modal-picker');
     const populated = $um('update-modal-populated');
     const completion = $um('update-modal-completion');
+    const edit = $um('update-modal-edit');
     if (!picker || !populated || !completion) return;
 
     updateModalState.view = view;
 
     const views = { picker, populated, completion };
+    if (edit) views.edit = edit;
     const target = views[view];
     if (!target) return;
 
@@ -488,9 +530,11 @@ async function loadHotEntry(jobNumber, month) {
     if (descArea) descArea.classList.remove('editing');
     const descInput = $um('update-modal-description-input');
     if (descInput) descInput.value = '';
-    const metaEl = $um('update-modal-meta');
+    const metaJobEl = $um('update-modal-meta-job');
+    const metaOwnerEl = $um('update-modal-meta-owner');
     const metaSecond = job.projectOwner || resolveClientName(clientCode);
-    metaEl.textContent = `${formatJobDisplay(job.jobNumber)}  |  ${metaSecond}`;
+    if (metaJobEl) metaJobEl.textContent = formatJobDisplay(job.jobNumber);
+    if (metaOwnerEl) metaOwnerEl.textContent = metaSecond;
 
     // Latest update — pull from updateHistory if present, else fall back to .update text
     const display = $um('update-modal-update-display');
@@ -554,8 +598,8 @@ async function loadHotEntry(jobNumber, month) {
     ensureClientsCached().then(() => {
         if (updateModalState.currentJob !== job) return; // guard: another job loaded since
         if (job.projectOwner) return; // not using fallback — nothing to refresh
-        const refreshed = job.projectOwner || resolveClientName(clientCode);
-        metaEl.textContent = `${formatJobDisplay(job.jobNumber)}  |  ${refreshed}`;
+        const refreshed = resolveClientName(clientCode);
+        if (metaOwnerEl) metaOwnerEl.textContent = refreshed;
     }).catch(() => { /* fire-and-forget */ });
 
     // Tracker — fetch budget data for this job
@@ -820,6 +864,7 @@ const UM_DROPDOWN_CONFIG = {
     live:   { btnId: 'update-modal-live-chip',   menuId: 'update-modal-live-menu' },
     month:  { btnId: 'update-modal-month-chip',  menuId: 'update-modal-month-menu' },
     status: { btnId: 'update-modal-status',      menuId: 'update-modal-status-menu' },
+    owner:  { btnId: 'update-modal-edit-owner-chip', menuId: 'update-modal-edit-owner-menu' },
 };
 
 function toggleUmDropdown(which) {
@@ -867,6 +912,112 @@ function renderUmDropdownOptions(which) {
             const sel = s === currentCanonical ? ' selected' : '';
             return `<div class="custom-dropdown-option${sel}" data-value="${escapeAttr(s)}">${escapeHtml(s)}</div>`;
         }).join('');
+    } else if (which === 'owner') {
+        const menu = $um('update-modal-edit-owner-menu');
+        const current = $um('update-modal-edit-owner-label').textContent.trim();
+        const team = Array.isArray(_umTeamCache) ? _umTeamCache : [];
+        const rows = team.map(p => {
+            const sel = p.name === current ? ' selected' : '';
+            return `<div class="custom-dropdown-option${sel}" data-value="${escapeAttr(p.name)}">${escapeHtml(p.name)}</div>`;
+        }).join('');
+        const addRow = `<div class="custom-dropdown-option update-modal-add-someone" data-action="add-person">+ Add someone new</div>`;
+        menu.innerHTML = rows + addRow;
+    }
+}
+
+// ===== EDIT DETAILS VIEW =====
+async function ensureTeamCached() {
+    if (Array.isArray(_umTeamCache)) return;
+    try {
+        const res = await fetch(`${API_BASE}/team`);
+        _umTeamCache = res.ok ? await res.json() : [];
+    } catch (err) {
+        console.warn('[update-modal] team fetch failed:', err);
+        _umTeamCache = [];
+    }
+}
+
+function openEditView(focus) {
+    const job = updateModalState.currentJob;
+    if (!job) return;
+    updateModalState.editFocus = focus || 'name';
+
+    // Logo + read-only job number
+    const clientCode = job.clientCode || '';
+    const logoEl = $um('update-modal-edit-logo');
+    if (logoEl) {
+        const logoUrl = (typeof getLogoUrl === 'function')
+            ? getLogoUrl(clientCode)
+            : `images/logos/${clientCode}.png`;
+        logoEl.src = logoUrl;
+        logoEl.onerror = () => { logoEl.src = 'images/logos/Unknown.png'; };
+    }
+    const jobNumEl = $um('update-modal-edit-jobnum');
+    if (jobNumEl) jobNumEl.textContent = formatJobDisplay(job.jobNumber);
+
+    // Current values
+    const nameInput = $um('update-modal-edit-name-input');
+    if (nameInput) nameInput.value = job.jobName || '';
+    const ownerLabel = $um('update-modal-edit-owner-label');
+    if (ownerLabel) ownerLabel.textContent = job.projectOwner || 'Choose owner';
+
+    // Warm the team list so the dropdown is ready when opened
+    ensureTeamCached();
+
+    showView('edit', 'fwd');
+
+    // Focus the tapped field once the view transition has settled (~2×140ms swap)
+    setTimeout(() => {
+        if (updateModalState.editFocus === 'owner') {
+            toggleUmDropdown('owner');
+        } else {
+            nameInput?.focus();
+        }
+    }, 320);
+}
+
+async function saveEditDetails() {
+    const job = updateModalState.currentJob;
+    if (!job) return;
+    const saveBtn = $um('update-modal-edit-save');
+
+    const newName = ($um('update-modal-edit-name-input')?.value || '').trim();
+    const ownerLabel = ($um('update-modal-edit-owner-label')?.textContent || '').trim();
+    const newOwner = ownerLabel === 'Choose owner' ? '' : ownerLabel;
+
+    // Patch only the identity fields — no Updates record is created (no message).
+    const payload = { projectOwner: newOwner };
+    if (newName) payload.projectName = newName;
+
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'SAVING…'; }
+    try {
+        const res = await fetch(`${API_BASE}/job/${encodeURIComponent(job.jobNumber)}/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Edit save failed');
+
+        // Patch local state + visible header so the populated view is current
+        if (newName) job.jobName = newName;
+        job.projectOwner = newOwner;
+        const heroEl = $um('update-modal-hero');
+        if (heroEl && newName) heroEl.textContent = newName;
+        const metaOwnerEl = $um('update-modal-meta-owner');
+        if (metaOwnerEl) metaOwnerEl.textContent = newOwner || resolveClientName(job.clientCode);
+
+        showView('populated', 'back');
+        if (typeof showToast === 'function') showToast('Saved.', 'success');
+
+        // Refresh WIP/Tracker in the background so cards reflect the change
+        if (typeof window.refreshAfterMutation === 'function') {
+            window.refreshAfterMutation(['jobs']).catch(() => {});
+        }
+    } catch (err) {
+        console.error('[update-modal] edit save failed:', err);
+        if (typeof showToast === 'function') showToast("Doh, that didn't save.", 'error');
+    } finally {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'SAVE'; }
     }
 }
 

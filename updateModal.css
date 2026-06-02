@@ -105,7 +105,10 @@
 .update-modal-hero {
   /* Type/clamp/colour provided by .modal-hero primitive. */
   margin-bottom: 3px;
+  cursor: pointer;
+  transition: color 0.15s;
 }
+.update-modal-hero:hover { color: var(--modal-red); }
 
 .update-modal-description-area {
   cursor: text;
@@ -148,12 +151,19 @@
 
 .update-modal-meta {
   /* Type/colour/transform provided by .modal-eyebrow primitive.
-     Component adds clickability + hover-red. */
-  cursor: pointer;
-  transition: color 0.15s;
+     Clickability lives on the child spans (job switches, owner edits). */
   display: inline-block;
 }
-.update-modal-meta:hover { color: var(--modal-red); }
+.update-modal-meta-job,
+.update-modal-meta-owner {
+  cursor: pointer;
+  transition: color 0.15s;
+  /* Roomier tap target than the bare glyphs (matters most on mobile) */
+  padding: 2px 1px;
+}
+.update-modal-meta-job:hover,
+.update-modal-meta-owner:hover { color: var(--modal-red); }
+.update-modal-meta-sep { cursor: default; }
 
 /* ===== BODY =====
    Padding provided by .modal-body primitive. */
@@ -512,3 +522,57 @@
   .update-modal-picker { padding: 28px 20px 24px; }
   .update-modal-completion { padding: 28px 20px 24px; }
 }
+
+/* ===== EDIT DETAILS VIEW ===== */
+.update-modal-edit-jobnum {
+  /* Type/colour/transform provided by .modal-eyebrow primitive. */
+  margin-top: 2px;
+}
+
+/* Job name — soft-box wrapper, base bg/radius from .modal-soft-box primitive. */
+.update-modal-edit-name-box {
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  cursor: text;
+}
+.update-modal-edit-name-box:focus-within { background: var(--modal-bg-soft-hover); }
+.update-modal-edit-name-input {
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: var(--modal-type-meta);
+  line-height: 1.4;
+  color: var(--modal-text-primary);
+  padding: 0;
+}
+.update-modal-edit-name-input::placeholder { color: var(--modal-text-tertiary); }
+
+/* Owner dropdown — sits on its own row */
+.update-modal-edit-owner-wrap {
+  display: flex;
+  margin-bottom: 22px;
+}
+.update-modal-add-someone {
+  color: var(--modal-red);
+  font-weight: 600;
+}
+
+/* Save button — base provided by .modal-button-filled primitive. */
+.update-modal-edit-save { margin-top: 4px; }
+
+/* Cancel — quiet text button under Save */
+.update-modal-edit-back {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-tertiary);
+  transition: color 0.15s;
+}
+.update-modal-edit-back:hover { color: var(--modal-text-secondary); }
