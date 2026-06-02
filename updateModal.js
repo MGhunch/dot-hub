@@ -635,8 +635,8 @@ function resolveTrackerForMonth(monthName) {
         spendInput.value = '';
         spendAmount.classList.add('empty');
         notes.value = '';
-        updateModalState.ballpark = true; // default ON for new entries
-        ballparkRow.classList.add('on');
+        updateModalState.ballpark = false; // default OFF for new entries
+        ballparkRow.classList.remove('on');
     }
 }
 
