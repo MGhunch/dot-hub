@@ -730,8 +730,9 @@ def create_person():
         if existing.ok and existing.json().get('records'):
             return jsonify({'error': 'A person with that email already exists'}), 409
 
+        # NOTE: 'Name' is a computed (formula) field in People — Airtable derives
+        # it from First/Last. Writing it causes a 422, so we don't.
         fields = {
-            'Name': name,
             'First Name': first,
             'Last Name': last,
             'Email Address': email,
@@ -749,7 +750,9 @@ def create_person():
                 fields['Client Link'] = [cl.json()['records'][0]['id']]
 
         resp = requests.post(url, headers=HEADERS, json={'fields': fields})
-        resp.raise_for_status()
+        if not resp.ok:
+            print(f'[Hub API] Airtable rejected person create ({resp.status_code}): {resp.text}')
+            return jsonify({'error': 'Airtable rejected the create'}), 502
 
         print(f'[Hub API] Created person: {name} ({access})')
         return jsonify({'success': True, 'name': name, 'access': access})
