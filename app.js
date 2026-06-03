@@ -481,7 +481,7 @@ function navigateTo(view) {
         const viewLabel = $('phone-view-label');
         const triggerLabel = $('phone-view-trigger-label');
         const contextBar = $('phone-context-bar');
-        const labels = { wip: 'WIP', tracker: 'Tracker', todo: 'Todo', settings: 'Settings' };
+        const labels = { wip: 'WIP', tracker: 'Tracker', todo: 'To do', settings: 'Settings' };
         const triggerLabels = { wip: 'WIP', tracker: 'TRACKER', todo: 'TO DO' };
         if (viewLabel) viewLabel.textContent = labels[view] || '';
         if (triggerLabel) triggerLabel.textContent = triggerLabels[view] || '';
