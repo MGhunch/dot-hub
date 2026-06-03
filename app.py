@@ -663,46 +663,6 @@ def get_people_for_client(client_code):
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/team')
-def get_team():
-    """Hunch team members (People with Access = Full) — for owner assignment."""
-    try:
-        url = get_airtable_url('People')
-        filter_formula = "AND({Active} = TRUE(), {Access} = 'Full')"
-        params = {'filterByFormula': filter_formula}
-        team = []
-        offset = None
-
-        while True:
-            if offset:
-                params['offset'] = offset
-
-            response = requests.get(url, headers=HEADERS, params=params)
-            response.raise_for_status()
-            data = response.json()
-
-            for record in data.get('records', []):
-                fields = record.get('fields', {})
-                name = fields.get('Name', fields.get('Full name', ''))
-                if name:
-                    team.append({
-                        'name': name,
-                        'firstName': fields.get('First Name', name.split()[0] if name else ''),
-                        'email': fields.get('Email Address', ''),
-                    })
-
-            offset = data.get('offset')
-            if not offset:
-                break
-
-        team.sort(key=lambda x: x['name'])
-        return jsonify(team)
-
-    except Exception as e:
-        print(f'[Hub API] Error fetching team: {e}')
-        return jsonify({'error': str(e)}), 500
-
-
 @app.route('/api/people', methods=['POST'])
 def create_person():
     """Create a new Person — a team member (Access=Full) or a client contact."""

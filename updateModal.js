@@ -34,8 +34,8 @@ const updateModalState = {
     // Edit details view — which field to focus after the view transition
     editFocus: null, // 'name' | 'owner'
 };
-// Team list (People where Access = Full) — cached once per page load
-let _umTeamCache = null;
+// Owner candidates per client (People linked to that client) — cached per page load
+let _umOwnerCache = {};
 
 const STATUSES = ['Incoming', 'In Progress', 'On Hold', 'Completed'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -917,8 +917,9 @@ function renderUmDropdownOptions(which) {
     } else if (which === 'owner') {
         const menu = $um('update-modal-edit-owner-menu');
         const current = $um('update-modal-edit-owner-label').textContent.trim();
-        const team = Array.isArray(_umTeamCache) ? _umTeamCache : [];
-        const rows = team.map(p => {
+        const clientCode = updateModalState.currentJob?.clientCode || '';
+        const people = Array.isArray(_umOwnerCache[clientCode]) ? _umOwnerCache[clientCode] : [];
+        const rows = people.map(p => {
             const sel = p.name === current ? ' selected' : '';
             return `<div class="custom-dropdown-option${sel}" data-value="${escapeAttr(p.name)}">${escapeHtml(p.name)}</div>`;
         }).join('');
@@ -928,14 +929,14 @@ function renderUmDropdownOptions(which) {
 }
 
 // ===== EDIT DETAILS VIEW =====
-async function ensureTeamCached() {
-    if (Array.isArray(_umTeamCache)) return;
+async function ensureOwnersCached(clientCode) {
+    if (!clientCode || Array.isArray(_umOwnerCache[clientCode])) return;
     try {
-        const res = await fetch(`${API_BASE}/team`);
-        _umTeamCache = res.ok ? await res.json() : [];
+        const res = await fetch(`${API_BASE}/people/${encodeURIComponent(clientCode)}`);
+        _umOwnerCache[clientCode] = res.ok ? await res.json() : [];
     } catch (err) {
-        console.warn('[update-modal] team fetch failed:', err);
-        _umTeamCache = [];
+        console.warn('[update-modal] owner fetch failed:', err);
+        _umOwnerCache[clientCode] = [];
     }
 }
 
@@ -963,8 +964,8 @@ function openEditView(focus) {
     const ownerLabel = $um('update-modal-edit-owner-label');
     if (ownerLabel) ownerLabel.textContent = job.projectOwner || 'Choose owner';
 
-    // Warm the team list so the dropdown is ready when opened
-    ensureTeamCached();
+    // Warm the client's contact list so the dropdown is ready when opened
+    ensureOwnersCached(clientCode);
 
     showView('edit', 'fwd');
 
@@ -1303,5 +1304,5 @@ function escapeAttr(str) { return escapeHtml(str); }
 // ===== EXPOSE TO WINDOW =====
 window.openUpdateModal = openUpdateModal;
 window.closeUpdateModal = closeUpdateModal;
-// Lets the Add Person modal force a fresh team fetch on next owner-dropdown open
-window.invalidateUmTeamCache = function () { _umTeamCache = null; };
+// Lets the Add Person modal force a fresh contact fetch on next owner-dropdown open
+window.invalidateUmTeamCache = function () { _umOwnerCache = {}; };
