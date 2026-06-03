@@ -59,17 +59,18 @@ function handleDeepLink() {
     const job = params.get('job');         // TOW066
     const month = params.get('month');     // January, February, etc. or 'current'
     const quarter = params.get('quarter'); // 'true' for quarter view
+    const open = params.get('open');       // e.g. 'add-person'
     
     // Store for after login/data load
-    if (view || client || job || month || quarter) {
-        state.deepLink = { view, client, job, month, quarter };
+    if (view || client || job || month || quarter || open) {
+        state.deepLink = { view, client, job, month, quarter, open };
     }
 }
 
 function applyDeepLink() {
     if (!state.deepLink) return;
     
-    const { view, client, job, month, quarter } = state.deepLink;
+    const { view, client, job, month, quarter, open } = state.deepLink;
     
     // Clear deep link first to prevent re-application
     state.deepLink = null;
@@ -109,6 +110,13 @@ function applyDeepLink() {
     // Now navigate - render functions will use our pre-set values
     if (view && ['wip', 'tracker', 'todo', 'settings'].includes(view)) {
         navigateTo(view);
+    }
+
+    // Open the Add a person form directly (e.g. from an owner-dropdown deep link)
+    if (open === 'add-person') {
+        setTimeout(() => {
+            if (typeof window.openAddPersonModal === 'function') window.openAddPersonModal();
+        }, 120);
     }
     
     // Open job modal if job param provided (after navigation and data load)

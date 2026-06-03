@@ -1,0 +1,65 @@
+/* ===== ADD PERSON MODAL =====
+   Built on the modal-system primitives (.modal-overlay / .modal-shell /
+   .modal-header / .modal-body / .modal-hero / .modal-eyebrow / .modal-soft-box /
+   .modal-chip / .modal-button-filled). Only the add-person specifics live here. */
+
+.add-person-kicker {
+  /* Type/colour/transform from .modal-eyebrow primitive. */
+  margin-top: 2px;
+}
+
+/* Section labels above each field */
+.add-person-label {
+  margin: 18px 0 8px;
+}
+.add-person-label:first-of-type { margin-top: 0; }
+
+/* First / last name side by side */
+.add-person-name-row {
+  display: flex;
+  gap: 12px;
+}
+.add-person-name-row .add-person-field { flex: 1; min-width: 0; }
+.add-person-name-row .add-person-label { margin-top: 0; }
+
+/* Text input boxes — base bg/radius from .modal-soft-box primitive. */
+.add-person-box {
+  padding: 12px 16px;
+  cursor: text;
+}
+.add-person-box:focus-within { background: var(--modal-bg-soft-hover); }
+.add-person-input {
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: var(--modal-type-meta);
+  line-height: 1.4;
+  color: var(--modal-text-primary);
+  padding: 0;
+}
+.add-person-input::placeholder { color: var(--modal-text-tertiary); }
+
+/* Dropdowns (Access / Client) sit on their own row */
+.add-person-dropdown {
+  position: relative;
+  display: flex;
+}
+.add-person-dropdown .custom-dropdown-menu { min-width: 180px; }
+
+/* Save + cancel */
+.add-person-save { margin-top: 24px; }
+.add-person-cancel {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--modal-type-meta);
+  color: var(--modal-text-tertiary);
+  transition: color 0.15s;
+}
+.add-person-cancel:hover { color: var(--modal-text-secondary); }

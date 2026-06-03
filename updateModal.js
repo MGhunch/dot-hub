@@ -137,9 +137,11 @@ function wireUpdateModalListeners() {
         if (opt.dataset.action === 'add-person') {
             closeAllUmDropdowns();
             closeUpdateModal();
-            // Deep link to the Add a person tool in Settings.
-            // Ship 2 wires ?open=add-person to open the form directly.
+            // Jump to Settings and open the Add a person form directly.
             if (typeof window.navigateTo === 'function') window.navigateTo('settings');
+            if (typeof window.openAddPersonModal === 'function') {
+                setTimeout(() => window.openAddPersonModal(), 60);
+            }
             return;
         }
         $um('update-modal-edit-owner-label').textContent = opt.dataset.value;
@@ -1301,3 +1303,5 @@ function escapeAttr(str) { return escapeHtml(str); }
 // ===== EXPOSE TO WINDOW =====
 window.openUpdateModal = openUpdateModal;
 window.closeUpdateModal = closeUpdateModal;
+// Lets the Add Person modal force a fresh team fetch on next owner-dropdown open
+window.invalidateUmTeamCache = function () { _umTeamCache = null; };

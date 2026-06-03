@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="askDotModal.css">
     <link rel="stylesheet" href="authOverlay.css">
     <link rel="stylesheet" href="welcomeModal.css">
+    <link rel="stylesheet" href="addPersonModal.css">
 </head>
 <body class="logged-out">
     <!-- Toast notifications -->
@@ -296,9 +297,11 @@
                             <span class="settings-item-label">Add a client</span>
                             <span class="settings-item-tag">Coming soon</span>
                         </li>
-                        <li class="settings-item disabled">
+                        <li class="settings-item" id="settings-add-person">
                             <span class="settings-item-label">Add a person</span>
-                            <span class="settings-item-tag">Coming soon</span>
+                            <span class="settings-item-arrow" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                            </span>
                         </li>
                         <li class="settings-item disabled">
                             <span class="settings-item-label">Remove a client</span>
@@ -549,6 +552,63 @@
         </div>
     </div>
 
+    <!-- ADD PERSON MODAL -->
+    <div class="modal-overlay add-person-overlay" id="add-person-overlay" role="dialog" aria-modal="true" aria-label="Add a person">
+        <div class="modal-shell add-person-modal" id="add-person-modal">
+            <button class="modal-close add-person-close" id="add-person-close" aria-label="Close">×</button>
+
+            <div class="modal-header">
+                <div class="modal-hero">Add a person</div>
+                <div class="modal-eyebrow add-person-kicker">NEW CONTACT</div>
+            </div>
+
+            <div class="modal-body">
+                <div class="add-person-name-row">
+                    <div class="add-person-field">
+                        <div class="modal-eyebrow add-person-label">FIRST NAME</div>
+                        <div class="modal-soft-box add-person-box">
+                            <input class="add-person-input" id="add-person-first" type="text" placeholder="First">
+                        </div>
+                    </div>
+                    <div class="add-person-field">
+                        <div class="modal-eyebrow add-person-label">LAST NAME</div>
+                        <div class="modal-soft-box add-person-box">
+                            <input class="add-person-input" id="add-person-last" type="text" placeholder="Last">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-eyebrow add-person-label">EMAIL</div>
+                <div class="modal-soft-box add-person-box">
+                    <input class="add-person-input" id="add-person-email" type="email" placeholder="name@email.com">
+                </div>
+
+                <div class="modal-eyebrow add-person-label">ACCESS</div>
+                <div class="custom-dropdown add-person-dropdown">
+                    <button class="modal-chip add-person-chip" id="add-person-access-chip" type="button">
+                        <span id="add-person-access-label">Full</span>
+                        <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                    </button>
+                    <div class="custom-dropdown-menu" id="add-person-access-menu"></div>
+                </div>
+
+                <div class="add-person-client-field" id="add-person-client-field" hidden>
+                    <div class="modal-eyebrow add-person-label">CLIENT</div>
+                    <div class="custom-dropdown add-person-dropdown">
+                        <button class="modal-chip add-person-chip" id="add-person-client-chip" type="button">
+                            <span id="add-person-client-label">Choose client</span>
+                            <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                        </button>
+                        <div class="custom-dropdown-menu" id="add-person-client-menu"></div>
+                    </div>
+                </div>
+
+                <button class="modal-button-filled add-person-save" id="add-person-save">ADD PERSON</button>
+                <button class="add-person-cancel" id="add-person-cancel" type="button">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
     <script src="tracker.js"></script>
     <script src="todolist.js"></script>
@@ -558,6 +618,7 @@
     <script src="newJobModal.js"></script>
     <script src="askDotModal.js"></script>
     <script src="welcomeModal.js"></script>
+    <script src="addPersonModal.js"></script>
     <script src="plusComponent.js"></script>
     <!-- Plus Component (floating button — visible on every page) -->
     <div class="plus-backdrop" id="plus-backdrop" aria-hidden="true"></div>

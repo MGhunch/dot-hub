@@ -3628,6 +3628,14 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     border-radius: var(--radius-full);
 }
 
+.settings-item-arrow {
+    display: inline-flex;
+    color: var(--grey-400);
+    transition: color 0.15s var(--ease-out);
+}
+.settings-item-arrow svg { width: 18px; height: 18px; }
+.settings-item:not(.disabled):hover .settings-item-arrow { color: var(--red); }
+
 @media (max-width: 899px) {
     .settings-container {
         padding: 40px 20px 80px;

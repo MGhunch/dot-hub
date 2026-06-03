@@ -703,6 +703,62 @@ def get_team():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/people', methods=['POST'])
+def create_person():
+    """Create a new Person — a team member (Access=Full) or a client contact."""
+    try:
+        data = request.get_json() or {}
+        first = (data.get('firstName') or '').strip()
+        last = (data.get('lastName') or '').strip()
+        email = (data.get('email') or '').strip()
+        access = (data.get('access') or 'Full').strip()
+        client_code = (data.get('clientCode') or '').strip()
+
+        if not first and not last:
+            return jsonify({'error': 'Name required'}), 400
+        if not email:
+            return jsonify({'error': 'Email required'}), 400
+
+        name = f'{first} {last}'.strip()
+        url = get_airtable_url('People')
+
+        # Guard against a duplicate email
+        existing = requests.get(url, headers=HEADERS, params={
+            'filterByFormula': f"LOWER({{Email Address}}) = '{email.lower()}'",
+            'maxRecords': 1,
+        })
+        if existing.ok and existing.json().get('records'):
+            return jsonify({'error': 'A person with that email already exists'}), 409
+
+        fields = {
+            'Name': name,
+            'First Name': first,
+            'Last Name': last,
+            'Email Address': email,
+            'Access': access,
+            'Active': True,
+        }
+
+        # Client Link only applies to client-access people, and only if a client is chosen
+        if access != 'Full' and client_code:
+            cl = requests.get(get_airtable_url('Clients'), headers=HEADERS, params={
+                'filterByFormula': f"{{Client code}} = '{client_code}'",
+                'maxRecords': 1,
+            })
+            if cl.ok and cl.json().get('records'):
+                fields['Client Link'] = [cl.json()['records'][0]['id']]
+
+        resp = requests.post(url, headers=HEADERS, json={'fields': fields})
+        resp.raise_for_status()
+
+        print(f'[Hub API] Created person: {name} ({access})')
+        return jsonify({'success': True, 'name': name, 'access': access})
+
+    except Exception as e:
+        print(f'[Hub API] Error creating person: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
 # ===== NEW JOB =====
 @app.route('/api/preview-job-number/<client_code>')
 def preview_job_number(client_code):
