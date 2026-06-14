@@ -1357,6 +1357,7 @@ def get_tracker_data():
                     'projectName': project_name,
                     'owner': owner,
                     'description': fields.get('Tracker notes', ''),
+                    'jobDescription': '',  # filled below from Projects.Description
                     'spend': spend,
                     'month': fields.get('Month', ''),
                     'spendType': fields.get('Spend type', 'Project budget'),
@@ -1366,6 +1367,36 @@ def get_tracker_data():
             offset = data.get('offset')
             if not offset:
                 break
+        
+        # ===== Attach job-level Description (for grouped quarter-view parent rows) =====
+        # Each Tracker row carries its own per-month 'Tracker notes' (-> description),
+        # which the quarter view collapses by job. Picking one month's note as the
+        # parent line is misleading, so the parent uses the job's canonical
+        # Projects.Description instead. Blank stays blank (prompts a backfill).
+        job_numbers = sorted({r['jobNumber'] for r in all_records if r.get('jobNumber')})
+        if job_numbers:
+            desc_by_job = {}
+            projects_url = get_airtable_url('Projects')
+            # Chunk the OR() filter so a job-heavy client never blows the
+            # Airtable formula-length ceiling.
+            for i in range(0, len(job_numbers), 40):
+                chunk = job_numbers[i:i + 40]
+                clauses = ','.join(f"{{Job Number}} = '{jn}'" for jn in chunk)
+                formula = f'OR({clauses})' if len(chunk) > 1 else clauses
+                proj_resp = requests.get(
+                    projects_url,
+                    headers=HEADERS,
+                    params={'filterByFormula': formula,
+                            'fields[]': ['Job Number', 'Description']},
+                )
+                proj_resp.raise_for_status()
+                for prec in proj_resp.json().get('records', []):
+                    pf = prec.get('fields', {})
+                    jn = pf.get('Job Number', '')
+                    if jn:
+                        desc_by_job[jn] = pf.get('Description', '')
+            for r in all_records:
+                r['jobDescription'] = desc_by_job.get(r['jobNumber'], '')
         
         return jsonify(all_records)
     

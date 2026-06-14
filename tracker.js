@@ -322,7 +322,8 @@ async function loadTrackerData(clientCode, cacheBust = false) {
         const data = await response.json();
         trackerData = data.map(d => ({
             id: d.id, client: d.client, jobNumber: d.jobNumber, projectName: d.projectName,
-            owner: d.owner, description: d.description, spend: d.spend, month: d.month,
+            owner: d.owner, description: d.description, jobDescription: d.jobDescription,
+            spend: d.spend, month: d.month,
             spendType: d.spendType, ballpark: d.ballpark
         }));
         return true;
@@ -677,7 +678,7 @@ function renderTrackerContent() {
                                     <td class="chevron-cell"><span class="chevron-indicator ${isExpanded ? 'expanded' : ''}" onclick="event.stopPropagation(); toggleJobExpand('${safeJob}')">${ICON_CHEVRON_RIGHT}</span></td>
                                     <td class="project-name">${p.jobNumber}  -  ${p.projectName}</td>
                                     <td>${p.owner || ''}</td>
-                                    <td>${p.description || ''}</td>
+                                    <td>${trackerIsQuarterView ? (p.jobDescription || '') : (p.description || '')}</td>
                                     ${!trackerIsQuarterView ? `<td class="amount" style="color:var(--grey-400);font-weight:normal;">${showToDateCol ? '(' + formatTrackerCurrency(spendToDate[p.jobNumber]) + ')' : ''}</td>` : ''}
                                     <td class="amount ${p.ballpark ? 'ballpark' : ''}">${formatTrackerCurrency(p.spend)}</td>
                                 </tr>
@@ -711,7 +712,7 @@ function renderTrackerContent() {
                                         <td class="chevron-cell"><span class="chevron-indicator">${ICON_CHEVRON_RIGHT}</span></td>
                                         <td class="project-name">${p.jobNumber}  -  ${p.projectName}</td>
                                         <td>${p.owner || ''}</td>
-                                        <td>${p.description || ''}</td>
+                                        <td>${trackerIsQuarterView ? (p.jobDescription || '') : (p.description || '')}</td>
                                         ${!trackerIsQuarterView ? `<td class="amount" style="color:var(--grey-400);font-weight:normal;">${showToDateCol ? '(' + formatTrackerCurrency(spendToDate[p.jobNumber]) + ')' : ''}</td>` : ''}
                                         <td class="amount">${formatTrackerCurrency(p.spend)}</td>
                                     </tr>
