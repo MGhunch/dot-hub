@@ -349,11 +349,9 @@ async function openTodoModal(todoId) {
         clientCode: null,
         clientName: null,
         bucket: todo ? (todo.bucket || 'OTHER') : 'OTHER',
-        urgent: todo ? !!todo.urgent : false,
+        due: todo ? (todo.due || null) : null,
     };
 
-    // Title text + button label
-    document.getElementById('todo-modal-title').textContent = isEdit ? 'Edit Todo' : 'Add Todo';
     const saveBtn = document.getElementById('todo-modal-save-btn');
     if (saveBtn) {
         saveBtn.disabled = false;
@@ -364,11 +362,8 @@ async function openTodoModal(todoId) {
     const titleInput = document.getElementById('todo-modal-title-input');
     titleInput.value = todo ? (todo.title || '') : '';
 
-    // Urgent toggle
-    document.getElementById('todo-modal-urgent').checked = todoModalState.urgent;
-
-    // Bucket dropdown — set initial display + selected option
-    setTodoModalDropdown('bucket', todoModalState.bucket, todoModalState.bucket === 'CLIENTS' ? 'Client Work' : 'Other');
+    // When chips — render from today, pre-select the stored due date if any
+    renderWhenChips(todoModalState.due);
 
     // Client dropdown — placeholder "None" until clients load
     const clientTrigger = document.getElementById('todo-modal-client-trigger');
@@ -410,7 +405,7 @@ async function openTodoModal(todoId) {
             clientTrigger.querySelector('span').textContent = todo.clientName;
         }
     } else {
-        clientTrigger.querySelector('span').textContent = 'None';
+        clientTrigger.querySelector('span').textContent = 'Other';
     }
 }
 
@@ -419,7 +414,7 @@ function closeTodoModal() {
     if (!modal) return;
     modal.classList.remove('visible');
     editingTodoId = null;
-    todoModalState = { clientCode: null, clientName: null, bucket: 'OTHER', urgent: false };
+    todoModalState = { clientCode: null, clientName: null, bucket: 'OTHER', due: null };
     // Close any open dropdowns inside the modal
     document.querySelectorAll('.todo-modal .custom-dropdown-menu.open').forEach(m => {
         m.classList.remove('open');
@@ -460,8 +455,8 @@ function renderTodoClientOptions(clients) {
     top.sort((a, b) => topCodes.indexOf(a.code) - topCodes.indexOf(b.code));
 
     let html = '';
-    // None option at top
-    html += `<div class="custom-dropdown-option" data-value="" onclick="selectTodoModalOption('client', '', 'None')"><img src="images/logos/Unknown.png" alt="" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;">None</div>`;
+    // Other option at top — no client link, OTHER bucket, Dot icon
+    html += `<div class="custom-dropdown-option" data-value="" onclick="selectTodoModalOption('client', '', 'Other')"><img src="images/logos/Unknown.png" alt="" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;">Other</div>`;
 
     top.forEach(c => {
         const safeName = c.name.replace(/'/g, "\\'");
@@ -469,7 +464,7 @@ function renderTodoClientOptions(clients) {
     });
 
     if (other.length > 0) {
-        html += '<div class="custom-dropdown-option section-header">Other</div>';
+        html += '<div class="custom-dropdown-option section-header">More</div>';
         other.forEach(c => {
             const safeName = c.name.replace(/'/g, "\\'");
             html += `<div class="custom-dropdown-option" data-value="${c.code}" onclick="selectTodoModalOption('client', '${c.code}', '${safeName}')"><img src="${getLogoUrl(c.code)}" alt="${c.code}" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 10px; vertical-align: middle;" onerror="this.src='images/logos/Unknown.png'">${c.name}</div>`;
@@ -519,11 +514,11 @@ function selectTodoModalOption(id, value, label) {
     if (id === 'client') {
         todoModalState.clientCode = value || null;
         todoModalState.clientName = value ? label : null;
+        // Bucket is derived from WHO: a client → CLIENTS, Other → OTHER
+        todoModalState.bucket = value ? 'CLIENTS' : 'OTHER';
         // Update modal logo to match
         const modalLogo = document.getElementById('todo-modal-logo');
         modalLogo.src = value ? getLogoUrl(value) : 'images/logos/Unknown.png';
-    } else if (id === 'bucket') {
-        todoModalState.bucket = value;
     }
 }
 
@@ -537,6 +532,26 @@ function setTodoModalDropdown(id, value, label) {
     });
 }
 
+// ===== MODAL: WHEN CHIPS =====
+function renderWhenChips(selectedDue) {
+    const chips = buildWhenChips(nzToday());
+    const flagWrap = document.getElementById('todo-when-flag');
+    const calWrap = document.getElementById('todo-when-calendar');
+    if (!flagWrap || !calWrap) return;
+    const chipHtml = (c) => {
+        const sel = (selectedDue && c.date === selectedDue) ? ' selected' : '';
+        return `<button type="button" class="todo-when-chip${sel}" data-date="${c.date}" onclick="selectWhenChip('${c.date}')">${c.label}</button>`;
+    };
+    flagWrap.innerHTML = chips.slice(0, 2).map(chipHtml).join('');
+    calWrap.innerHTML = chips.slice(2).map(chipHtml).join('');
+}
+
+// Tap a day to set it; tap the selected day again to clear back to undated.
+function selectWhenChip(date) {
+    todoModalState.due = (todoModalState.due === date) ? null : date;
+    renderWhenChips(todoModalState.due);
+}
+
 // ===== MODAL: SAVE / DELETE =====
 async function saveTodoFromModal() {
     const titleInput = document.getElementById('todo-modal-title-input');
@@ -547,14 +562,11 @@ async function saveTodoFromModal() {
         return;
     }
 
-    const urgent = document.getElementById('todo-modal-urgent').checked;
-    todoModalState.urgent = urgent;
-
     const payload = {
         title,
         bucket: todoModalState.bucket || 'OTHER',
-        urgent,
         client: todoModalState.clientCode || '',
+        due: todoModalState.due || null,
     };
 
     const saveBtn = document.getElementById('todo-modal-save-btn');
@@ -629,3 +641,4 @@ window.toggleTodoModalDropdown = toggleTodoModalDropdown;
 window.selectTodoModalOption = selectTodoModalOption;
 window.saveTodoFromModal = saveTodoFromModal;
 window.deleteTodoFromModal = deleteTodoFromModal;
+window.selectWhenChip = selectWhenChip;
