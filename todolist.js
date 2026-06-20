@@ -18,6 +18,108 @@ const ICON_TICK_EMPTY = '<svg width="22" height="22" viewBox="0 0 24 24" fill="n
 const ICON_TICK_DONE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="#ED1C24" stroke="#ED1C24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9" stroke="white" fill="none"/></svg>';
 const ICON_X = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
+// ===== DATE UTILITIES (Phase B) =====
+// Pure helpers for the WHEN system. Nothing here is wired in yet — no behaviour
+// change until Phase C. All "today" reckoning is Pacific/Auckland so rollover
+// lands at NZ midnight, not UTC.
+
+function nzToday() {
+    // 'YYYY-MM-DD' for the current calendar day in NZ, regardless of device tz.
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Pacific/Auckland',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date());
+}
+
+function _parseISO(iso) {
+    // Parse 'YYYY-MM-DD' to a local Date at midday (avoids DST/midnight drift).
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d, 12, 0, 0, 0);
+}
+
+function _toISO(dt) {
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function _addDays(iso, n) {
+    const dt = _parseISO(iso);
+    dt.setDate(dt.getDate() + n);
+    return _toISO(dt);
+}
+
+function _weekday(iso) {
+    // 0 = Sun ... 6 = Sat
+    return _parseISO(iso).getDay();
+}
+
+function _isWeekend(iso) {
+    const wd = _weekday(iso);
+    return wd === 0 || wd === 6;
+}
+
+function _nextWorkingDay(iso) {
+    // First working day strictly after `iso` (skips Sat/Sun).
+    let next = _addDays(iso, 1);
+    while (_isWeekend(next)) next = _addDays(next, 1);
+    return next;
+}
+
+const _WEEKDAY_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Ordered chips for the WHEN picker: Today, Tomorrow, then 5 named working days.
+// Today/Tomorrow carry relative labels, which frees their weekday names for the
+// single "next" slot — so no weekday name ever appears twice (kills this/next
+// ambiguity by construction).
+function buildWhenChips(today) {
+    today = today || nzToday();
+    const chips = [
+        { key: 'today', label: 'Today', date: today },
+        { key: 'tomorrow', label: 'Tomorrow', date: _nextWorkingDay(today) },
+    ];
+    let cursor = chips[1].date;
+    for (let i = 0; i < 5; i++) {
+        cursor = _nextWorkingDay(cursor);
+        const label = _WEEKDAY_LABEL[_weekday(cursor)];
+        chips.push({ key: label.toLowerCase(), label: label, date: cursor });
+    }
+    return chips;
+}
+
+// Resolve a chip key to its ISO date for the current day. null if unknown.
+function resolveChip(key, today) {
+    const chip = buildWhenChips(today).find(c => c.key === key);
+    return chip ? chip.date : null;
+}
+
+// Label for a stored due date relative to today. null = undated.
+function deriveDueLabel(due, today) {
+    if (!due) return null;
+    today = today || nzToday();
+    if (due < today) return 'Overdue';
+    if (due === today) return 'Today';
+    if (due === _nextWorkingDay(today)) return 'Tomorrow';
+    return _WEEKDAY_LABEL[_weekday(due)];
+}
+
+// Which page section a live (not-done) todo belongs in.
+function sectionFor(todo, today) {
+    today = today || nzToday();
+    const due = todo && todo.due;
+    if (!due) return 'soon';
+    if (due <= today) return 'today';           // today + overdue roll up here
+    if (due === _nextWorkingDay(today)) return 'tomorrow';
+    return 'soon';
+}
+
+// True if a done todo was completed today — drives crossed-out-then-archive.
+function isDoneToday(todo, today) {
+    today = today || nzToday();
+    return !!(todo && todo.done && todo.doneDate === today);
+}
+
 // ===== ENTRY POINT =====
 async function renderTodos() {
     // Render shells immediately so loader shows
