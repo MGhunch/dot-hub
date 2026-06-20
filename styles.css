@@ -3333,6 +3333,50 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     color: var(--red);
 }
 
+/* ===== Todo WHEN chip rows (Phase C) ===== */
+.todo-when {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.todo-when-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.todo-when-icon {
+    flex-shrink: 0;
+    width: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--grey-400);
+}
+.todo-when-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.todo-when-chip {
+    font-size: 13px;
+    line-height: 1;
+    padding: 7px 13px;
+    border: 1px solid var(--grey-200);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--grey-800);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.todo-when-chip:hover {
+    border-color: var(--grey-400);
+}
+.todo-when-chip.selected {
+    background: var(--red);
+    border-color: var(--red);
+    color: #fff;
+}
+
 /* ===== PLUS COMPONENT (floating dock) ===== */
 /* v1 slice 1: visual only — dock + tray + circle, no menu yet */
 

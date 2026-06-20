@@ -442,7 +442,6 @@
             <div class="job-modal-header">
                 <div class="job-modal-header-left">
                     <img class="job-modal-logo" id="todo-modal-logo" src="images/logos/Unknown.png" alt="">
-                    <h2 class="job-modal-title" id="todo-modal-title">Edit Todo</h2>
                 </div>
                 <button class="job-modal-close" onclick="closeTodoModal()">&times;</button>
             </div>
@@ -450,13 +449,13 @@
             <div class="job-modal-body">
                 <!-- Title -->
                 <div class="job-form-group">
-                    <label class="job-form-label">Title <span class="required">*</span></label>
+                    <label class="job-form-label">What? <span class="required">*</span></label>
                     <input type="text" class="job-form-input" id="todo-modal-title-input" placeholder="What needs doing?">
                 </div>
 
-                <!-- Client -->
+                <!-- Who -->
                 <div class="job-form-group">
-                    <label class="job-form-label">Client</label>
+                    <label class="job-form-label">Who?</label>
                     <div class="custom-dropdown form-dropdown" id="todo-modal-client-dropdown">
                         <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="todo-modal-client-trigger" onclick="toggleTodoModalDropdown('client')">
                             <span>None</span>
@@ -468,28 +467,23 @@
                     </div>
                 </div>
 
-                <!-- Bucket -->
+                <!-- When -->
                 <div class="job-form-group">
-                    <label class="job-form-label">Bucket</label>
-                    <div class="custom-dropdown form-dropdown" id="todo-modal-bucket-dropdown">
-                        <button type="button" class="custom-dropdown-trigger form-dropdown-trigger" id="todo-modal-bucket-trigger" onclick="toggleTodoModalDropdown('bucket')">
-                            <span>Other</span>
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                        </button>
-                        <div class="custom-dropdown-menu" id="todo-modal-bucket-menu">
-                            <div class="custom-dropdown-option" data-value="CLIENTS" onclick="selectTodoModalOption('bucket', 'CLIENTS', 'Client Work')">Client Work</div>
-                            <div class="custom-dropdown-option selected" data-value="OTHER" onclick="selectTodoModalOption('bucket', 'OTHER', 'Other')">Other</div>
+                    <label class="job-form-label">When?</label>
+                    <div class="todo-when">
+                        <div class="todo-when-row">
+                            <span class="todo-when-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="22" x2="5" y2="4"/><path d="M5 4h11l-2 4 2 4H5"/></svg>
+                            </span>
+                            <div class="todo-when-chips" id="todo-when-flag"></div>
+                        </div>
+                        <div class="todo-when-row">
+                            <span class="todo-when-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+                            </span>
+                            <div class="todo-when-chips" id="todo-when-calendar"></div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Urgent toggle -->
-                <div class="todo-modal-urgent-row">
-                    <span class="job-form-label">Urgent</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="todo-modal-urgent">
-                        <span class="toggle-slider"></span>
-                    </label>
                 </div>
             </div>
 
