@@ -1739,6 +1739,8 @@ def _todo_record_to_dict(record):
         'clientName': client_name_lookup[0] if client_name_lookup else None,
         'urgent': bool(fields.get('Urgent', False)),
         'done': bool(fields.get('Done', False)),
+        'due': fields.get('Due') or None,
+        'doneDate': fields.get('Completed') or None,
         'created': fields.get('Created', ''),
     }
 
@@ -1795,9 +1797,11 @@ def create_todo():
         fields = {
             'Title': title,
             'Bucket': bucket,
-            'Urgent': bool(data.get('urgent', False)),
             'Done': False,
         }
+        due = data.get('due')
+        if due:
+            fields['Due'] = due
         client_input = data.get('client')
         if client_input:
             client_id = _resolve_client_record_id(client_input)
@@ -1824,7 +1828,7 @@ def update_todo(record_id):
         field_mapping = {
             'title': 'Title',
             'bucket': 'Bucket',
-            'urgent': 'Urgent',
+            'due': 'Due',
             'done': 'Done',
         }
         airtable_fields = {}
