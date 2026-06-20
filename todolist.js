@@ -158,13 +158,36 @@ async function loadTodos() {
 
 // ===== RENDER =====
 function renderTodoContent() {
-    const clientsTodos = todos.filter(t => t.bucket === 'CLIENTS');
-    const otherTodos = todos.filter(t => t.bucket === 'OTHER');
+    const today = nzToday();
+
+    const live = todos.filter(t => !t.done);
+    const doneToday = todos.filter(t => isDoneToday(t, today));
+    const doneOld = todos.filter(t => t.done && !isDoneToday(t, today));
+
+    const inToday = live.filter(t => sectionFor(t, today) === 'today');
+    const inTomorrow = live.filter(t => sectionFor(t, today) === 'tomorrow');
+    const inSoon = live.filter(t => sectionFor(t, today) === 'soon');
+
+    // Dated first (earliest due), undated after (keep API order = newest first).
+    const byDue = (a, b) => {
+        if (a.due && b.due) return a.due < b.due ? -1 : (a.due > b.due ? 1 : 0);
+        if (a.due) return -1;
+        if (b.due) return 1;
+        return 0;
+    };
+    inToday.sort(byDue);
+    inSoon.sort(byDue);
 
     const html = `
-        <div class="todo-columns">
-            ${renderTodoColumn('Client Work', clientsTodos)}
-            ${renderTodoColumn('Other', otherTodos)}
+        <div class="todo-board">
+            <div class="todo-board-col">
+                ${renderTodoSection('To do today', inToday, today, doneToday)}
+                ${renderTodoSection('To do tomorrow', inTomorrow, today, [])}
+            </div>
+            <div class="todo-board-col">
+                ${renderTodoSection('To do soon', inSoon, today, [])}
+                ${renderTodoArchive(doneOld, today)}
+            </div>
         </div>
     `;
 
@@ -173,37 +196,42 @@ function renderTodoContent() {
     });
 }
 
-function renderTodoColumn(label, items) {
-    // Sort: urgent live → live → done (newest first within each)
-    // API already returns newest first, so we just split by status.
-    const liveUrgent = items.filter(t => !t.done && t.urgent);
-    const liveNormal = items.filter(t => !t.done && !t.urgent);
-    const done = items.filter(t => t.done);
-
-    const liveCards = [...liveUrgent, ...liveNormal].map(renderTodoCard).join('');
-    const doneCards = done.map(renderTodoCard).join('');
-
+function renderTodoSection(label, items, today, doneItems) {
+    doneItems = doneItems || [];
     let body = '';
-    if (liveCards) body += liveCards;
-    if (!liveCards && !doneCards) {
-        body = `<div class="todo-empty">Nothing in ${label.toLowerCase()} yet</div>`;
+    if (items.length) {
+        body += items.map(t => renderTodoCard(t, today)).join('');
+    } else if (!doneItems.length) {
+        body = `<div class="todo-empty">Nothing here</div>`;
     }
-    if (doneCards) body += `<div class="todo-done-divider"></div>${doneCards}`;
-
+    if (doneItems.length) {
+        body += `<div class="todo-done-divider"></div>`;
+        body += doneItems.map(t => renderTodoCard(t, today)).join('');
+    }
     return `
-        <div class="todo-column">
+        <div class="todo-section">
             <div class="section-title">${label}</div>
             <div class="todo-list">${body}</div>
         </div>
     `;
 }
 
-function renderTodoCard(todo) {
+function renderTodoCard(todo, today) {
     const logoUrl = todo.clientId ? getTodoLogoUrl(todo.clientName) : 'images/logos/Unknown.png';
 
     const classes = ['todo-card'];
-    if (todo.urgent) classes.push('urgent');
     if (todo.done) classes.push('done');
+
+    // Tag: red "Overdue" for past-due live items, weekday for dated Soon items.
+    let tag = '';
+    if (!todo.done && todo.due) {
+        const label = deriveDueLabel(todo.due, today);
+        if (label === 'Overdue') {
+            tag = `<span class="todo-day-tag overdue">Overdue</span>`;
+        } else if (label && label !== 'Today' && label !== 'Tomorrow') {
+            tag = `<span class="todo-day-tag">${label}</span>`;
+        }
+    }
 
     return `
         <div class="${classes.join(' ')}" data-todo-id="${todo.id}">
@@ -213,11 +241,30 @@ function renderTodoCard(todo) {
             <div class="todo-main" data-action="edit">
                 <div class="todo-title">${escapeHtml(todo.title)}</div>
             </div>
+            ${tag}
             <div class="todo-tick" data-action="toggle" title="${todo.done ? 'Mark not done' : 'Mark done'}">
                 ${todo.done ? ICON_TICK_DONE : ICON_TICK_EMPTY}
             </div>
         </div>
     `;
+}
+
+function renderTodoArchive(doneOld, today) {
+    if (!doneOld || !doneOld.length) return '';
+    const cards = doneOld.map(t => renderTodoCard(t, today)).join('');
+    return `
+        <div class="todo-archive">
+            <button type="button" class="todo-archive-toggle" onclick="toggleTodoArchive()">
+                <span>Done · ${doneOld.length}</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="todo-archive-list">${cards}</div>
+        </div>
+    `;
+}
+
+function toggleTodoArchive() {
+    document.querySelectorAll('.todo-archive').forEach(a => a.classList.toggle('open'));
 }
 
 // ===== HELPERS =====
@@ -270,9 +317,12 @@ async function toggleTodoDone(todoId) {
     const todo = todos.find(t => t.id === todoId);
     if (!todo) return;
     const newDone = !todo.done;
+    const prevDoneDate = todo.doneDate || null;
 
-    // Optimistic update
+    // Optimistic update — set doneDate so a just-ticked item shows in today's
+    // done strip (not the archive). On untick it clears back to undated.
     todo.done = newDone;
+    todo.doneDate = newDone ? nzToday() : null;
     renderTodoContent();
 
     try {
@@ -286,6 +336,7 @@ async function toggleTodoDone(todoId) {
         console.error('[Todo] Toggle failed', err);
         // Revert
         todo.done = !newDone;
+        todo.doneDate = prevDoneDate;
         renderTodoContent();
         if (typeof showToast === 'function') showToast('Couldn\'t update todo');
     }
@@ -642,3 +693,4 @@ window.selectTodoModalOption = selectTodoModalOption;
 window.saveTodoFromModal = saveTodoFromModal;
 window.deleteTodoFromModal = deleteTodoFromModal;
 window.selectWhenChip = selectWhenChip;
+window.toggleTodoArchive = toggleTodoArchive;

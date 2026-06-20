@@ -3167,6 +3167,83 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     margin: 12px 4px;
 }
 
+/* ===== Todo board (Phase D): Today/Tomorrow left, Soon right ===== */
+.todo-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+@media (max-width: 768px) {
+    .todo-board {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+.todo-board-col {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+}
+.todo-section .section-title {
+    margin-bottom: 8px;
+}
+
+/* Day tag / overdue flag on cards */
+.todo-day-tag {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--grey-600);
+    background: var(--grey-100);
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.todo-day-tag.overdue {
+    color: var(--red);
+    background: var(--red-glow);
+}
+
+/* Done archive (collapsed by default) */
+.todo-archive {
+    margin-top: 4px;
+}
+.todo-archive-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--grey-400);
+    padding: 8px 4px;
+    transition: color 0.15s ease;
+}
+.todo-archive-toggle:hover {
+    color: var(--grey-600);
+}
+.todo-archive-toggle svg {
+    transition: transform 0.15s ease;
+}
+.todo-archive.open .todo-archive-toggle svg {
+    transform: rotate(180deg);
+}
+.todo-archive-list {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+.todo-archive.open .todo-archive-list {
+    display: flex;
+}
+
 /* ===== TODO CARD ===== */
 .todo-card {
     background: var(--white);
@@ -3337,12 +3414,13 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
 .todo-when {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
+    padding: 4px 0 2px;
 }
 .todo-when-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 .todo-when-icon {
     flex-shrink: 0;
@@ -3350,17 +3428,17 @@ input[type="date"].job-form-input::-webkit-calendar-picker-indicator {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--grey-400);
+    color: var(--red);
 }
 .todo-when-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 7px;
 }
 .todo-when-chip {
     font-size: 13px;
     line-height: 1;
-    padding: 7px 13px;
+    padding: 8px 15px;
     border: 1px solid var(--grey-200);
     border-radius: 999px;
     background: #fff;
