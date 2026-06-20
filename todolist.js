@@ -222,12 +222,12 @@ function renderTodoCard(todo, today) {
     const classes = ['todo-card'];
     if (todo.done) classes.push('done');
 
-    // Tag: red "Overdue" for past-due live items, weekday for dated Soon items.
+    // Tag: red flag for overdue, muted-red weekday tag for dated Soon items.
     let tag = '';
     if (!todo.done && todo.due) {
         const label = deriveDueLabel(todo.due, today);
         if (label === 'Overdue') {
-            tag = `<span class="todo-day-tag overdue">Overdue</span>`;
+            tag = `<span class="todo-overdue-flag" title="Overdue"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="22" x2="5" y2="4"/><path d="M5 4h11l-2 4 2 4H5"/></svg></span>`;
         } else if (label && label !== 'Today' && label !== 'Tomorrow') {
             tag = `<span class="todo-day-tag">${label}</span>`;
         }
