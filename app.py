@@ -24,6 +24,7 @@ CORS(app)
 # ===== CONFIGURATION =====
 AIRTABLE_API_KEY = os.environ.get('AIRTABLE_API_KEY')
 AIRTABLE_BASE_ID = os.environ.get('AIRTABLE_BASE_ID', 'app8CI7NAZqhQ4G1Y')
+WORKERS_URL = os.environ.get('WORKERS_URL', 'https://dot-workers.up.railway.app')
 
 HEADERS = {
     'Authorization': f'Bearer {AIRTABLE_API_KEY}',
@@ -775,7 +776,8 @@ def create_new_job():
         update_due = data.get('updateDue', '')
         live = data.get('live', 'Tbc')
         status = data.get('status', 'Incoming')  # Incoming, In Progress, On Hold
-        ballpark = data.get('ballpark', 5000)  # Default $5000
+        cost = data.get('cost', data.get('ballpark', 5000))  # $ amount; back-compat with old 'ballpark' key
+        is_ballpark = bool(data.get('isBallpark', True))  # default True keeps Hub modal unchanged; skill sends False
         setup_teams = data.get('setupTeams', False)
         
         if not client_code or not job_name:
@@ -857,35 +859,87 @@ def create_new_job():
         created_record = response.json()
         project_record_id = created_record.get('id')
         print(f'[Hub API] Created new job: {job_number} - {job_name}')
-        
-        # Step 4: Create Tracker record with ballpark
+
+        # Per-step receipt — the job survives a sub-step failure; each step reports its own outcome.
+        steps = {'project': 'created', 'tracker': 'pending', 'todo': 'pending', 'folder': 'pending'}
+        files_url = None
+
+        # Step 4: Tracker record (best-effort)
         current_month = datetime.now().strftime('%B')  # e.g. "January"
-        
-        tracker_url = get_airtable_url('Tracker')
-        tracker_fields = {
-            'Link': [project_record_id],  # Link to the Project record
-            'Spend': ballpark,
-            'Ballpark': True,
-            'Month': current_month,
-            'Spend type': 'Project budget'
-        }
-        
-        tracker_response = requests.post(
-            tracker_url,
-            headers=HEADERS,
-            json={'fields': tracker_fields}
-        )
-        tracker_response.raise_for_status()
-        print(f'[Hub API] Created Tracker record for {job_number} with ballpark ${ballpark}')
-        
+        try:
+            tracker_fields = {
+                'Link': [project_record_id],
+                'Spend': cost,
+                'Ballpark': is_ballpark,
+                'Month': current_month,
+                'Spend type': 'Project budget'
+            }
+            tr = requests.post(get_airtable_url('Tracker'), headers=HEADERS, json={'fields': tracker_fields})
+            tr.raise_for_status()
+            steps['tracker'] = 'created'
+            print(f"[Hub API] Tracker for {job_number}: ${cost} (ballpark={is_ballpark})")
+        except Exception as e:
+            steps['tracker'] = f'failed: {e}'
+            print(f'[Hub API] Tracker failed for {job_number}: {e}')
+
+        # Step 5: Todo for the job (best-effort)
+        try:
+            todo_fields = {
+                'Title': f'{job_number} {job_name}',
+                'Bucket': 'CLIENTS',
+                'Done': False,
+            }
+            cid = _resolve_client_record_id(client_code)
+            if cid:
+                todo_fields['Client'] = [cid]
+            td = requests.post(get_airtable_url('Todo'), headers=HEADERS, json={'fields': todo_fields})
+            td.raise_for_status()
+            steps['todo'] = 'created'
+            print(f'[Hub API] Todo created for {job_number}')
+        except Exception as e:
+            steps['todo'] = f'failed: {e}'
+            print(f'[Hub API] Todo failed for {job_number}: {e}')
+
+        # Step 6: Dropbox folder via workers (best-effort), then write Files Url
+        try:
+            fr = requests.post(
+                f'{WORKERS_URL}/folder',
+                json={'clientCode': client_code, 'jobNumber': job_number, 'jobName': job_name},
+                timeout=30
+            )
+            fr_data = fr.json() if fr.content else {}
+            if fr.ok and fr_data.get('success'):
+                files_url = fr_data.get('dropboxUrl')
+                steps['folder'] = 'created'
+                if files_url:
+                    try:
+                        requests.patch(
+                            f"{get_airtable_url('Projects')}/{project_record_id}",
+                            headers=HEADERS,
+                            json={'fields': {'Files Url': files_url}}
+                        )
+                    except Exception as e:
+                        print(f'[Hub API] Files Url patch failed for {job_number}: {e}')
+                print(f'[Hub API] Folder created for {job_number}: {files_url}')
+            else:
+                steps['folder'] = f"failed: {fr_data.get('error', 'unknown')}"
+                print(f"[Hub API] Folder failed for {job_number}: {fr_data.get('error')}")
+        except Exception as e:
+            steps['folder'] = f'failed: {e}'
+            print(f'[Hub API] Folder call failed for {job_number}: {e}')
+
         return jsonify({
             'success': True,
             'jobNumber': job_number,
             'jobName': job_name,
             'recordId': project_record_id,
             'status': status,
+            'cost': cost,
+            'isBallpark': is_ballpark,
+            'filesUrl': files_url,
             'setupTeams': setup_teams,
-            'teamId': team_id
+            'teamId': team_id,
+            'steps': steps
         })
     
     except Exception as e:
