@@ -1838,7 +1838,8 @@ def get_todos():
 
 @app.route('/api/todos', methods=['POST'])
 def create_todo():
-    """Create a todo. Accepts: title (req), bucket (CLIENTS|OTHER, default OTHER), client (code or name), urgent (bool)."""
+    """Create a todo. Accepts: title (req), bucket (CLIENTS|OTHER, default OTHER),
+    client (code or name), urgent (bool), confidence (High|Low), due."""
     try:
         data = request.get_json() or {}
         title = (data.get('title') or '').strip()
@@ -1852,7 +1853,11 @@ def create_todo():
             'Title': title,
             'Bucket': bucket,
             'Done': False,
+            'Urgent': bool(data.get('urgent', False)),
         }
+        confidence = data.get('confidence')
+        if confidence in ('High', 'Low'):
+            fields['Confidence'] = confidence
         due = data.get('due')
         if due:
             fields['Due'] = due
