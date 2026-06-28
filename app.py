@@ -15,6 +15,8 @@ import re
 import hashlib  # NEW: For auth tokens
 import time     # NEW: For auth tokens
 import base64   # NEW: For auth tokens
+import hmac      # PIN: constant-time compare
+import threading # PIN: rate-limit lock
 
 import tracker  # Tracker math (quarter, rollover, chart months)
 
@@ -61,12 +63,28 @@ TOKEN_SECRET = os.environ.get('TOKEN_SECRET', 'dot-hub-secret-change-me')
 HUB_URL = os.environ.get('HUB_URL', 'https://dot.hunch.co.nz')
 TOKEN_EXPIRY_DAYS = 7
 
+# Long-lived session cookie for the trusted device (Full access only).
+# Magic-link tokens stay at TOKEN_EXPIRY_DAYS — this only affects the session
+# cookie set after a successful login, so a leaked email link never lasts longer.
+SESSION_EXPIRY_DAYS = 180
+
+# PIN login (mobile "tap and go" fallback). You-only: the keypad checks against
+# this owner's People.Pin and nothing else.
+PIN_OWNER_EMAIL = os.environ.get('PIN_OWNER_EMAIL', 'michael@hunch.co.nz')
+
+# Brute-force guard for /api/verify-pin. In-memory, per-IP. Resets on redeploy
+# and is per-instance (fine for a single Railway dyno).
+PIN_MAX_FAILS = 5
+PIN_LOCKOUT_SECONDS = 5 * 60
+_pin_attempts = {}          # ip -> {'fails': int, 'locked_until': float}
+_pin_attempts_lock = threading.Lock()
+
 
 # ===== AUTH FUNCTIONS (NEW) =====
 
-def generate_token(email, client_code, first_name, access_level='Client WIP'):
+def generate_token(email, client_code, first_name, access_level='Client WIP', expiry_days=TOKEN_EXPIRY_DAYS):
     """Generate a signed token containing user info + expiry."""
-    expires = int(time.time()) + (TOKEN_EXPIRY_DAYS * 24 * 60 * 60)
+    expires = int(time.time()) + (expiry_days * 24 * 60 * 60)
     data = f"{email}|{client_code}|{first_name}|{access_level}|{expires}"
     sig = hashlib.sha256(f"{data}|{TOKEN_SECRET}".encode()).hexdigest()[:8]
     token_data = f"{data}|{sig}"
@@ -145,6 +163,46 @@ def lookup_person(email):
         
     except Exception as e:
         print(f"[Auth] Airtable lookup error: {e}")
+        return None
+
+
+def lookup_person_with_pin(email):
+    """Look up a person including their PIN. Returns dict (with 'pin' as a
+    string, or None if unset) or None if not found. Used only by the PIN login."""
+    if not AIRTABLE_API_KEY or not AIRTABLE_BASE_ID:
+        print("[Auth] Warning: Airtable not configured")
+        return None
+
+    url = get_airtable_url('People')
+    params = {
+        'filterByFormula': f'LOWER({{Email Address}}) = LOWER("{email}")',
+        'maxRecords': 1
+    }
+
+    try:
+        response = requests.get(url, headers=HEADERS, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        if not data.get('records'):
+            return None
+
+        fields = data['records'][0].get('fields', {})
+        pin_val = fields.get('Pin')
+        client_code = fields.get('clientCode', ['UNKNOWN'])
+        if isinstance(client_code, list):
+            client_code = client_code[0] if client_code else 'UNKNOWN'
+
+        return {
+            'email': fields.get('Email Address', email),
+            'first_name': fields.get('First Name', 'there'),
+            'client_code': client_code,
+            'access_level': fields.get('Access', 'Client WIP'),
+            'pin': str(pin_val).strip() if pin_val is not None else None
+        }
+
+    except Exception as e:
+        print(f"[Auth] PIN lookup error: {e}")
         return None
 
 
@@ -292,19 +350,25 @@ def handle_verify():
     
     # Success! Set cookie and redirect to Hub with welcome flag
     response = make_response(redirect('/?welcome=1'))
-    
+
+    # Full-access (Hunch team) gets a long-lived session so the trusted device
+    # stays logged in. Clients keep the standard window. The magic link itself
+    # is unaffected — it was already verified above.
+    session_days = SESSION_EXPIRY_DAYS if user['access_level'] == 'Full' else TOKEN_EXPIRY_DAYS
+
     # Create a session token (signed, same approach)
     session_token = generate_token(
         email=user['email'],
         client_code=user['client_code'],
         first_name=user['first_name'],
-        access_level=user['access_level']
+        access_level=user['access_level'],
+        expiry_days=session_days
     )
-    
+
     response.set_cookie(
         'dot_session',
         session_token,
-        max_age=TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
+        max_age=session_days * 24 * 60 * 60,
         httponly=True,
         secure=True,
         samesite='Lax'
@@ -393,6 +457,87 @@ def handle_logout():
     """Clear session cookie."""
     response = make_response(jsonify({'success': True}))
     response.delete_cookie('dot_session')
+    return response
+
+
+@app.route('/api/verify-pin', methods=['POST'])
+def handle_verify_pin():
+    """Mobile PIN login (you-only). Expects: { "pin": "1234" }.
+
+    Checks the entered PIN against the owner's People.Pin and, on match, sets
+    the same long-lived dot_session cookie a magic-link login would. Rate-limited
+    per IP to blunt brute-forcing of a 4-digit space.
+    """
+    # Identify caller (Railway sits behind a proxy — first X-Forwarded-For hop)
+    fwd = request.headers.get('X-Forwarded-For', '')
+    ip = fwd.split(',')[0].strip() if fwd else (request.remote_addr or 'unknown')
+    now = time.time()
+
+    # Rate-limit gate
+    with _pin_attempts_lock:
+        rec = _pin_attempts.get(ip)
+        if rec and rec.get('locked_until', 0) > now:
+            retry = int(rec['locked_until'] - now)
+            return jsonify({
+                'success': False,
+                'error': 'locked',
+                'message': f"Too many tries. Try again in {retry // 60 + 1} min.",
+                'retryAfter': retry
+            }), 429
+
+    data = request.get_json() or {}
+    pin = str(data.get('pin', '')).strip()
+
+    if not pin.isdigit() or not (4 <= len(pin) <= 10):
+        return jsonify({'success': False, 'error': 'invalid',
+                        'message': 'Enter your PIN'}), 400
+
+    owner = lookup_person_with_pin(PIN_OWNER_EMAIL)
+    real_pin = owner['pin'] if owner else None
+
+    # Constant-time compare; treat a missing/blank stored PIN as never-match
+    matched = bool(real_pin) and hmac.compare_digest(pin, real_pin)
+
+    if not matched:
+        with _pin_attempts_lock:
+            rec = _pin_attempts.get(ip, {'fails': 0, 'locked_until': 0})
+            rec['fails'] += 1
+            if rec['fails'] >= PIN_MAX_FAILS:
+                rec['locked_until'] = now + PIN_LOCKOUT_SECONDS
+                rec['fails'] = 0
+            _pin_attempts[ip] = rec
+        return jsonify({'success': False, 'error': 'wrong',
+                        'message': "That's not it"}), 401
+
+    # Success — clear attempts, mint the long session
+    with _pin_attempts_lock:
+        _pin_attempts.pop(ip, None)
+
+    session_days = SESSION_EXPIRY_DAYS if owner['access_level'] == 'Full' else TOKEN_EXPIRY_DAYS
+    session_token = generate_token(
+        email=owner['email'],
+        client_code=owner['client_code'],
+        first_name=owner['first_name'],
+        access_level=owner['access_level'],
+        expiry_days=session_days
+    )
+
+    response = make_response(jsonify({
+        'success': True,
+        'user': {
+            'firstName': owner['first_name'],
+            'accessLevel': owner['access_level']
+        }
+    }))
+    response.set_cookie(
+        'dot_session',
+        session_token,
+        max_age=session_days * 24 * 60 * 60,
+        httponly=True,
+        secure=True,
+        samesite='Lax'
+    )
+    update_last_login(owner['email'])
     return response
 
 

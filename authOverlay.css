@@ -223,3 +223,27 @@ body.logged-out .auth-overlay {
    Existing rules in styles.css already hide phone-home, view-home, etc.
    when body.logged-out is set. The auth-overlay sits above all of that.
 */
+
+/* ---------- PIN face (step 2) ---------- */
+/* Reuses .pin-dots / .pin-keypad / .pin-key / .pin-error-msg from styles.css.
+   Here we just centre them within the auth-content column. */
+.auth-content-pin {
+    text-align: center;
+}
+.auth-content-pin .pin-dots {
+    justify-content: center;
+    margin: 22px 0 28px;
+}
+.auth-content-pin .pin-keypad {
+    margin: 0 auto;
+    width: max-content;
+}
+.auth-content-pin .pin-error-msg {
+    text-align: center;
+    min-height: 18px;   /* reserve space so the keypad doesn't jump on error */
+    margin-top: 18px;
+}
+.auth-content-pin .auth-retry {
+    text-align: center;
+    margin-top: 14px;
+}

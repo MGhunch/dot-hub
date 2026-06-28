@@ -141,6 +141,23 @@ function setupEventListeners() {
     $('auth-expired-form')?.addEventListener('submit', (e) => { e.preventDefault(); requestLogin('expired'); });
     $('auth-try-again')?.addEventListener('click', (e) => { e.preventDefault(); resetLoginForm(); });
 
+    // PIN login (you-only keypad)
+    $('auth-use-pin')?.addEventListener('click', (e) => { e.preventDefault(); showPinFace(); });
+    $('auth-use-email')?.addEventListener('click', (e) => { e.preventDefault(); resetLoginForm(); });
+    $('pin-keypad')?.addEventListener('click', (e) => {
+        const key = e.target.closest('.pin-key');
+        if (!key) return;
+        if (key.dataset.action === 'delete') { pinDelete(); return; }
+        if (key.dataset.digit != null) pinPress(key.dataset.digit);
+    });
+    // Physical keyboard, only while the PIN face is showing (desktop convenience)
+    document.addEventListener('keydown', (e) => {
+        const pinFace = document.querySelector('.auth-face[data-face="pin"]');
+        if (!pinFace || pinFace.hidden) return;
+        if (e.key >= '0' && e.key <= '9') { e.preventDefault(); pinPress(e.key); }
+        else if (e.key === 'Backspace') { e.preventDefault(); pinDelete(); }
+    });
+
     // Phone navigation
     $('phone-view-trigger')?.addEventListener('click', togglePhoneMenu);
     $('phone-overlay')?.addEventListener('click', closePhoneMenu);
@@ -356,6 +373,91 @@ function resetLoginForm() {
         btn.disabled = false;
         btn.textContent = 'Get a link';
     });
+}
+
+// ----- PIN login (you-only mobile keypad) -----
+
+const PIN_LENGTH = 4;
+let pinEntry = '';
+let pinSubmitting = false;
+
+function renderPinDots() {
+    const dots = document.querySelectorAll('#pin-dots .pin-dot');
+    dots.forEach((d, i) => {
+        d.classList.toggle('filled', i < pinEntry.length);
+        d.classList.remove('error');
+    });
+}
+
+function clearPinError() {
+    const el = $('pin-error-msg');
+    if (el) { el.classList.remove('visible'); el.textContent = ''; }
+}
+
+function showPinError(msg) {
+    const el = $('pin-error-msg');
+    if (el) { el.textContent = msg || "That's not it"; el.classList.add('visible'); }
+    // Shake the dots (animation lives on .pin-dot.error in styles.css)
+    document.querySelectorAll('#pin-dots .pin-dot').forEach(d => d.classList.add('error'));
+}
+
+function pinPress(digit) {
+    if (pinSubmitting || pinEntry.length >= PIN_LENGTH) return;
+    clearPinError();
+    pinEntry += String(digit);
+    renderPinDots();
+    if (pinEntry.length === PIN_LENGTH) submitPin();
+}
+
+function pinDelete() {
+    if (pinSubmitting) return;
+    clearPinError();
+    pinEntry = pinEntry.slice(0, -1);
+    renderPinDots();
+}
+
+function resetPin() {
+    pinEntry = '';
+    pinSubmitting = false;
+    clearPinError();
+    renderPinDots();
+}
+
+function showPinFace() {
+    resetPin();
+    showAuthFace('pin');
+}
+
+async function submitPin() {
+    if (pinSubmitting) return;
+    pinSubmitting = true;
+    try {
+        const res = await fetch('/api/verify-pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin: pinEntry })
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok && data.success) {
+            // Cookie is set server-side — reload so checkSession() picks it up.
+            // Reloading (vs reload('/')) preserves any ?job= deep link.
+            window.location.reload();
+            return;
+        }
+
+        // Failure (wrong PIN, locked, etc.) — shake, then clear after it plays.
+        showPinError(data.message);
+        pinEntry = '';
+        pinSubmitting = false;
+        setTimeout(renderPinDots, 500);
+    } catch (e) {
+        console.error('PIN verify failed:', e);
+        showPinError("Couldn't connect. Try again?");
+        pinEntry = '';
+        pinSubmitting = false;
+        setTimeout(renderPinDots, 500);
+    }
 }
 
 function unlockApp() {

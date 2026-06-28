@@ -41,6 +41,7 @@
                         <button type="submit" class="auth-button" id="auth-submit">Get a link</button>
                     </form>
                     <p class="auth-error" id="auth-error"></p>
+                    <p class="auth-retry"><a href="#" id="auth-use-pin">Got a PIN? Tap in instead</a></p>
                 </div>
             </div>
 
@@ -69,6 +70,39 @@
                         <button type="submit" class="auth-button">Get a link</button>
                     </form>
                     <p class="auth-error" id="auth-error-expired"></p>
+                </div>
+            </div>
+
+            <!-- PIN — mobile "tap and go" login (you-only) -->
+            <div class="auth-face" data-face="pin" hidden>
+                <div class="auth-graphic">
+                    <img src="images/Dotandhello.png" alt="Hello from Dot">
+                </div>
+                <div class="auth-content auth-content-pin">
+                    <h1 class="auth-headline">Enter your PIN</h1>
+                    <p class="auth-sub">Tap it in and you're straight through.</p>
+                    <div class="pin-dots" id="pin-dots">
+                        <span class="pin-dot"></span>
+                        <span class="pin-dot"></span>
+                        <span class="pin-dot"></span>
+                        <span class="pin-dot"></span>
+                    </div>
+                    <div class="pin-keypad" id="pin-keypad">
+                        <button type="button" class="pin-key" data-digit="1">1</button>
+                        <button type="button" class="pin-key" data-digit="2">2</button>
+                        <button type="button" class="pin-key" data-digit="3">3</button>
+                        <button type="button" class="pin-key" data-digit="4">4</button>
+                        <button type="button" class="pin-key" data-digit="5">5</button>
+                        <button type="button" class="pin-key" data-digit="6">6</button>
+                        <button type="button" class="pin-key" data-digit="7">7</button>
+                        <button type="button" class="pin-key" data-digit="8">8</button>
+                        <button type="button" class="pin-key" data-digit="9">9</button>
+                        <span class="pin-key empty" aria-hidden="true"></span>
+                        <button type="button" class="pin-key" data-digit="0">0</button>
+                        <button type="button" class="pin-key delete" data-action="delete" aria-label="Delete">⌫</button>
+                    </div>
+                    <p class="pin-error-msg" id="pin-error-msg"></p>
+                    <p class="auth-retry"><a href="#" id="auth-use-email">Email me a link instead</a></p>
                 </div>
             </div>
 
