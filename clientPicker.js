@@ -39,6 +39,11 @@
     // Mirrors the legacy New Job dropdown ordering.
     const TOP_CLIENT_CODES = ['ONE', 'ONS', 'ONB', 'SKY', 'TOW', 'FIS', 'HUN'];
 
+    // WIP picker grouping (allOption mode only): these show individually,
+    // everything else aggregates into an "Other" row.
+    // Duplicated from app.js TOP_WIP_CLIENTS (module convention: no load-order coupling).
+    const WIP_TOP_CODES = ['ONB', 'ONE', 'ONS', 'SKY', 'TOW'];
+
     // ===== PICKER INSTANCE STATE =====
     // One module-level instance is fine — Update modal mounts once per page.
     // (If New Job modal in Phase F mounts a second instance, we'll revisit
@@ -149,6 +154,14 @@
             }
         }
 
+        // WIP/Tracker picker (allOption): show top clients individually,
+        // collapse the rest into a single "Other" row (rendered after the list).
+        let showOtherRow = false;
+        if (allOption) {
+            showOtherRow = visible.some(c => !WIP_TOP_CODES.includes(c.code));
+            visible = visible.filter(c => WIP_TOP_CODES.includes(c.code));
+        }
+
         const rowsHtml = visible.map(c => {
             const code = escapeAttr(c.code || '');
             const name = escapeHtml(c.name || c.code || '');
@@ -184,7 +197,21 @@
             `;
         }
 
-        listEl.innerHTML = allRowHtml + rowsHtml;
+        // "Other" aggregate row — only in allOption (WIP/Tracker) mode.
+        let otherRowHtml = '';
+        if (showOtherRow) {
+            otherRowHtml = `
+              <button class="modal-row" data-code="other">
+                <img class="modal-row-logo" src="images/logos/Unknown.png" alt="Other" onerror="this.style.display='none'">
+                <div class="modal-row-content">
+                  <div class="modal-row-kicker">OTHER</div>
+                  <div class="modal-row-name">Other clients</div>
+                </div>
+              </button>
+            `;
+        }
+
+        listEl.innerHTML = allRowHtml + rowsHtml + otherRowHtml;
     }
 
     // ===== GET CLIENTS =====

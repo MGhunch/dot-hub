@@ -11,7 +11,9 @@ const BRAIN_BASE = 'https://dot-brain.up.railway.app';
 const KEY_CLIENTS = ['ONE', 'ONB', 'ONS', 'SKY', 'TOW'];
 
 // Clients to hide from WIP dropdown (cleanup later)
-const HIDDEN_CLIENTS = ['DEM', 'FIR', 'EON', 'N4L', 'WHA'];
+// Clients shown individually in WIP pickers. Everything else aggregates under "Other".
+// (Replaces HIDDEN_CLIENTS — which had stale codes: FIR/WHA vs live FST/WKA.)
+const TOP_WIP_CLIENTS = ['ONB', 'ONE', 'ONS', 'SKY', 'TOW'];
 
 const CLIENT_DISPLAY_NAMES = {
     'ONE': 'One NZ (Marketing)',
@@ -851,17 +853,28 @@ async function setupWipDropdown() {
     allOpt.textContent = 'All Clients';
     menu.appendChild(allOpt);
     
-    // Add client options (excluding hidden)
+    // Add top client options (a-z), then a single "Other" aggregate for the rest
     let selectedText = 'All Clients';
-    state.allClients.filter(c => !HIDDEN_CLIENTS.includes(c.code)).forEach(c => {
-        const opt = document.createElement('div');
-        const isSelected = (c.code === presetClient);
-        opt.className = 'custom-dropdown-option' + (isSelected ? ' selected' : '');
-        opt.dataset.value = c.code;
-        opt.textContent = getClientDisplayName(c);
-        menu.appendChild(opt);
-        if (isSelected) selectedText = opt.textContent;
-    });
+    state.allClients
+        .filter(c => TOP_WIP_CLIENTS.includes(c.code))
+        .sort((a, b) => getClientDisplayName(a).localeCompare(getClientDisplayName(b)))
+        .forEach(c => {
+            const opt = document.createElement('div');
+            const isSelected = (c.code === presetClient);
+            opt.className = 'custom-dropdown-option' + (isSelected ? ' selected' : '');
+            opt.dataset.value = c.code;
+            opt.textContent = getClientDisplayName(c);
+            menu.appendChild(opt);
+            if (isSelected) selectedText = opt.textContent;
+        });
+
+    // "Other" — aggregates every client not in TOP_WIP_CLIENTS
+    const otherOpt = document.createElement('div');
+    otherOpt.className = 'custom-dropdown-option' + (presetClient === 'other' ? ' selected' : '');
+    otherOpt.dataset.value = 'other';
+    otherOpt.textContent = 'Other';
+    menu.appendChild(otherOpt);
+    if (presetClient === 'other') selectedText = 'Other';
     
     // Update trigger text to match selection
     trigger.querySelector('span').textContent = selectedText;
@@ -893,7 +906,8 @@ function toggleWipMode() {
 }
 
 function openWipPdf() {
-    const client = state.wipClient === 'all' ? 'ALL' : state.wipClient;
+    // 'other' falls back to ALL — dot-tracker-pdf has no aggregate concept (yet)
+    const client = (state.wipClient === 'all' || state.wipClient === 'other') ? 'ALL' : state.wipClient;
     window.open(`https://dot-tracker-pdf.up.railway.app/wip?client=${client}`, '_blank');
 }
 
@@ -920,7 +934,11 @@ function getWipFilteredJobs() {
     
     // Then apply user's view filter (if they're allowed to see all)
     if (state.wipClient !== 'all' && !state.clientFilter) {
-        jobs = jobs.filter(j => j.clientCode === state.wipClient);
+        if (state.wipClient === 'other') {
+            jobs = jobs.filter(j => !TOP_WIP_CLIENTS.includes(j.clientCode));
+        } else {
+            jobs = jobs.filter(j => j.clientCode === state.wipClient);
+        }
     }
     
     return jobs.filter(j => { const num = j.jobNumber.split(' ')[1]; return num !== '000' && num !== '999'; });
@@ -930,6 +948,11 @@ function getWipSectionLabels() {
     // Dynamic labels based on selected client
     if (state.wipClient === 'all') {
         return { withUs: 'WITH US', withClient: 'WITH CLIENT' };
+    }
+    
+    // "Other" aggregate — no single client name to show
+    if (state.wipClient === 'other') {
+        return { withUs: 'WITH HUNCH', withClient: 'WITH CLIENT' };
     }
     
     // Find client name for the filtered client
@@ -1031,7 +1054,7 @@ async function setupPhoneSharedPicker() {
     // Picker logo: always pull an image. HUN.png for "all", otherwise the client's logo.
     function setPickerLogo(code) {
         if (!logoEl) return;
-        const logoCode = code === 'all' ? 'HUN' : code;
+        const logoCode = code === 'all' ? 'HUN' : (code === 'other' ? 'Unknown' : code);
         logoEl.innerHTML = `<img src="${getLogoUrl(logoCode)}" alt="${code}" onerror="this.style.display='none'">`;
     }
     function setPickerName(text) {
@@ -1062,6 +1085,9 @@ async function setupPhoneSharedPicker() {
     if (current === 'all') {
         setPickerName('All clients');
         setPickerLogo('all');
+    } else if (current === 'other') {
+        setPickerName('Other');
+        setPickerLogo('other');
     } else {
         const selectedClient = state.allClients.find(c => c.code === current);
         setPickerName(selectedClient ? getClientDisplayName(selectedClient) : 'All clients');
@@ -1077,13 +1103,16 @@ async function setupPhoneSharedPicker() {
         if (newClient === 'all') {
             setPickerName('All clients');
             setPickerLogo('all');
+        } else if (newClient === 'other') {
+            setPickerName('Other');
+            setPickerLogo('other');
         } else {
             const selectedClient = state.allClients.find(c => c.code === newClient);
             setPickerName(selectedClient ? getClientDisplayName(selectedClient) : newClient);
             setPickerLogo(newClient);
         }
         state.wipClient = newClient;
-        if (newClient !== 'all') {
+        if (newClient !== 'all' && newClient !== 'other') {
             state.trackerClient = newClient;
         }
         closeWipPicker();
@@ -1092,7 +1121,7 @@ async function setupPhoneSharedPicker() {
             renderPhoneWip();
         } else if ($('phone-tracker')?.classList.contains('visible')) {
             const content = $('phone-tracker-content');
-            if (content && newClient !== 'all') {
+            if (content && newClient !== 'all' && newClient !== 'other') {
                 content.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading numbers...</p></div>';
                 await loadTrackerData(newClient);
             }
@@ -1201,8 +1230,8 @@ function renderPhoneTracker() {
         return;
     }
 
-    // "All clients" — show Coming Soon (the cross-client tracker is its own future phase)
-    if (state.wipClient === 'all' && !state.clientFilter) {
+    // "All clients" / "Other" — show Coming Soon (cross-client tracker is its own future phase)
+    if ((state.wipClient === 'all' || state.wipClient === 'other') && !state.clientFilter) {
         content.innerHTML = `
             <div class="pt-empty">
                 <p style="font-size: 16px; font-weight: 500; margin-bottom: 6px; color: var(--black);">All-clients tracker — coming soon</p>
@@ -1306,7 +1335,7 @@ async function loadAndRenderPhoneTracker() {
         await loadTrackerClients();
     }
     // If a real client is selected (not 'all'), make sure its tracker data is loaded
-    const clientCode = state.trackerClient || (state.wipClient !== 'all' ? state.wipClient : null);
+    const clientCode = state.trackerClient || (state.wipClient !== 'all' && state.wipClient !== 'other' ? state.wipClient : null);
     if (clientCode) {
         state.trackerClient = clientCode;
         await loadTrackerData(clientCode);
