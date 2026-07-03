@@ -10,7 +10,8 @@ from flask import Flask, jsonify, request, send_from_directory, make_response, r
 from flask_cors import CORS
 import requests
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+from zoneinfo import ZoneInfo  # Todo default due dates (NZ reckoning)
 import re
 import hashlib  # NEW: For auth tokens
 import time     # NEW: For auth tokens
@@ -678,13 +679,6 @@ def transform_project(record):
     fields = record.get('fields', {})
     job_number = fields.get('Job Number', '')
     
-    # Parse update - get latest if pipe-separated
-    update_summary = fields.get('Update Summary', '') or fields.get('Update', '')
-    latest_update = update_summary
-    if '|' in update_summary:
-        parts = update_summary.split('|')
-        latest_update = parts[-1].strip() if parts else update_summary
-    
     # Parse dates - 'Update Due' is D/M/YYYY format from Airtable
     update_due = parse_airtable_date(fields.get('Update Due', ''))
     
@@ -702,6 +696,18 @@ def transform_project(record):
         update_history = update_history_raw
     else:
         update_history = []
+    
+    # Latest update - derived from the Update History rollup, whose source of
+    # truth is the Updates table. This stays correct no matter where an update
+    # is written from (Hub, Dot, Claude, or directly in Airtable).
+    # Entries arrive as "03 Jul | message text" - strip the date prefix.
+    # Falls back to the legacy denormalized 'Update' field for any project
+    # with no linked update records.
+    if update_history:
+        last_entry = update_history[-1]
+        latest_update = last_entry.split(' | ', 1)[1] if ' | ' in last_entry else last_entry
+    else:
+        latest_update = fields.get('Update Summary', '') or fields.get('Update', '')
     
     # === UNIVERSAL SCHEMA ===
     return {
@@ -1925,6 +1931,20 @@ def get_job_budget(job_number):
 
 
 # ===== TODOS API =====
+NZ_TZ = ZoneInfo('Pacific/Auckland')
+
+
+def _default_todo_due(from_date=None):
+    """Due date 5 working days (Mon-Fri) out from from_date (default: today NZ)."""
+    current = from_date or datetime.now(NZ_TZ).date()
+    added = 0
+    while added < 5:
+        current += timedelta(days=1)
+        if current.weekday() < 5:  # Mon=0 .. Fri=4
+            added += 1
+    return current.isoformat()
+
+
 def _todo_record_to_dict(record):
     """Convert an Airtable Todos record into the API shape."""
     fields = record.get('fields', {})
@@ -2004,8 +2024,7 @@ def create_todo():
         if confidence in ('High', 'Low'):
             fields['Confidence'] = confidence
         due = data.get('due')
-        if due:
-            fields['Due'] = due
+        fields['Due'] = due if due else _default_todo_due()
         client_input = data.get('client')
         if client_input:
             client_id = _resolve_client_record_id(client_input)
@@ -2039,6 +2058,17 @@ def update_todo(record_id):
         for key, value in data.items():
             if key in field_mapping:
                 airtable_fields[field_mapping[key]] = value
+
+        # Dates can be changed but not cleared - a cleared date snaps to the
+        # default (created + 5 working days)
+        if 'Due' in airtable_fields and not airtable_fields['Due']:
+            url = get_airtable_url('Todo')
+            record_response = requests.get(f"{url}/{record_id}", headers=HEADERS)
+            record_response.raise_for_status()
+            created_str = record_response.json().get('createdTime', '')[:10]
+            created = date.fromisoformat(created_str) if created_str else None
+            airtable_fields['Due'] = _default_todo_due(created)
+
         if 'client' in data:
             client_input = data.get('client')
             if client_input:
