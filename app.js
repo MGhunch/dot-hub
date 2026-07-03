@@ -893,11 +893,8 @@ function toggleWipMode() {
 }
 
 function openWipPdf() {
-    if (state.wipClient === 'all') {
-        showToast('Select a client first');
-        return;
-    }
-    window.open(`https://dot-tracker-pdf.up.railway.app/wip?client=${state.wipClient}`, '_blank');
+    const client = state.wipClient === 'all' ? 'ALL' : state.wipClient;
+    window.open(`https://dot-tracker-pdf.up.railway.app/wip?client=${client}`, '_blank');
 }
 
 function updateWipModeLabels() {
