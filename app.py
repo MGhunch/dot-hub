@@ -1015,16 +1015,26 @@ def create_new_job():
         steps = {'project': 'created', 'tracker': 'pending', 'todo': 'pending', 'folder': 'pending'}
         files_url = None
 
+        # Resolve the client record once — needed by BOTH the tracker and todo steps.
+        client_record_id = _resolve_client_record_id(client_code)
+        if not client_record_id:
+            print(f'[Hub API] WARNING: could not resolve client record for {client_code} — '
+                  f'{job_number} tracker spend will not appear in client rollups')
+
         # Step 4: Tracker record (best-effort)
         current_month = datetime.now().strftime('%B')  # e.g. "January"
         try:
             tracker_fields = {
-                'Link': [project_record_id],
+                'Link': [project_record_id],      # Projects link — drives display lookups
                 'Spend': cost,
                 'Ballpark': is_ballpark,
                 'Month': current_month,
                 'Spend type': 'Project budget'
             }
+            # Clients link — drives every money rollup on the Clients table.
+            # NOT a lookup through 'Link'. Without it the row renders fine and counts zero.
+            if client_record_id:
+                tracker_fields['Clients'] = [client_record_id]
             tr = requests.post(get_airtable_url('Tracker'), headers=HEADERS, json={'fields': tracker_fields})
             tr.raise_for_status()
             steps['tracker'] = 'created'
@@ -1040,9 +1050,8 @@ def create_new_job():
                 'Bucket': 'CLIENTS',
                 'Done': False,
             }
-            cid = _resolve_client_record_id(client_code)
-            if cid:
-                todo_fields['Client'] = [cid]
+            if client_record_id:
+                todo_fields['Client'] = [client_record_id]
             td = requests.post(get_airtable_url('Todo'), headers=HEADERS, json={'fields': todo_fields})
             td.raise_for_status()
             steps['todo'] = 'created'
@@ -1700,18 +1709,27 @@ def create_tracker():
             return jsonify({'error': f'Project not found: {job_number}'}), 404
         
         project_record_id = records[0].get('id')
-        
+
         # Create the Tracker record
         tracker_url = get_airtable_url('Tracker')
         tracker_fields = {
-            'Link': [project_record_id],
+            'Link': [project_record_id],      # Projects link — drives display lookups
             'Spend': data.get('spend', 0),
             'Ballpark': data.get('ballpark', True),
             'Month': data.get('month', datetime.now().strftime('%B')),
             'Spend type': data.get('spendType', 'Project budget'),
             'Tracker notes': data.get('description', '')
         }
-        
+
+        # Clients link — drives every money rollup on the Clients table.
+        # NOT a lookup through 'Link'. Without it the row renders fine and counts zero.
+        client_record_id = _resolve_client_record_id(extract_client_code(job_number))
+        if client_record_id:
+            tracker_fields['Clients'] = [client_record_id]
+        else:
+            print(f'[Hub API] WARNING: no client record for {job_number} — '
+                  f'this tracker row will not appear in client rollups')
+
         tracker_response = requests.post(
             tracker_url,
             headers=HEADERS,
