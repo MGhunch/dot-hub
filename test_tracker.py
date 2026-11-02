@@ -743,5 +743,42 @@ class TestHistoricQuarterDates:
         assert len(dates) == 3
 
 
+
+# ===== Year: same month name in different years =====
+
+class TestYearDisambiguation:
+    """Tracker holds more than a year of lines. Last October must not
+    count towards this October."""
+
+    def _entries(self, with_years=True):
+        rows = [
+            ('October', 2025, 40000),   # last year's October: must be ignored
+            ('October', 2026, 5000),
+            ('November', 2026, 5000),
+            ('December', 2026, 5000),
+        ]
+        return [{
+            'client': 'SKY', 'month': m,
+            'year': y if with_years else None,
+            'spendType': 'Project budget', 'ballpark': False, 'spend': s,
+        } for m, y, s in rows]
+
+    def test_last_years_month_is_ignored(self):
+        # January 2027: previous quarter is Oct-Dec 2026.
+        # Committed 3 x $10k, spent $15k, so $15k carries in.
+        r = get_rollover('SKY', date(2027, 1, 15), 'June',
+                         BUDGET_HISTORY, CLIENTS_FALLBACK, self._entries())
+        assert r['lastQuarter']['inherited'] == 15000
+        assert r['lastQuarter']['remaining'] == 15000
+
+    def test_rows_without_year_still_match_on_month(self):
+        # Older data shapes with no year fall back to month-only matching,
+        # so both Octobers count: $55k spent, nothing carries.
+        r = get_rollover('SKY', date(2027, 1, 15), 'June',
+                         BUDGET_HISTORY, CLIENTS_FALLBACK,
+                         self._entries(with_years=False), is_closed=True)
+        assert r['lastQuarter']['inherited'] == 0
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])

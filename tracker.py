@@ -60,8 +60,24 @@ def _quarter_months(quarter_first: date) -> list:
     return out
 
 
+def _entry_in_month(row: dict, client_code: str, month_name: str,
+                    year: Optional[int]) -> bool:
+    """True if a tracker row belongs to client_code in month_name of year.
+
+    Rows without a year (older data shapes) match on month alone.
+    """
+    if row.get('client') != client_code:
+        return False
+    if row.get('month') != month_name:
+        return False
+    row_year = row.get('year')
+    if year is not None and row_year is not None and row_year != year:
+        return False
+    return True
+
+
 def _spend_for_month(client_code: str, month_name: str,
-                     tracker_entries: list) -> int:
+                     tracker_entries: list, year: Optional[int] = None) -> int:
     """Sum tracker spend where:
        - client matches
        - month matches (Tracker.Month is text like 'April')
@@ -72,18 +88,12 @@ def _spend_for_month(client_code: str, month_name: str,
     work. Better to surface planned spend and have a conversation than miss
     actual work because someone forgot to untick a flag.
 
-    Note: Tracker entries don't carry year. Same month name in different years
-    can't be disambiguated from this data alone. Acceptable for now: rollover
-    only ever reads previous + current quarter (max 6 months), which only
-    repeats month names if the year-end is unusual. None of the current main
-    clients (March/June/September year-ends) repeat month names within that
-    window.
+    Year: when given, only rows from that year count. Tracker holds more than
+    a year of lines, so 'October' alone is ambiguous.
     """
     total = 0
     for row in tracker_entries:
-        if row.get('client') != client_code:
-            continue
-        if row.get('month') != month_name:
+        if not _entry_in_month(row, client_code, month_name, year):
             continue
         if row.get('spendType') != 'Project budget':
             continue
@@ -282,11 +292,10 @@ def get_rollover(client_code: str, today: date,
     # Pre-system suppression: if the previous quarter has ZERO tracker entries
     # for this client, that quarter pre-dates the tracker system being live for
     # them. Don't manufacture a phantom carry from "no entries = full underspend".
-    prev_month_names = {m['month_name'] for m in prev_q['months']}
     prev_entry_count = sum(
         1 for row in tracker_entries
-        if row.get('client') == client_code
-        and row.get('month') in prev_month_names
+        for m in prev_q['months']
+        if _entry_in_month(row, client_code, m['month_name'], m['year'])
     )
     prev_quarter_has_data = prev_entry_count > 0
 
@@ -299,7 +308,7 @@ def get_rollover(client_code: str, today: date,
                 budget_history, clients_fallback,
             )
             prev_spent_total += _spend_for_month(
-                client_code, m['month_name'], tracker_entries,
+                client_code, m['month_name'], tracker_entries, m['year'],
             )
         inherited = max(0, prev_committed_total - prev_spent_total)
     else:
@@ -319,7 +328,7 @@ def get_rollover(client_code: str, today: date,
             budget_history, clients_fallback,
         )
         curr_spent_total += _spend_for_month(
-            client_code, m['month_name'], tracker_entries,
+            client_code, m['month_name'], tracker_entries, m['year'],
         )
 
     net = curr_committed_total - curr_spent_total

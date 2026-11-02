@@ -138,9 +138,18 @@ function getYearForMonth(client, monthName) {
         const found = client.chartMonths.find(m => m.month === monthName);
         if (found) return found.year;
     }
-    // Fallback: best-effort from today's calendar year
+    return trackerYearForMonth(monthName);
+}
+
+// Which year a month name means in the rolling twelve months the Hub shows:
+// its most recent occurrence up to the end of the current calendar quarter.
+// Matches _tracker_year_for_month in app.py.
+function trackerYearForMonth(monthName) {
     const today = new Date();
-    return today.getFullYear();
+    const monthNum = MONTH_NUM[monthName];
+    if (!monthNum) return today.getFullYear();
+    const quarterEnd = (Math.floor(today.getMonth() / 3) + 1) * 3;
+    return monthNum <= quarterEnd ? today.getFullYear() : today.getFullYear() - 1;
 }
 
 // Build the rollover line ("rollover shrinks" pattern). One line, three shapes:
@@ -323,7 +332,7 @@ async function loadTrackerData(clientCode, cacheBust = false) {
         trackerData = data.map(d => ({
             id: d.id, client: d.client, jobNumber: d.jobNumber, projectName: d.projectName,
             owner: d.owner, description: d.description, jobDescription: d.jobDescription,
-            spend: d.spend, month: d.month,
+            spend: d.spend, month: d.month, year: d.year,
             spendType: d.spendType, ballpark: d.ballpark
         }));
         return true;

@@ -663,6 +663,31 @@ def parse_status_changed(status_str):
     return None
 
 
+def _tracker_year(value):
+    """Tracker.Year as an int, or None if blank/unreadable."""
+    if isinstance(value, list):
+        value = value[0] if value else None
+    try:
+        return int(value) if value not in (None, '') else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _tracker_year_for_month(month_name, today=None):
+    """Which year a month name means in the Hub's rolling twelve months.
+
+    The Hub's month picker has no year, so a month means its most recent
+    occurrence up to the end of the current calendar quarter. In November
+    2026, 'December' is Dec 2026 and 'January' is Jan 2026.
+    """
+    month_num = tracker.MONTH_NUM.get(month_name)
+    if not month_num:
+        return None
+    today = today or datetime.now(ZoneInfo('Pacific/Auckland')).date()
+    quarter_end = ((today.month - 1) // 3 + 1) * 3
+    return today.year if month_num <= quarter_end else today.year - 1
+
+
 def extract_client_code(job_number):
     """Extract client code from job number: 'SKY 017' -> 'SKY'"""
     if not job_number:
@@ -1419,6 +1444,7 @@ def get_tracker_clients():
                     tracker_entries.append({
                         'client': client_code,
                         'month': fields.get('Month', ''),
+                        'year': _tracker_year(fields.get('Year')),
                         'spendType': fields.get('Spend type', 'Project budget'),
                         'ballpark': bool(fields.get('Ballpark', False)),
                         'spend': spend,
@@ -1563,6 +1589,14 @@ def get_tracker_data():
                 # Skip zero spend records
                 if spend == 0:
                     continue
+
+                # Only lines from the rolling twelve months the Hub shows.
+                # Without this, last October and this October add together.
+                # Lines with no Year (no Month) are kept as before.
+                month = fields.get('Month', '')
+                year = _tracker_year(fields.get('Year'))
+                if year is not None and year != _tracker_year_for_month(month):
+                    continue
                 
                 all_records.append({
                     'id': record.get('id'),
@@ -1573,7 +1607,8 @@ def get_tracker_data():
                     'description': fields.get('Tracker notes', ''),
                     'jobDescription': '',  # filled below from Projects.Description
                     'spend': spend,
-                    'month': fields.get('Month', ''),
+                    'month': month,
+                    'year': year,
                     'spendType': fields.get('Spend type', 'Project budget'),
                     'ballpark': bool(fields.get('Ballpark', False)),
                 })
@@ -1926,6 +1961,7 @@ def get_job_budget(job_number):
                 all_records.append({
                     'id': record.get('id'),
                     'month': fields.get('Month', ''),
+                    'year': _tracker_year(fields.get('Year')),
                     'spendType': fields.get('Spend type', ''),
                     'notes': fields.get('Tracker notes', ''),
                     'spend': float(spend),

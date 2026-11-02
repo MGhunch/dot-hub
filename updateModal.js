@@ -661,7 +661,9 @@ async function loadTrackerForJob(jobNumber, month) {
 }
 
 function resolveTrackerForMonth(monthName) {
-    const entry = updateModalState.trackerEntries.find(e => e.month === monthName);
+    // Prefer this year's line for the month; fall back to a line with no year.
+    const wantYear = typeof trackerYearForMonth === 'function' ? trackerYearForMonth(monthName) : null;
+    const entry = updateModalState.trackerEntries.find(e => e.month === monthName && (e.year == null || wantYear == null || e.year === wantYear));
     const spendInput = $um('update-modal-spend-input');
     const spendAmount = $um('update-modal-spend-amount');
     const notes = $um('update-modal-tracker-notes');
