@@ -158,9 +158,10 @@ class TestRollover:
         assert result['nextQuarter'] is None
 
     def test_april_overspent_5k_chips_rollover(self):
-        # SKY: April overspent $5K. Carry chipped to $21K. Nothing banking.
+        # SKY: April alone spends $35K — the whole $30K quarter plus $5K.
+        # Carry chipped to $21K. Nothing banking.
         entries = sky_q3_underspend_26k() + [
-            {'client': 'SKY', 'month': 'April', 'spend': 15000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'April', 'spend': 35000, 'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
@@ -208,11 +209,10 @@ class TestRollover:
         assert result['nextQuarter'] is None  # net is $0, nothing banks
 
     def test_over_then_under_nets_smaller_overage(self):
-        # April over $10K, May under $3K. Net = $7K over.
-        # Old asymmetric: chip $10K (remaining $16K), bank $3K.
-        # New model: chip the net overage only ($7K). Bank nothing.
+        # April $30K, May $7K = $37K against a $30K quarter. $7K over.
+        # Chip the quarter overage only ($7K). Bank nothing.
         entries = sky_q3_underspend_26k() + [
-            {'client': 'SKY', 'month': 'April', 'spend': 20000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'April', 'spend': 30000, 'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'May',   'spend': 7000,  'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 6, 15), 'June',
@@ -222,12 +222,11 @@ class TestRollover:
         assert result['nextQuarter'] is None
 
     def test_under_then_over_chips_only_net_overage(self):
-        # April under $5K, May over $10K. Net = $5K over.
-        # Old asymmetric: chip $10K, bank $5K separately.
-        # New model: net is what chips ($5K). Bank nothing.
+        # April $5K, May $30K = $35K against a $30K quarter. $5K over.
+        # Quarter overage is what chips ($5K). Bank nothing.
         entries = sky_q3_underspend_26k() + [
             {'client': 'SKY', 'month': 'April', 'spend': 5000,  'spendType': 'Project budget', 'ballpark': False},
-            {'client': 'SKY', 'month': 'May',   'spend': 20000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'May',   'spend': 30000, 'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 6, 15), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
@@ -236,12 +235,12 @@ class TestRollover:
         assert result['nextQuarter'] is None
 
     def test_floor_at_zero_when_overage_exceeds_carry(self):
-        # SKY Q3 underspent $5K (not 26K). April overspent $10K. Chip floors at 0.
+        # SKY Q3 underspent $5K (not 26K). April $40K = quarter $10K over. Chip floors at 0.
         entries = [
             {'client': 'SKY', 'month': 'January',  'spend': 9000, 'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'February', 'spend': 8000, 'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'March',    'spend': 8000, 'spendType': 'Project budget', 'ballpark': False},
-            {'client': 'SKY', 'month': 'April',    'spend': 20000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'April',    'spend': 40000, 'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
@@ -310,10 +309,10 @@ class TestRollover:
 
     def test_ballpark_counted(self):
         # Ballpark is a UI hint only — it does NOT gate spend math.
-        # April counts both $5K (confirmed) + $7K (ballpark) = $12K spent.
-        # April $2K over (committed $10K) → chips $2K of $26K carry → carry $24K, no banking.
+        # April counts both $25K (confirmed) + $7K (ballpark) = $32K spent.
+        # Quarter $2K over (committed $30K) → chips $2K of $26K carry → carry $24K, no banking.
         entries = sky_q3_underspend_26k() + [
-            {'client': 'SKY', 'month': 'April', 'spend': 5000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'April', 'spend': 25000, 'spendType': 'Project budget', 'ballpark': False},
             {'client': 'SKY', 'month': 'April', 'spend': 7000, 'spendType': 'Project budget', 'ballpark': True},
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
@@ -370,11 +369,35 @@ class TestRollover:
         assert result['lastQuarter'] is None  # no inherited (Q4 on commit), nothing to show
         assert result['nextQuarter'] is None  # net $0, nothing banks
 
+    def test_front_loaded_month_within_quarter_budget_keeps_carry(self):
+        # 2 Nov 2026 — Sky: a heavy first month inside the quarter's budget
+        # must not eat the rollover. April $25K of a $30K quarter: carry intact.
+        entries = sky_q3_underspend_26k() + [
+            {'client': 'SKY', 'month': 'April', 'spend': 25000, 'spendType': 'Project budget', 'ballpark': False},
+        ]
+        result = get_rollover('SKY', date(2026, 5, 3), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
+        assert result['lastQuarter']['remaining'] == 26000
+        assert result['lastQuarter']['chipped'] == 0
+        assert result['nextQuarter'] is None  # completed months over — nothing banks yet
+
+    def test_in_flight_spend_counts_toward_chip(self):
+        # Spend logged in the in-flight month counts toward the quarter story.
+        # April $31K + May (in flight) $1K = $32K of $30K → $2K chipped.
+        entries = sky_q3_underspend_26k() + [
+            {'client': 'SKY', 'month': 'April', 'spend': 31000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'May',   'spend': 1000,  'spendType': 'Project budget', 'ballpark': False},
+        ]
+        result = get_rollover('SKY', date(2026, 5, 3), 'June',
+                               BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
+        assert result['lastQuarter']['chipped'] == 2000
+        assert result['lastQuarter']['remaining'] == 24000
+
     def test_chipped_field_reflects_consumption(self):
         # New field: lastQuarter.chipped = how much of inherited was consumed
         # by this quarter's overspend. inherited - chipped == remaining always.
         entries = sky_q3_underspend_26k() + [
-            {'client': 'SKY', 'month': 'April', 'spend': 15000, 'spendType': 'Project budget', 'ballpark': False},
+            {'client': 'SKY', 'month': 'April', 'spend': 35000, 'spendType': 'Project budget', 'ballpark': False},
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)

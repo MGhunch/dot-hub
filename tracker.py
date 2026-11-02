@@ -333,16 +333,29 @@ def get_rollover(client_code: str, today: date,
 
     net = curr_committed_total - curr_spent_total
 
-    if net >= 0:
-        # Net under (or exactly even): banks to next quarter. Inherited untouched.
-        banking = net
-        chipped = 0
-    else:
-        # Net over: chips inherited rollover (floor at 0). Anything beyond the
-        # carry is written off — no banking.
-        overage = -net
-        chipped = min(inherited, overage)
+    # Chipping is judged against the WHOLE quarter's committed, using all spend
+    # logged in the quarter so far — the same story the tracker tells
+    # ("$32K spent of $30K committed → $2K over"). A heavy first month doesn't
+    # eat the rollover while the quarter's own budget still has room.
+    # (2 Nov 2026 — Sky: Oct $31K of a $30K quarter was wiping a $14K carry.)
+    full_committed_total = 0
+    full_spent_total = 0
+    for m in curr_q['months']:
+        full_committed_total += get_committed(
+            client_code, m['year'], m['month_num'],
+            budget_history, clients_fallback,
+        )
+        full_spent_total += _spend_for_month(
+            client_code, m['month_name'], tracker_entries, m['year'],
+        )
+    overage = max(0, full_spent_total - full_committed_total)
+    chipped = min(inherited, overage)
+
+    # Banking still waits on completed months only (live) / all months (closed).
+    if overage > 0 or net < 0:
         banking = 0
+    else:
+        banking = net
 
     remaining = inherited - chipped
 
