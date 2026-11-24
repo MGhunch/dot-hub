@@ -1653,6 +1653,7 @@ body.logged-out .view-tracker {
 }
 
 .tracker-progress-fill.over { background: #f59e0b; }
+.tracker-progress-fill.rollover-part { opacity: 0.5; }
 
 .rollover-credit {
     margin-top: 16px;

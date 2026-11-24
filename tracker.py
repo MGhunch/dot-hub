@@ -360,14 +360,13 @@ def get_rollover(client_code: str, today: date,
     remaining = inherited - chipped
 
     # ===== Build response =====
-    # Live: hide lastQuarter when there's nothing useful to say (no prev data,
-    #   or carry fully chipped — "expired" stories ask more questions than
-    #   they answer).
+    # Live: hide lastQuarter only when nothing came in. A fully used carry is
+    #   still reported so the tracker can say "all used" (Nov 2026).
     # Closed: always populate both buckets (with zeros) so the historic story
     #   renders fully — EXCEPT when prev quarter had no data at all (pre-system),
     #   in which case lastQuarter stays hidden.
     last_quarter = None
-    if prev_quarter_has_data and (is_closed or remaining > 0):
+    if prev_quarter_has_data and (is_closed or inherited > 0):
         last_quarter = {
             'remaining': remaining,
             'inherited': inherited,

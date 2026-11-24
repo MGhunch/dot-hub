@@ -244,8 +244,12 @@ class TestRollover:
         ]
         result = get_rollover('SKY', date(2026, 5, 3), 'June',
                                BUDGET_HISTORY, CLIENTS_FALLBACK, entries)
-        # Carry $5K, overage $10K → floored at 0 → lastQuarter hidden
-        assert result['lastQuarter'] is None
+        # Carry $5K, overage $10K → all used. Still reported so the tracker
+        # can say "all used" (and how far over).
+        lq = result['lastQuarter']
+        assert lq['inherited'] == 5000
+        assert lq['chipped'] == 5000
+        assert lq['remaining'] == 0
         assert result['nextQuarter'] is None
 
     def test_no_carry_in_quarter_under_banks(self):

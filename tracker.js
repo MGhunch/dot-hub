@@ -205,6 +205,30 @@ function formatRolloverBlock(rolloverObj) {
     `;
 }
 
+// Rollover story for the quarter view (Nov 2026).
+// Available = committed + carry from last quarter, marked with an asterisk.
+// The rollover box explains the asterisk. Wording is placeholder — Michael to
+// supply final copy for each state.
+function buildRolloverStory(committed, inherited, toDate, prevLabel) {
+    const fmt = formatTrackerCurrency;
+    const overCommitted = Math.max(0, toDate - committed);
+    const used = Math.min(inherited, overCommitted);
+    const left = inherited - used;
+    const overAll = Math.max(0, toDate - committed - inherited);
+    const lead = `*${fmt(committed)} committed plus ${fmt(inherited)} carried over from ${prevLabel}.`;
+    let tail;
+    if (used === 0) {
+        tail = `None of the rollover used yet.`;
+    } else if (left > 0) {
+        tail = `You've used ${fmt(used)} of the rollover, so ${fmt(left)} is left.`;
+    } else if (overAll > 0) {
+        tail = `All used, and ${fmt(overAll)} over.`;
+    } else {
+        tail = `Now all used.`;
+    }
+    return `${lead} ${tail}`;
+}
+
 // Join a list of month names with NZ-style "and" / commas (no Oxford comma).
 //   ['April']                  -> 'April'
 //   ['April', 'May']           -> 'April and May'
@@ -569,9 +593,7 @@ function renderTrackerContent() {
         const year = getYearForMonth(client, m);
         return sum + getCommittedFor(client, year, m);
     }, 0);
-    const remaining = totalBudget - toDate;
-    const progress = totalBudget > 0 ? Math.min((toDate / totalBudget) * 100, 100) : 0;
-    const isOver = toDate > totalBudget;
+
     // Rollover block visibility:
     //   Pick rollover for the quarter being viewed from rolloverByQuarter map.
     //   If available, use that (handles current AND historic). Falls back to
@@ -587,7 +609,25 @@ function renderTrackerContent() {
     // single-line model, that means `inherited > 0` — no carry, no header.
     const showRolloverNew = !!rolloverBlockHtml;
     const showRolloverOld = !rolloverObject && rollover > 0 && rolloverUseIn && isViewingCurrentQuarter;
-    const showRollover = showRolloverNew || showRolloverOld;
+    const showRolloverLegacy = showRolloverNew || showRolloverOld;
+
+    // Quarter view only: fold last quarter's carry into Available (Nov 2026).
+    const lq = (trackerIsQuarterView && rolloverToRender && rolloverToRender.lastQuarter) || null;
+    const inherited = lq ? (lq.inherited || 0) : 0;
+    const hasCarry = inherited > 0;
+    const available = totalBudget + inherited;
+    const remaining = available - toDate;
+    const isOver = toDate > available;
+    const progress = available > 0 ? Math.min((toDate / available) * 100, 100) : 0;
+    const committedPart = available > 0 ? Math.min((Math.min(toDate, totalBudget) / available) * 100, 100) : 0;
+    const rolloverPart = Math.max(0, progress - committedPart);
+    // Closed quarter that came in under: say where the money went.
+    const isClosedQuarter = trackerIsQuarterView && rolloverToRender && rolloverToRender.isClosed;
+    const carriedOut = isClosedQuarter && rolloverToRender.nextQuarter ? (rolloverToRender.nextQuarter.banking || 0) : 0;
+    const showCarriedOut = carriedOut > 0;
+    const carriedOutLabel = showCarriedOut ? `Carried into ${rolloverToRender.nextQuarterLabel || 'next quarter'}` : '';
+    const rolloverStory = hasCarry ? buildRolloverStory(totalBudget, inherited, toDate, lq.previousQuarterLabel || prevQ.quarter) : '';
+    const showRollover = trackerIsQuarterView && hasCarry;
     
     const mainProjects = projects.filter(p => p.spendType === 'Project budget');
     const otherProjects = projects.filter(p => p.spendType === 'Extra budget' || p.spendType === 'Project on us');
@@ -634,29 +674,35 @@ function renderTrackerContent() {
             <div class="numbers-section">
                 <div class="numbers-grid">
                     <div class="stat-box">
-                        <div class="stat-value grey">${formatTrackerCurrency(totalBudget)}</div>
-                        <div class="stat-label">Committed</div>
+                        <div class="stat-value grey">${formatTrackerCurrency(hasCarry ? available : totalBudget)}${hasCarry ? '*' : ''}</div>
+                        <div class="stat-label">${hasCarry ? 'Available' : 'Committed'}</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-value">${formatTrackerCurrency(toDate)}</div>
                         <div class="stat-label">To Date</div>
                     </div>
                     <div class="stat-box">
+                        ${showCarriedOut ? `
+                        <div class="stat-value grey">${formatTrackerCurrency(carriedOut)}</div>
+                        <div class="stat-label">${carriedOutLabel}</div>
+                        ` : `
                         <div class="stat-value ${isOver ? 'orange' : 'red'}">${isOver ? '-' : ''}${formatTrackerCurrency(Math.abs(remaining))}</div>
                         <div class="stat-label">To Spend</div>
+                        `}
                     </div>
                 </div>
                 <div class="tracker-progress-bar">
+                    ${isOver || !hasCarry ? `
                     <div class="tracker-progress-fill ${isOver ? 'over' : ''}" style="width: ${progress}%"></div>
+                    ` : `
+                    <div class="tracker-progress-fill" style="width: ${committedPart}%; border-radius: 4px 0 0 4px; float: left;"></div>
+                    <div class="tracker-progress-fill rollover-part" style="width: ${rolloverPart}%; border-radius: 0 4px 4px 0; float: left;"></div>
+                    `}
                 </div>
                 ${showRollover ? `
                     <div class="rollover-credit">
                         <div class="rollover-label">Rollover</div>
-                        <div class="rollover-amount">${
-                            rolloverToRender
-                                ? rolloverBlockHtml
-                                : `<strong>+${formatTrackerCurrency(rollover)}</strong> credit from ${prevQ.quarter}`
-                        }</div>
+                        <div class="rollover-amount">${rolloverStory}</div>
                     </div>
                 ` : ''}
             </div>
